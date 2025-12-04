@@ -7,29 +7,7 @@ library OrderActs {
         Bid
     }
 
-    /// For clarity, `Signature` is a struct seperate from `Order`
-    /*
-        Off-chain mongo-db document will be in denormalized form:
-        {
-        "_id": "<orderId>",
-        "order": {
-            "side": "ask",
-            "actor": "0x1234",
-            "collection": "0xNFT",
-            "tokenId": 1337,
-            "price": "420000000000000000",
-            "start": 12345,
-            "end": 20000,
-            "nonce": 69
-        },
-        "signature": {
-            "r": "0xabc...",
-            "s": "0xdef...",
-            "v": 27
-            }
-        }
-    */
-    /// Maket's Intent
+    /// Maker's Intent
     struct Order {
         Side side;
         address actor;

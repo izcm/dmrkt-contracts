@@ -22,6 +22,7 @@ library PoolActs {
 
     bytes32 internal constant INTENT_HASH = keccak256("todo");
 
+    /*
     function hash(Intent memory intent) internal pure returns (bytes32) {
         return keccak256(
             abi.encode(
@@ -35,4 +36,5 @@ library PoolActs {
             )
         );
     }
+    */
 }

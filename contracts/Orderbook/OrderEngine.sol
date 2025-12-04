@@ -51,8 +51,10 @@ contract OrderEngine {
         // 1. Order nonce is valid
         // 2. Signer != addr(0)
 
-        // Verify signature
-        //(uint8 v, bytes32 r, bytes32 s) = SigOps.vrs(sig);
+        // Verify Signature
+        // (uint8 v, bytes32 r, bytes32 s) = SigOps.vrs(sig);
         SigOps.verify(DOMAIN_SEPARATOR, order.hash(), order.actor, v, r, s);
+
+        // Signature is valid
     }
 }
