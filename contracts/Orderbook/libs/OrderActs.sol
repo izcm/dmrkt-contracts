@@ -7,7 +7,7 @@ library OrderActs {
         Bid
     }
 
-    /// For clarity, order and signature is seperated in contract code.
+    /// For clarity, `Signature` is a struct seperate from `Order`
     /*
         Off-chain mongo-db document will be in denormalized form:
         {
@@ -53,6 +53,7 @@ library OrderActs {
     // hashStruct(s : 𝕊) = keccak256(typeHash ‖ encodeData(s)) where typeHash = keccak256(encodeType(typeOf(s)))
     bytes32 constant ORDER_TYPE_HASH = keccak256("dmrkt.order.v.1.0"); // temporary until `Order` fields are decided
 
+    // ❗ TODO: implement this in assembly and test gas savings
     function hash(Order memory o) internal pure returns (bytes32) {
         return keccak256(abi.encode(ORDER_TYPE_HASH, o.actor, o.price, o.side, o.start, o.end, o.nonce));
     }

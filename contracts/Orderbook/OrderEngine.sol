@@ -3,10 +3,11 @@ pragma solidity ^0.8.30;
 
 // Explicit namespace imports to avoid any ambiguity in maintenance / audits
 import "./libs/OrderActs.sol";
-import "./libs/Auth.sol";
+import {SignatureOps as SigOps} from "./libs/SignatureOps.sol";
 
 contract OrderEngine {
     using OrderActs for OrderActs.Order;
+    using SigOps for SigOps.Signature;
 
     bytes32 public immutable DOMAIN_SEPERATOR;
     mapping(address => mapping(uint256 => bool)) private _isUserOrderNonceValid;
@@ -29,15 +30,29 @@ contract OrderEngine {
     }
 
     /// Matches a `Fill` request to an existing `Order`
-    function settle(OrderActs.Fill calldata fill, OrderActs.Order calldata order, Auth.Signature calldata sig)
-        external {
-        //
+    // TODO: add nonreentrant
+    function settle(OrderActs.Fill calldata fill, OrderActs.Order calldata order, SigOps.Signature calldata sig)
+        external
+    {
+        // Verify
+        (uint8 v, bytes32 r, bytes32 s) = sig.vrs();
+        _verifyOrder(order, v, r, s);
     }
 
     // --------------
     // INTERNAL
     // --------------
-    function verifyOrder() internal {
-        // validate signature
+
+    /**
+     * @notice Verify order is valid
+     */
+    function _verifyOrder(OrderActs.Order calldata order, uint8 v, bytes32 r, bytes32 s) internal {
+        // Require:
+        // 1. Order nonce is valid
+        // 2. Signer != addr(0)
+
+        // Verify signature
+        //(uint8 v, bytes32 r, bytes32 s) = SigOps.vrs(sig);
+        SigOps.verify(DOMAIN_SEPERATOR, order.hash(), order.actor, v, r, s);
     }
 }
