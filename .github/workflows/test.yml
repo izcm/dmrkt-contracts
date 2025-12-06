@@ -27,11 +27,30 @@ jobs:
       - name: Show Forge version
         run: forge --version
 
-      - name: Run Forge fmt
+      - name: Format contracts
         run: forge fmt --check
 
-      - name: Run Forge build
+      - name: Build contracts
         run: forge build --sizes
 
-      - name: Run Forge tests
+      - name: Test contracts
         run: forge test -vvv
+
+      # push abis to a2zblocks packages repo
+      - name: Clone packages repo
+        run: |
+          git clone https://github.com/izcm/a2zblocks-packages.git
+          cd abis/dmrkt
+          git config user.name "a2zblocksCI"
+          git config user.email "github@github.com"
+
+      - name: Copy ABIs
+        run: |
+          cp -f out/OrderEngine.sol/OrderEngine.json a2zblocks-packages/abis/dmrkt/OrderEngine.json
+
+      - name: Commit & Push
+        run: |
+          cd a2zblocks-packages
+          git add .
+          git commit -m "Sync dmrkt ABIs"
+          git push https://x-access-token:${{ secrets.ABI_PUSH_TOKEN }}@github.com/izcm/a2zblocks-packages.git HEAD:main
