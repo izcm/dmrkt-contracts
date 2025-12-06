@@ -40,7 +40,7 @@ jobs:
       - name: Clone packages repo
         run: |
           git clone https://github.com/izcm/a2zblocks-packages.git
-          cd abis/dmrkt
+          cd a2zblocks-packages/abis/dmrkt
           git config user.name "a2zblocksCI"
           git config user.email "github@github.com"
 
