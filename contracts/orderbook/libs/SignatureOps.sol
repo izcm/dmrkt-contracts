@@ -3,18 +3,18 @@ pragma solidity ^0.8.30;
 
 import {console} from "forge-std/console.sol";
 
+// TODO read OZ helpers
+// https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/utils/cryptography/ECDSA.sol
+
 library SignatureOps {
-    // --------------
-    // ERRORS
-    // --------------
+    // ===== ERRORS =====
     error InvalidYParity();
     error InvalidSParameter();
     error InvalidSignature();
     error ContractSignerUnsupported();
 
-    // --------------
-    // OBJ & METHODS
-    // --------------
+    // ===== SIG OBJ & METHODS =====
+
     struct Signature {
         uint8 v; // Y-parity - 27 or 28 always
         bytes32 r;
@@ -28,9 +28,8 @@ library SignatureOps {
         return (sig.v, sig.r, sig.s);
     }
 
-    // --------------
-    // VERIFICATION
-    // --------------
+    // ===== SIG VERIFICATION =====
+
     function recover(bytes32 hash, uint8 v, bytes32 r, bytes32 s) internal pure returns (address) {
         return ecrecover(hash, v, r, s);
     }

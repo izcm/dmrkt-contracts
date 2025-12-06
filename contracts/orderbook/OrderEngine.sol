@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.30;
 
-// Explicit namespace imports to avoid any ambiguity in maintenance / audits
 import "./libs/OrderActs.sol";
 import {SignatureOps as SigOps} from "./libs/SignatureOps.sol";
 
-// TODO read OZ helpers
-// https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/utils/cryptography/ECDSA.sol
+// ===== ERRORS =====
+error UnauthorizedFillActor();
+error InvalidNonce();
+error ZeroActor();
+error CurrencyNotWhitelisted();
 
 contract OrderEngine {
     using OrderActs for OrderActs.Order;
@@ -14,10 +16,9 @@ contract OrderEngine {
 
     bytes32 public immutable DOMAIN_SEPARATOR;
 
-    mapping(address => mapping(uint256 => bool)) private _isUserOrderNonceValid;
+    mapping(address => mapping(uint256 => bool)) private _isUserOrderNonceInvalid;
 
     constructor() {
-        // compute domain seperator once
         DOMAIN_SEPARATOR = keccak256(
             abi.encode(
                 // EIP-712 domain type hash
@@ -33,34 +34,38 @@ contract OrderEngine {
         );
     }
 
+    // ===== EXTERNAL FUNCTIONS =====
+
     /// Matches a `Fill` request to an existing `Order`
     // TODO: add nonreentrant
     function settle(OrderActs.Fill calldata fill, OrderActs.Order calldata order, SigOps.Signature calldata sig)
         external
     {
-        require(msg.sender == fill.actor, "Fill: Actor must be the sender"); // Fill request must be from taker
+        // Fill request actor must be msg.sender
+        require(msg.sender == fill.actor, UnauthorizedFillActor());
 
         // Verify
         (uint8 v, bytes32 r, bytes32 s) = sig.vrs();
-        _verifyOrder(order, v, r, s);
+        _validateOrder(order, v, r, s);
+
+        // uint256 tokenId = order.isCollectionBid ? fill.tokenId : order.tokenId;
     }
 
-    // --------------
-    // INTERNAL
-    // --------------
+    // ===== INTERNAL FUNCTIONS =====
 
     /**
-     * @notice Verify order is valid
+     * @notice Validates order.
      */
     function _validateOrder(OrderActs.Order calldata order, uint8 v, bytes32 r, bytes32 s) internal view {
-        // Require:
-        // 1. Order nonce is valid
-        // 2. Signer != addr(0)
+        // Signer != addr(0)
+        require(order.actor != address(0), ZeroActor());
+
+        // Valid order nonce
+        require(!_isUserOrderNonceInvalid[order.actor][order.nonce], InvalidNonce());
+
+        // Whitelisted currency
 
         // Verify Signature
-        // (uint8 v, bytes32 r, bytes32 s) = SigOps.vrs(sig);
         SigOps.verify(DOMAIN_SEPARATOR, order.hash(), order.actor, v, r, s);
-
-        // Signature is valid
     }
 }

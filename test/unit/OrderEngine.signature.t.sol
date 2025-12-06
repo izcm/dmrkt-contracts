@@ -52,9 +52,8 @@ contract OrderEngineSignatureTest is Test {
         engine.settle(fill, order, sig);
     }
 
-    // --------------
-    // HELPERS
-    // --------------
+    // ===== HELPERS =====
+
     function makeOrderDigestAndSign(address actor, uint256 actorPrivateKey)
         internal
         view
@@ -82,6 +81,7 @@ contract OrderEngineSignatureTest is Test {
         return OrderActs.Order({
             side: OrderActs.Side.Ask,
             actor: actor,
+            isCollectionBid: false,
             collection: collection,
             tokenId: 1,
             price: price,
@@ -93,7 +93,7 @@ contract OrderEngineSignatureTest is Test {
 
     // `settle()` requires fill.actor = msg.sender
     function makeFill(address actor) internal pure returns (OrderActs.Fill memory) {
-        return OrderActs.Fill({actor: actor});
+        return OrderActs.Fill({actor: actor, tokenId: 0});
     }
 
     function makeDigest(OrderActs.Order memory o) internal view returns (bytes32) {
