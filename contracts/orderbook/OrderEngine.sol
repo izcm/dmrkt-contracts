@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.30;
 
+import {ReentrancyGuard} from "@openzeppelin/utils/ReentrancyGuard.sol";
+
+// local
 import "./libs/OrderActs.sol";
 import {SignatureOps as SigOps} from "./libs/SignatureOps.sol";
 
@@ -10,7 +13,7 @@ error InvalidNonce();
 error ZeroActor();
 error CurrencyNotWhitelisted();
 
-contract OrderEngine {
+contract OrderEngine is ReentrancyGuard {
     using OrderActs for OrderActs.Order;
     using SigOps for SigOps.Signature;
 
@@ -40,6 +43,8 @@ contract OrderEngine {
     // TODO: add nonreentrant
     function settle(OrderActs.Fill calldata fill, OrderActs.Order calldata order, SigOps.Signature calldata sig)
         external
+        payable
+        nonReentrant
     {
         // Fill request actor must be msg.sender
         require(msg.sender == fill.actor, UnauthorizedFillActor());
