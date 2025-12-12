@@ -7,18 +7,23 @@ include .env
 
 # paths
 DEPLOY_ORDER_ENGINE = script/DeployOrderEngine.s.sol
+PATH_DEV_SETUP = script/setup-fork
 PATH_FORK_SETUP_SCRIPTS = script/setup-fork
 
 # ───────────────────────────────────────────────
 #   Deploy 
 # ───────────────────────────────────────────────
-deploy-orderbook-fork: 
-	@echo "🚀 Deploying OrderEngine..."
-	@forge script $(DEPLOY_ORDER_ENGINE) \
-		--rpc-url fork \
+dev-fork:
+	@echo "🧬 Starting anvil fork..."
+	@cd script/setup-dev && bash start.sh
+
+dev-setup-script:dev-fork
+	@echo "💻 Running DEV Setup Script..." && \
+	forge script script/setup-dev/Setup.s.sol \
+		--rpc-url http://127.0.0.1:8545 \
 		--broadcast \
 		--sender $(ANVIL_SENDER) \
-		--private-key $(ANVIL_PK) \
-		| tee $(PATH_FORK_SETUP_SCRIPTS)/deploy-engine.log 
+		--private-key $(ANVIL_PK)
 
+	
 

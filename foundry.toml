@@ -8,6 +8,10 @@ remappings = [
     "@openzeppelin/=lib/openzeppelin-contracts/contracts"
 ]
 
+fs_permissions = [
+    { access = "read", path = "./" },
+]
+
 [rpc_endpoints]
 fork = "http://localhost:8545"
 
