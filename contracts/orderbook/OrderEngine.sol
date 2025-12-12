@@ -43,8 +43,9 @@ contract OrderEngine is ReentrancyGuard {
 
     // ===== EXTERNAL FUNCTIONS =====
 
-    /// Matches a `Fill` request to an existing `Order`
-    // TODO: add nonreentrant
+    /**
+     * @notice Matches a `Fill` request to an existing `Order`
+     */
     function settle(OrderActs.Fill calldata fill, OrderActs.Order calldata order, SigOps.Signature calldata sig)
         external
         payable
