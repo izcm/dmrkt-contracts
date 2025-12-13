@@ -33,8 +33,8 @@ contract Setup is BaseDevScript, Config {
         orderEngine = new OrderEngine();
         vm.stopBroadcast();
 
+        // TODO: write the addr back to development.toml
         console.log("\nEngine Deployed: %s", address(orderEngine));
-        console.logAddress(address(orderEngine));
 
         console.log(
             "\nDeployment complete! Addresses saved to deployments.toml"

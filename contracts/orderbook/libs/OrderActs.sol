@@ -37,20 +37,21 @@ library OrderActs {
 
     // TODO: implement this in assembly and test gas savings
     function hash(Order memory o) internal pure returns (bytes32) {
-        return keccak256(
-            abi.encode(
-                ORDER_TYPE_HASH,
-                o.actor,
-                o.isCollectionBid,
-                o.collection,
-                o.tokenId,
-                o.price,
-                o.currency,
-                o.side,
-                o.start,
-                o.end,
-                o.nonce
-            )
-        );
+        return
+            keccak256(
+                abi.encode(
+                    ORDER_TYPE_HASH,
+                    o.actor,
+                    o.isCollectionBid,
+                    o.collection,
+                    o.tokenId,
+                    o.price,
+                    o.currency,
+                    o.side,
+                    o.start,
+                    o.end,
+                    o.nonce
+                )
+            );
     }
 }
