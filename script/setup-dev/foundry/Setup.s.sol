@@ -29,7 +29,7 @@ contract Setup is BaseDevScript, Config {
 
     function run() external {
         // --------------------------------
-        // PHASE 0: LOAD CONFIG + SETUP
+        // PHASE 0: LOAD CONFIG
         // --------------------------------
 
         _loadConfig("deployments.toml", true);
@@ -37,13 +37,16 @@ contract Setup is BaseDevScript, Config {
         uint256 chainId = block.chainid;
         console.log("Deploying to chain: %s", chainId);
 
-        // deploy marketplace
-
-        address azuki = config.get("azuki").toAddress();
+        address azuki = config.get("nft_address").toAddress();
         address weth = config.get("weth").toAddress();
 
+        // --------------------------------
+        // PHASE 1: SETUP CONTRACTS
+        // --------------------------------
+
+        // deploy nft contract
         // select tokens
-        (uint256[] memory ids) = selectTokens(azuki, 10, 2);
+        /*(uint256[] memory ids) = selectTokens(azuki, 10, 2);
 
         // get number of tokens
         uint256 length = countUntilZero(ids);
@@ -71,6 +74,12 @@ contract Setup is BaseDevScript, Config {
             );
         }
 
+        // read owner
+        for (uint256 i = 0; i < length; i++) {
+            owners[i] = readOwnerOf(azuki, ids[i]);
+            console.log("Owner of token %s: %s", ids[i], owners[i]);
+        }
+
         // --------------------------------
         // PHASE 2: BROADCAST - FUNDING
         // --------------------------------
@@ -90,7 +99,6 @@ contract Setup is BaseDevScript, Config {
         // - WETH allowance to marketplace
         // - Approve marketplace
 
-        /*
         orderEngine = new OrderEngine();
         vm.stopBroadcast();
 
