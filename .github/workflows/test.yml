@@ -48,9 +48,14 @@ jobs:
         run: |
           cp -f out/OrderEngine.sol/OrderEngine.json a2zblocks-packages/abis/dmrkt/OrderEngine.json
 
-      - name: Commit & Push
+      - name: Commit & Push ABI (only if OrderEngine ABI changed)
         run: |
           cd a2zblocks-packages
-          git add .
-          git commit -m "Sync dmrkt ABIs"
-          git push https://x-access-token:${{ secrets.ABI_PUSH_TOKEN }}@github.com/izcm/a2zblocks-packages.git HEAD:main
+
+          if ! git diff --quiet abis/dmrkt/OrderEngine.json; then
+            git add abis/dmrkt/OrderEngine.json
+            git commit -m "Sync OrderEngine ABI"
+            git push https://x-access-token:${{ secrets.ABI_PUSH_TOKEN }}@github.com/izcm/a2zblocks-packages.git HEAD:main
+          else
+            echo "OrderEngine ABI unchanged — skipping sync"
+          fi
