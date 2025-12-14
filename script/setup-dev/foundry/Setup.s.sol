@@ -10,12 +10,16 @@ import {BaseDevScript} from "dev-script/BaseDevScript.s.sol";
 import {OrderEngine} from "orderbook/OrderEngine.sol";
 import {DMrktGremlin as DNFT} from "nfts/DMrktGremlin.sol";
 
-// TODO: cryptopunks is not erc721 compatible, custom wrapper l8r?
-// https://docs.openzeppelin.com/contracts/4.x/api/token/erc721
+// interfaces
 interface IERC721 {
     function setApprovalForAll(address operator, bool approved) external;
     function ownerOf(uint256 tokenId) external view returns (address);
     function transferFrom(address from, address to, uint256 tokenId) external;
+    function balanceOf(address who) external view returns (uint256);
+}
+
+interface IMintable721 {
+    function mint(address to) external;
 }
 
 interface IWETH {
@@ -24,6 +28,11 @@ interface IWETH {
     function balanceOf(address who) external view returns (uint256);
 }
 
+// NOTE:
+// This script is typically executed using the funder private key.
+// Explicit vm.startBroadcast(funderPK) calls are used for clarity
+// and to guarantee correct sender behavior even if the script
+// is invoked from a different context.
 contract Setup is BaseDevScript, Config {
     uint256 immutable DEV_BOOTSTRAP_ETH = 10000 ether;
 
@@ -95,7 +104,6 @@ contract Setup is BaseDevScript, Config {
 
         for (uint256 i = 0; i < recipientLen; i++) {
             address a = resolveAddr(recipientPKs[i]);
-            console.log("ADDRESS A: %s", a);
 
             logBalance("PRE ", a);
 
@@ -112,13 +120,16 @@ contract Setup is BaseDevScript, Config {
 
         vm.stopBroadcast();
 
+        // --------------------------------
+        // PHASE 3: WRAP ETH
+        // --------------------------------
         logSection("WRAP ETH => WETH");
 
         uint256 wethWrapAmount = bootstrapEth / 2;
 
         for (uint256 i = 1; i < recipientLen; i++) {
             address a = resolveAddr(recipientPKs[i]);
-            logTokenBalance("PRE WETH ", a, IWETH(weth).balanceOf(a));
+            logTokenBalance("PRE  WETH", a, IWETH(weth).balanceOf(a));
 
             vm.startBroadcast(recipientPKs[i]);
             IWETH(weth).deposit{value: wethWrapAmount}();
@@ -127,6 +138,42 @@ contract Setup is BaseDevScript, Config {
             logTokenBalance("POST WETH", a, IWETH(weth).balanceOf(a));
 
             logSeperator();
+        }
+
+        // --------------------------------
+        // PHASE 3: MINT NFTS
+        // --------------------------------
+        logSection("MINT NFTS");
+
+        mintTokens(
+            recipientPKs,
+            IMintable721(address(dNft)),
+            dNft.MAX_SUPPLY()
+        );
+
+        logSection("DNFT FINAL BALANCES");
+
+        for (uint256 i = 0; i < recipientPKs.length; i++) {
+            address user = resolveAddr(recipientPKs[i]);
+            uint256 bal = IERC721(address(dNft)).balanceOf(user);
+
+            logTokenBalance("DNFT", user, bal);
+        }
+    }
+
+    // for dnft scanLimit = maxSupply
+    function mintTokens(
+        uint256[] memory pks,
+        IMintable721 nft,
+        uint256 scanLimit
+    ) internal {
+        // in this script we know i = tokenid for token minted (no previous mints)
+        for (uint256 i = 0; i < scanLimit; i++) {
+            bytes32 h = keccak256(abi.encode(address(nft), i));
+            uint256 j = uint256(h) % pks.length;
+
+            address to = resolveAddr(pks[j]);
+            nft.mint(to);
         }
     }
 
@@ -142,8 +189,7 @@ contract Setup is BaseDevScript, Config {
         for (uint256 i = 0; i < scanLimit && count < targetCount; i++) {
             bytes32 h = keccak256(abi.encode(tokenContract, i));
             if (uint256(h) % mod == 0) {
-                ids[count] = i;
-                count++;
+                ids[count++] = i;
             }
         }
 

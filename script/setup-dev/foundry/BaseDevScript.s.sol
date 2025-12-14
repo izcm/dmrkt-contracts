@@ -64,4 +64,12 @@ abstract contract BaseDevScript is Script {
     function logSeperator() internal pure {
         console.log("------------------------------------");
     }
+
+    function logNFTMint(
+        address nft,
+        uint256 tokenId,
+        address to
+    ) internal pure {
+        console.log("MINT | nft: %s | tokenId: %s | to: %s", nft, tokenId, to);
+    }
 }
