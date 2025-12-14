@@ -8,7 +8,7 @@ import {console} from "forge-std/console.sol";
 // local
 import {BaseDevScript} from "dev-script/BaseDevScript.s.sol";
 import {OrderEngine} from "orderbook/OrderEngine.sol";
-import {DMrktGremlin as DNFT} from "nfts/DMrktGremlin.sol";
+import {DMrktGremlin as DNFT} from "nfts/DMrktGremlin.ERC721.sol";
 
 // TODO: import IERC721 + IERC20 from OZ libs
 // interfaces
@@ -161,12 +161,10 @@ contract Setup is BaseDevScript, Config {
         logSection("MINT NFTs");
 
         IERC721 nftToken = IERC721(address(dNft));
+        uint256 supply = dNft.MAX_SUPPLY();
 
-        mintTokens(
-            participantPKs,
-            IMintable721(address(nftToken)),
-            dNft.MAX_SUPPLY()
-        );
+        // script mints all tokens => limit = MAX_SUPPLY()
+        mintTokens(participantPKs, IMintable721(address(nftToken)), supply);
 
         logSection("DNFT FINAL BALANCES");
 
@@ -178,7 +176,21 @@ contract Setup is BaseDevScript, Config {
         }
 
         // --------------------------------
-        // PHASE 4: APPROVALS
+        // PHASE 4: SELECT TOKENS FOR ORDERS
+        // --------------------------------
+        logSection("SELECT TOKENS");
+
+        uint256 scanLimit = supply / 2; // scan only N first tokenIds
+        uint8 density = 3;
+
+        uint256[] memory selectedTokens = selectTokens(
+            address(nftToken),
+            scanLimit,
+            density
+        );
+
+        // --------------------------------
+        // PHASE 5: APPROVALS
         // --------------------------------
         logSection("APPROVE MARKETPLACE FOR NFTs");
 
@@ -260,15 +272,16 @@ contract Setup is BaseDevScript, Config {
     function selectTokens(
         address tokenContract,
         uint256 scanLimit,
-        uint256 targetCount,
-        uint8 mod
+        uint8 density
     ) internal pure returns (uint256[] memory) {
         uint256 count = 0;
+        uint targetCount = scanLimit / density;
+
         uint256[] memory ids = new uint256[](targetCount);
 
         for (uint256 i = 0; i < scanLimit && count < targetCount; i++) {
             bytes32 h = keccak256(abi.encode(tokenContract, i));
-            if (uint256(h) % mod == 0) {
+            if (uint256(h) % density == 0) {
                 ids[count++] = i;
             }
         }

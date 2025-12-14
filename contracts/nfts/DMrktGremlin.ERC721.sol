@@ -17,7 +17,9 @@ contract DMrktGremlin is ERC721 {
         _safeMint(to, _nextTokenId++);
     }
 
-    function tokenURI(uint256 tokenId) public view override returns (string memory) {
+    function tokenURI(
+        uint256 tokenId
+    ) public view override returns (string memory) {
         require(_ownerOf(tokenId) != address(0), "Not minted");
 
         string memory svg = string(
@@ -61,7 +63,13 @@ contract DMrktGremlin is ERC721 {
     }
 
     function getColor(uint256 tokenId) public pure returns (string memory) {
-        string[5] memory colors = ["#00FFFF", "#8A2BE2", "#39FF14", "#7c5cff", "#FF00FF"];
+        string[5] memory colors = [
+            "#00FFFF",
+            "#8A2BE2",
+            "#39FF14",
+            "#7c5cff",
+            "#FF00FF"
+        ];
         return colors[tokenId % colors.length];
     }
 }
