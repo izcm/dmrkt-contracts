@@ -8,20 +8,16 @@ import {console} from "forge-std/console.sol";
 // local
 import {BaseDevScript} from "dev-script/BaseDevScript.s.sol";
 import {OrderEngine} from "orderbook/OrderEngine.sol";
-import {DMrktGremlin as DNFT} from "nfts/DMrktGremlin.ERC721.sol";
+import {DMrktGremlin as DNFT} from "shared/nfts/DMrktGremlin.ERC721.sol";
 
-// TODO: import IERC721 + IERC20 from OZ libs
 // interfaces
 import {IERC721} from "@openzeppelin/interfaces/IERC721.sol";
 import {IERC20} from "@openzeppelin/interfaces/IERC20.sol";
 
+import {IWETH} from "shared/interfaces/IWETH.sol";
+
 interface IMintable721 is IERC721 {
     function mint(address to) external;
-}
-
-interface IWETH is IERC20 {
-    function deposit() external payable;
-    function withdraw(uint256) external;
 }
 
 // NOTE:

@@ -7,6 +7,7 @@ remappings = [
     "orderbook/=contracts/orderbook",
     "nfts/=contracts/nfts",
     "dev-script/=script/setup-dev",
+    "shared/=contracts/shared",
     "@openzeppelin/=lib/openzeppelin-contracts/contracts"
 ]
 

@@ -11,7 +11,7 @@ import {SignatureOps as SigOps} from "orderbook/libs/SignatureOps.sol";
 // mocks
 import {MockVerifyingContract} from "../mocks/MockVerifyingContract.sol";
 
-contract TestSigOps is Test {
+contract TestSignatureOps is Test {
     using OrderActs for OrderActs.Order;
 
     MockVerifyingContract verifier;

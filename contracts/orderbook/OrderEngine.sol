@@ -74,6 +74,10 @@ contract OrderEngine is ReentrancyGuard {
 
     // ===== INTERNAL FUNCTIONS =====
 
+    function _settlePayment() internal {
+        // todo:
+    }
+
     /**
      * @notice Validates order.
      */
