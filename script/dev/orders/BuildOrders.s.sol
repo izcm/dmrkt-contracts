@@ -50,7 +50,9 @@ contract BuildOrders is BaseDevScript, Config {
 
         // deployed contracts
         address dNft = config.get("dnft_erc721").toAddress();
-        address verifyingContract = config.get("verifying_contract").toAddress();
+        address verifyingContract = config
+            .get("verifying_contract")
+            .toAddress();
 
         logAddress("DNFT    ", dNft);
         logAddress("VERIFIER", verifyingContract);
@@ -70,11 +72,12 @@ contract BuildOrders is BaseDevScript, Config {
         for (uint256 i = 0; i < participantCount; i++) {
             uint256 pk = participantPks[i];
 
-            address addr = resolveAddr(pk);
+            address addr = addrOf(pk);
             ownerPk[addr] = pk;
         }
 
-        bytes32 domainSeparator = OrderEngine(verifyingContract).DOMAIN_SEPARATOR();
+        bytes32 domainSeparator = OrderEngine(verifyingContract)
+            .DOMAIN_SEPARATOR();
 
         SignedOrder[] memory signed = new SignedOrder[](orderCount);
 
@@ -84,7 +87,11 @@ contract BuildOrders is BaseDevScript, Config {
             uint256 pk = ownerPk[order.actor];
             require(pk != 0, "NO PK FOR ACTOR");
 
-            (SigOps.Signature memory sig) = _makeOrderDigestAndSign(order, pk, domainSeparator);
+            (SigOps.Signature memory sig) = _makeOrderDigestAndSign(
+                order,
+                pk,
+                domainSeparator
+            );
 
             signed[i] = SignedOrder({order: order, sig: sig});
         }
@@ -94,19 +101,36 @@ contract BuildOrders is BaseDevScript, Config {
         // --------------------------------
         logSection("WRITING ORDERS AS JSON");
 
-        string memory path = string.concat("./data/", vm.toString(chainId), "/orders-raw.json");
+        string memory path = string.concat(
+            "./data/",
+            vm.toString(chainId),
+            "/orders-raw.json"
+        );
 
-        _persistSignedOrders(signed, path, chainId, verifyingContract, domainSeparator);
+        _persistSignedOrders(
+            signed,
+            path,
+            chainId,
+            verifyingContract,
+            domainSeparator
+        );
 
         logSeparator();
         console.log("ORDERS SAVED TO: %s", path);
         logSeparator();
     }
 
-    function _makeOrders(address collection, address currency) internal returns (OrderActs.Order[] memory) {
+    function _makeOrders(
+        address collection,
+        address currency
+    ) internal returns (OrderActs.Order[] memory) {
         IERC721 token = IERC721(collection);
 
-        uint256[] memory selected = MarketSim.selectTokens(collection, DNFT(collection).MAX_SUPPLY() / 2, 3);
+        uint256[] memory selected = MarketSim.selectTokens(
+            collection,
+            DNFT(collection).MAX_SUPPLY() / 2,
+            3
+        );
 
         uint256 selectedCount = selected.length;
         OrderActs.Order[] memory orders = new OrderActs.Order[](selectedCount);
@@ -117,18 +141,27 @@ contract BuildOrders is BaseDevScript, Config {
             uint256 price = MarketSim.priceOf(collection, tokenId);
             uint256 nonce = ++nonceOf[owner];
 
-            orders[i] = OrderBuilder.simpleAsk(owner, collection, currency, tokenId, price, nonce);
+            orders[i] = OrderBuilder.simpleAsk(
+                owner,
+                collection,
+                currency,
+                tokenId,
+                price,
+                nonce
+            );
         }
 
         return orders;
     }
 
-    function _makeOrderDigestAndSign(OrderActs.Order memory order, uint256 actorPrivateKey, bytes32 domainSeparator)
-        internal
-        pure
-        returns (SigOps.Signature memory)
-    {
-        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", domainSeparator, OrderActs.hash(order)));
+    function _makeOrderDigestAndSign(
+        OrderActs.Order memory order,
+        uint256 actorPrivateKey,
+        bytes32 domainSeparator
+    ) internal pure returns (SigOps.Signature memory) {
+        bytes32 digest = keccak256(
+            abi.encodePacked("\x19\x01", domainSeparator, OrderActs.hash(order))
+        );
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(actorPrivateKey, digest);
 
@@ -158,7 +191,10 @@ contract BuildOrders is BaseDevScript, Config {
         for (uint256 i = 0; i < signedOrderCount; i++) {
             SignedOrder memory signed = signedOrders[i];
 
-            string memory oKey = string.concat("order_", vm.toString(uint256(1)));
+            string memory oKey = string.concat(
+                "order_",
+                vm.toString(uint256(1))
+            );
 
             entries[i] = _serializeOrder(signed.order, oKey);
 
@@ -174,16 +210,27 @@ contract BuildOrders is BaseDevScript, Config {
             // tried to avoid printing this value, but cannot avoid this!?
             string memory sigOut = vm.serializeString(sKey, "_", "0");
 
-            string memory output = vm.serializeString(oKey, "signature", sigOut);
+            string memory output = vm.serializeString(
+                oKey,
+                "signature",
+                sigOut
+            );
             entries[i] = output;
         }
 
-        string memory finalJson = vm.serializeString(root, "signedOrders", entries);
+        string memory finalJson = vm.serializeString(
+            root,
+            "signedOrders",
+            entries
+        );
 
         vm.writeJson(finalJson, path);
     }
 
-    function _serializeOrder(OrderActs.Order memory o, string memory objKey) internal returns (string memory) {
+    function _serializeOrder(
+        OrderActs.Order memory o,
+        string memory objKey
+    ) internal returns (string memory) {
         string memory key = objKey;
 
         // ---- order ----

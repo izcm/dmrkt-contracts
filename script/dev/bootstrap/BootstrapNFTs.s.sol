@@ -48,21 +48,25 @@ contract BootstrapNFTs is BaseDevScript, Config {
         logSection("DNFT FINAL BALANCES");
 
         for (uint256 i = 0; i < participantCount; i++) {
-            address user = resolveAddr(participantPks[i]);
+            address user = addrOf(participantPks[i]);
             uint256 bal = nftToken.balanceOf(user);
 
             logTokenBalance("DNFT", user, bal);
         }
     }
 
-    function mintTokens(uint256[] memory pks, IMintable721 nft, uint256 limit) internal {
+    function mintTokens(
+        uint256[] memory pks,
+        IMintable721 nft,
+        uint256 limit
+    ) internal {
         // in this script we know i = tokenid for token minted (no previous mints)
         for (uint256 i = 0; i < limit; i++) {
             bytes32 h = keccak256(abi.encode(address(nft), i));
             uint256 j = uint256(h) % pks.length;
 
             uint256 pk = pks[j];
-            address to = resolveAddr(pk);
+            address to = addrOf(pk);
 
             // Broadcast as the recipient — respect for history
             vm.startBroadcast(pk);

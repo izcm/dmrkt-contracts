@@ -46,8 +46,12 @@ contract Approve is BaseDevScript, Config {
             nftToken.setApprovalForAll(marketplace, true);
             vm.stopBroadcast();
 
-            address owner = resolveAddr(participantPks[i]);
-            console.log("%s HAS APPROVED DMRKT FOR ALL: ", owner, nftToken.isApprovedForAll(owner, marketplace));
+            address owner = addrOf(participantPks[i]);
+            console.log(
+                "%s HAS APPROVED DMRKT FOR ALL: ",
+                owner,
+                nftToken.isApprovedForAll(owner, marketplace)
+            );
         }
 
         // --------------------------------
@@ -66,8 +70,12 @@ contract Approve is BaseDevScript, Config {
             wethToken.approve(marketplace, allowance);
             vm.stopBroadcast();
 
-            address owner = resolveAddr(participantPks[i]);
-            console.log("%s HAS APPROVED ALLOWANCE FOR MARKETPLACE: ", owner, wethToken.allowance(owner, marketplace));
+            address owner = addrOf(participantPks[i]);
+            console.log(
+                "%s HAS APPROVED ALLOWANCE FOR MARKETPLACE: ",
+                owner,
+                wethToken.allowance(owner, marketplace)
+            );
         }
     }
 }

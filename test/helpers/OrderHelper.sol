@@ -22,7 +22,7 @@ abstract contract OrderHelper is Test {
 
     function makeOrderDigestAndSign(
         address actor,
-        uint256 actorPrivateKey,
+        uint256 actorPk,
         bytes32 domainSeparator
     )
         internal
@@ -32,7 +32,7 @@ abstract contract OrderHelper is Test {
         order = makeOrder(actor);
         bytes32 digest = makeDigest(order, domainSeparator);
 
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(actorPrivateKey, digest);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(actorPk, digest);
         sig = SigOps.Signature({v: v, r: r, s: s});
     }
 

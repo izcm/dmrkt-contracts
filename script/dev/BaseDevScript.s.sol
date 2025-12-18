@@ -5,8 +5,14 @@ import {Script} from "forge-std/Script.sol";
 import {console} from "forge-std/console.sol";
 
 abstract contract BaseDevScript is Script {
-    function readKeys(uint256 chainId) internal view returns (uint256[] memory) {
-        string memory path = string.concat("./data/", vm.toString(chainId), "/keys.json");
+    function readKeys(
+        uint256 chainId
+    ) internal view returns (uint256[] memory) {
+        string memory path = string.concat(
+            "./data/",
+            vm.toString(chainId),
+            "/keys.json"
+        );
 
         string memory json = vm.readFile(path);
         uint256[] memory keys = vm.parseJsonUintArray(json, ".privateKeys");
@@ -14,11 +20,13 @@ abstract contract BaseDevScript is Script {
         return keys;
     }
 
-    function resolveAddr(uint256 pk) internal pure returns (address) {
+    function addrOf(uint256 pk) internal pure returns (address) {
         return vm.addr(pk);
     }
 
-    function countUntilZero(uint256[] memory arr) internal pure returns (uint256) {
+    function countUntilZero(
+        uint256[] memory arr
+    ) internal pure returns (uint256) {
         uint256 i = 0;
         while (i < arr.length && arr[i] != 0) {
             i++;
@@ -34,8 +42,16 @@ abstract contract BaseDevScript is Script {
         console.log("------------------------------------");
     }
 
-    function logDeployment(string memory label, address deployed) internal view {
-        console.log("DEPLOY | %s | %s | codeSize: %s", label, deployed, deployed.code.length);
+    function logDeployment(
+        string memory label,
+        address deployed
+    ) internal view {
+        console.log(
+            "DEPLOY | %s | %s | codeSize: %s",
+            label,
+            deployed,
+            deployed.code.length
+        );
     }
 
     function logAddress(string memory label, address a) internal pure {
@@ -46,7 +62,11 @@ abstract contract BaseDevScript is Script {
         console.log("%s | %s | balance: %s", label, a, a.balance);
     }
 
-    function logTokenBalance(string memory label, address a, uint256 balance) internal pure {
+    function logTokenBalance(
+        string memory label,
+        address a,
+        uint256 balance
+    ) internal pure {
         console.log("%s | %s | balance: %s", label, a, balance);
     }
 
@@ -54,7 +74,11 @@ abstract contract BaseDevScript is Script {
         console.log("------------------------------------");
     }
 
-    function logNFTMint(address nft, uint256 tokenId, address to) internal pure {
+    function logNFTMint(
+        address nft,
+        uint256 tokenId,
+        address to
+    ) internal pure {
         console.log("MINT | nft: %s | tokenId: %s | to: %s", nft, tokenId, to);
     }
 }

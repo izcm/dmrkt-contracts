@@ -64,6 +64,7 @@ contract OrderEngineSettleTest is OrderHelper, AccountsHelper {
         OrderActs.Fill memory fill = makeFill(fillActor);
         SigOps.Signature memory sig = dummySig();
 
+        vm.prank(txSender);
         vm.expectRevert(OrderEngine.UnauthorizedFillActor.selector);
         orderEngine.settle(fill, order, sig);
     }
