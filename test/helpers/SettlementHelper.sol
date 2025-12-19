@@ -54,7 +54,7 @@ abstract contract SettlementHelper is Test {
         }
     }
 
-    function dealWethAndApproveSpenderAllowance(
+    function wethDealAndApproveSpenderAllowance(
         address wethReceiver,
         uint256 amount
     ) internal {
@@ -97,7 +97,7 @@ abstract contract SettlementHelper is Test {
 
         // future proofing in case future support for other currencies
         if (currency == weth) {
-            dealWethAndApproveSpenderAllowance(spender, price);
+            wethDealAndApproveSpenderAllowance(spender, price);
         }
 
         nftMintAndApproveTransferOperator(collection, nftHolder, tokenId);

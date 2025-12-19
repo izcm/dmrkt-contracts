@@ -152,6 +152,28 @@ contract OrderEngineSettleRevertsTest is
         orderEngine.settle(fill, order, sig);
     }
 
+    function test_Settle_TamperedOrderReverts() public {
+        Actors memory actors = someActors("sig_mismatch");
+        uint256 signerPk = pkOf(actors.order);
+
+        OrderActs.Order memory order = makeAsk(
+            actors.order,
+            erc721,
+            wethAddr()
+        );
+
+        (, SigOps.Signature memory sig) = makeDigestAndSign(order, signerPk);
+
+        OrderActs.Fill memory fill = makeFill(actors.fill);
+
+        // decrease price
+        order.price = 10;
+
+        vm.prank(actors.fill);
+        vm.expectRevert(SigOps.InvalidSignature.selector);
+        orderEngine.settle(fill, order, sig);
+    }
+
     /*//////////////////////////////////////////////////////////////
                 VALID SIGNATURE + APPROVALS REQUIRED
     //////////////////////////////////////////////////////////////*/
@@ -200,12 +222,10 @@ contract OrderEngineSettleRevertsTest is
 
         // `legitimizeSettlement` mints nft while MockUnsupported does not mint implement `mint`
         // => explicitly do erc20 approvals
-        address collection = order.collection;
         uint256 price = order.price;
+        address spender = actors.fill; // since order is `Ask`
 
-        (, address spender, ) = expectRolesAndAssets(fill, order);
-
-        dealWethAndApproveSpenderAllowance(spender, price);
+        wethDealAndApproveSpenderAllowance(spender, price);
 
         vm.prank(actors.fill);
         vm.expectRevert(OrderEngine.UnsupportedCollection.selector);

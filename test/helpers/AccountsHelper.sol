@@ -44,7 +44,7 @@ abstract contract AccountsHelper is Test {
     function someActors(
         string memory seed
     ) internal view returns (Actors memory a) {
-        a.order = actor(string.concat(seed, "order"));
+        a.order = actor(string.concat(seed, "_order"));
         a.fill = actor(string.concat(seed, "_fill"));
 
         uint256 i = 0;
@@ -56,12 +56,12 @@ abstract contract AccountsHelper is Test {
 
     function allActors() internal view returns (address[] memory) {
         uint256 count = testKeys.length;
-        address[] memory users = new address[](count);
+        address[] memory actors = new address[](count);
 
         for (uint256 i = 0; i < count; i++) {
-            users[i] = addrOf(testKeys[i]);
+            actors[i] = addrOf(testKeys[i]);
         }
 
-        return users;
+        return actors;
     }
 }
