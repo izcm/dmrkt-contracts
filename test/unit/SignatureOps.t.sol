@@ -33,6 +33,7 @@ contract SignatureOpsTest is OrderHelper {
     /*//////////////////////////////////////////////////////////////
                                 SUCCESS
     //////////////////////////////////////////////////////////////*/
+
     function test_Verify_ValidSignature_Succeeds() public {
         (
             OrderActs.Order memory order,
@@ -46,6 +47,7 @@ contract SignatureOpsTest is OrderHelper {
     /*//////////////////////////////////////////////////////////////
                                 REVERTS
     //////////////////////////////////////////////////////////////*/
+
     function test_Verify_MutatedOrder_Reverts() public {
         (
             OrderActs.Order memory order,

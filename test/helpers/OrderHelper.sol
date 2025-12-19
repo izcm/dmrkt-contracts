@@ -11,11 +11,11 @@ import {OrderBuilder} from "periphery/OrderBuilder.sol";
 abstract contract OrderHelper is Test {
     using OrderActs for OrderActs.Order;
 
-    address constant DUMMY_COLLECTION = address(0xC011EC710);
-    address constant DUMMY_CURRENCY = address(0xC0FFEE);
+    address private constant DUMMY_COLLECTION = address(0xC011EC710);
+    address private constant DUMMY_CURRENCY = address(0xC0FFEE);
 
-    uint256 constant DEFAULT_PRICE = 1 ether;
-    uint256 constant DEFAULT_TOKEN_ID = 1;
+    uint256 private constant DEFAULT_PRICE = 1 ether;
+    uint256 private constant DEFAULT_TOKEN_ID = 1;
 
     // === MAKE ORDERS ===
 

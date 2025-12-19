@@ -38,27 +38,24 @@ contract OrderEngineSettleRevertsTest is
 {
     using OrderActs for OrderActs.Order;
 
-    uint256 constant DEFAULT_TOKENID = 1;
+    uint256 constant DEFAULT_TOKEN_ID_FILL = 1;
 
     OrderEngine orderEngine;
     bytes32 domainSeparator;
 
-    MockWETH wethToken;
-    MockERC721 erc721Token;
-
-    address weth;
     address erc721;
 
     function setUp() public {
-        wethToken = new MockWETH();
-        erc721Token = new MockERC721();
+        MockWETH wethToken = new MockWETH();
+        MockERC721 erc721Token = new MockERC721();
 
-        weth = address(wethToken);
+        address weth = address(wethToken);
         erc721 = address(erc721Token);
 
         orderEngine = new OrderEngine(weth, address(this)); // fee receiver = this
         domainSeparator = orderEngine.DOMAIN_SEPARATOR();
 
+        // future proofing in case auth decentralizes from orderEngine
         address erc721Transferer = address(orderEngine);
         address erc20Spender = address(orderEngine);
 
@@ -82,7 +79,11 @@ contract OrderEngineSettleRevertsTest is
         Actors memory actors = someActors("reuse_nonce");
         uint256 signerPk = pkOf(actors.order);
 
-        OrderActs.Order memory order = makeAsk(actors.order, erc721, weth);
+        OrderActs.Order memory order = makeAsk(
+            actors.order,
+            erc721,
+            wethAddr()
+        );
 
         (, SigOps.Signature memory sig) = makeDigestAndSign(
             order,
@@ -111,7 +112,7 @@ contract OrderEngineSettleRevertsTest is
     function makeFill(
         address actor
     ) internal view returns (OrderActs.Fill memory fill) {
-        return OrderActs.Fill({actor: actor, tokenId: DEFAULT_TOKENID});
+        return OrderActs.Fill({actor: actor, tokenId: DEFAULT_TOKEN_ID_FILL});
     }
 
     function makeFill(

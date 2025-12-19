@@ -16,8 +16,8 @@ abstract contract SettlementHelper is Test {
     using SafeERC20 for IERC20; // mirrors actual engine
     using OrderActs for OrderActs.Order;
 
-    address erc721TransferAuthority;
-    address erc20Spender;
+    address private erc721TransferAuthority;
+    address private erc20Spender;
 
     address private weth;
 
@@ -113,5 +113,9 @@ abstract contract SettlementHelper is Test {
         uint256 value
     ) internal {
         IERC20(tokenContract).forceApprove(spender, value);
+    }
+
+    function wethAddr() public view returns (address) {
+        return weth;
     }
 }

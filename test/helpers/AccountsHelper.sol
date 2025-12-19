@@ -29,10 +29,6 @@ abstract contract AccountsHelper is Test {
         revert("Address not in testKeys");
     }
 
-    function fundActor(address a, uint256 v) internal {
-        vm.deal(a, v);
-    }
-
     function actor(string memory seed) internal view returns (address) {
         uint256 idx = uint256(keccak256(abi.encode(seed))) % testKeys.length;
         return addrOf(testKeys[idx]);
