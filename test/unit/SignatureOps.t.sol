@@ -30,6 +30,9 @@ contract SignatureOpsTest is OrderHelper {
         signer = vm.addr(signerPk);
     }
 
+    /*//////////////////////////////////////////////////////////////
+                                SUCCESS
+    //////////////////////////////////////////////////////////////*/
     function test_Verify_ValidSignature_Succeeds() public {
         (
             OrderActs.Order memory order,

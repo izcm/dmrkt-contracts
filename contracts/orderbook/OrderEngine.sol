@@ -36,6 +36,8 @@ contract OrderEngine is ReentrancyGuard {
 
     address public protocolFeeReceiver;
 
+    // TODO: mapping(address => mapping(uint256 => uint256)) nonceBitmap;
+    // ====> each uint256 packs 256 nonces
     mapping(address => mapping(uint256 => bool))
         private _isUserOrderNonceInvalid;
 
@@ -99,6 +101,13 @@ contract OrderEngine is ReentrancyGuard {
         _settlePayment(order.currency, spender, nftHolder, order.price);
 
         _transferNFT(order.collection, nftHolder, spender, tokenId);
+    }
+
+    function isUserOrderNonceInvalid(
+        address user,
+        uint256 nonce
+    ) external view returns (bool) {
+        return _isUserOrderNonceInvalid[user][nonce];
     }
 
     // ===== INTERNAL FUNCTIONS =====
