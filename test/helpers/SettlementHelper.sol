@@ -16,6 +16,9 @@ abstract contract SettlementHelper is Test {
     using SafeERC20 for IERC20; // mirrors actual engine
     using OrderActs for OrderActs.Order;
 
+    // default tokenId for fill
+    uint256 private constant DEFAULT_TOKEN_ID = 1;
+
     address private erc721TransferAuthority;
     address private erc20Spender;
 
@@ -85,6 +88,10 @@ abstract contract SettlementHelper is Test {
         forceApproveAllowance(currency, erc20Spender, price);
     }
 
+    function wethAddr() internal view returns (address) {
+        return weth;
+    }
+
     function mintMockNft(
         address collection,
         address to,
@@ -115,7 +122,17 @@ abstract contract SettlementHelper is Test {
         IERC20(tokenContract).forceApprove(spender, value);
     }
 
-    function wethAddr() public view returns (address) {
-        return weth;
+    // === MAKE FILL ====
+    function makeFill(
+        address actor
+    ) internal view returns (OrderActs.Fill memory fill) {
+        return OrderActs.Fill({actor: actor, tokenId: DEFAULT_TOKEN_ID});
+    }
+
+    function makeFill(
+        address actor,
+        uint256 tokenId
+    ) internal pure returns (OrderActs.Fill memory fill) {
+        return OrderActs.Fill({actor: actor, tokenId: tokenId});
     }
 }

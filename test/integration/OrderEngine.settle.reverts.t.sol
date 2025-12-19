@@ -38,8 +38,6 @@ contract OrderEngineSettleRevertsTest is
 {
     using OrderActs for OrderActs.Order;
 
-    uint256 constant DEFAULT_TOKEN_ID_FILL = 1;
-
     OrderEngine orderEngine;
     bytes32 domainSeparator;
 
@@ -106,19 +104,4 @@ contract OrderEngineSettleRevertsTest is
     }
 
     function test_Settle_ZeroAsOrderActorReverts() public {}
-
-    // === INTERNAL HELPERS ===
-
-    function makeFill(
-        address actor
-    ) internal view returns (OrderActs.Fill memory fill) {
-        return OrderActs.Fill({actor: actor, tokenId: DEFAULT_TOKEN_ID_FILL});
-    }
-
-    function makeFill(
-        address actor,
-        uint256 tokenId
-    ) internal pure returns (OrderActs.Fill memory fill) {
-        return OrderActs.Fill({actor: actor, tokenId: tokenId});
-    }
 }
