@@ -28,6 +28,7 @@ contract OrderEngine is ReentrancyGuard {
     error CurrencyNotWhitelisted();
     error UnsupportedCollection();
     error InvalidOrderSide();
+    error OwnershipTransferFailed();
 
     // === IMMUTABLES ===
     bytes32 public immutable DOMAIN_SEPARATOR;
@@ -179,11 +180,18 @@ contract OrderEngine is ReentrancyGuard {
         address to,
         uint256 tokenId
     ) internal {
-        if (IERC165(collection).supportsInterface(INTERFACE_ID_ERC721)) {
-            // nft supports erc721
-            IERC721(collection).safeTransferFrom(from, to, tokenId);
-        } else {
+        if (!IERC165(collection).supportsInterface(INTERFACE_ID_ERC721)) {
             revert UnsupportedCollection();
+        }
+
+        IERC721 erc721 = IERC721(collection);
+
+        // attempt transfer
+        erc721.safeTransferFrom(from, to, tokenId);
+
+        // verify post-transfer ownerhip change
+        if (erc721.ownerOf(tokenId) != to) {
+            revert OwnershipTransferFailed();
         }
     }
 }

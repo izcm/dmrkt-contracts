@@ -24,6 +24,7 @@ abstract contract OrderHelper is Test {
     ) internal view returns (OrderActs.Order memory order) {
         return makeAsk(actor, DUMMY_COLLECTION, DUMMY_CURRENCY);
     }
+
     function makeAsk(
         address actor,
         address collection,

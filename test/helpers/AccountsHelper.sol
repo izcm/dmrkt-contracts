@@ -9,7 +9,14 @@ abstract contract AccountsHelper is Test {
         address fill;
     }
 
-    uint256[7] private testKeys = [1, 2, 3, 4, 5, 6, 7];
+    uint256[] private testKeys;
+
+    function _initActors(uint256 count) internal {
+        testKeys = new uint256[](count);
+        for (uint256 i = 0; i < count; i++) {
+            testKeys[i] = i + 1;
+        }
+    }
 
     function actorCount() internal view returns (uint256) {
         return testKeys.length;

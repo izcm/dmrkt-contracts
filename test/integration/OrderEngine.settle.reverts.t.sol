@@ -20,23 +20,31 @@ import {MockERC721} from "mocks/MockERC721.sol";
 /*
     // === REVERTS ===
 
-    // order.actor == address(0)
     // currency != WETH
     // unsupported collection (not ERC721)
     // test reverts on invalid `Side`
     // reverts if isBid & !isCollectionBid and order.tokenid != fill.tokenId
+    // reverts erc721 token ownership does not change on transfer
 
     // === SIGNATURE (INTEGRATION ONLY) ===
 
     // invalid signature causes settle to revert
 */
 
+/// NOTE:
+/// When testing branches that revert before any `order.Side` logic,
+/// the order defaults to `Ask` for simplicity.
+///
+/// When behavior depends on `Side`, dedicated tests are added
+/// for `Ask`, `Bid`, and `CollectionBid`.
 contract OrderEngineSettleRevertsTest is
     OrderHelper,
     AccountsHelper,
     SettlementHelper
 {
     using OrderActs for OrderActs.Order;
+
+    uint256 private constant DEFAULT_ACTOR_COUNT = 10; // adjust as you please
 
     OrderEngine orderEngine;
     bytes32 domainSeparator;
@@ -58,6 +66,7 @@ contract OrderEngineSettleRevertsTest is
         address erc20Spender = address(orderEngine);
 
         _initSettlementHelper(weth, erc721Transferer, erc20Spender);
+        _initActors(DEFAULT_ACTOR_COUNT);
     }
 
     function test_Settle_InvalidSenderReverts() public {
@@ -106,7 +115,7 @@ contract OrderEngineSettleRevertsTest is
     function test_Settle_ZeroAsOrderActorReverts() public {
         Actors memory actors = Actors({
             order: address(0),
-            fill: actor("someone")
+            fill: actor("not_important")
         });
 
         OrderActs.Order memory order = makeAsk(
@@ -115,13 +124,35 @@ contract OrderEngineSettleRevertsTest is
             wethAddr()
         );
 
-        // should revert before signature veritifaction
-        SigOps.Signature memory sig = dummySig();
+        SigOps.Signature memory sig = dummySig(); // should revert before sig verification
 
         OrderActs.Fill memory fill = makeFill(actors.fill);
 
         vm.prank(actors.fill);
         vm.expectRevert(OrderEngine.ZeroActor.selector);
+        orderEngine.settle(fill, order, sig);
+    }
+
+    function test_Settle_NonWhitelistedCurrencyReverts() public {
+        string memory seed = "non_whitelisted_currency";
+
+        // per today orderbook only supports WETH
+        Actors memory actors = someActors(seed);
+
+        address nonWhitelistedCurrency = makeAddr(seed);
+
+        OrderActs.Order memory order = makeAsk(
+            actors.order,
+            erc721,
+            nonWhitelistedCurrency
+        );
+
+        SigOps.Signature memory sig = dummySig(); // should revert before sig verification
+
+        OrderActs.Fill memory fill = makeFill(actors.fill);
+
+        vm.prank(actors.fill);
+        vm.expectRevert(OrderEngine.CurrencyNotWhitelisted.selector);
         orderEngine.settle(fill, order, sig);
     }
 }
