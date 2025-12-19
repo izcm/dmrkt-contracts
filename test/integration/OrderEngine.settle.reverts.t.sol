@@ -103,5 +103,25 @@ contract OrderEngineSettleRevertsTest is
         orderEngine.settle(fill, order, sig);
     }
 
-    function test_Settle_ZeroAsOrderActorReverts() public {}
+    function test_Settle_ZeroAsOrderActorReverts() public {
+        Actors memory actors = Actors({
+            order: address(0),
+            fill: actor("someone")
+        });
+
+        OrderActs.Order memory order = makeAsk(
+            actors.order,
+            erc721,
+            wethAddr()
+        );
+
+        // should revert before signature veritifaction
+        SigOps.Signature memory sig = dummySig();
+
+        OrderActs.Fill memory fill = makeFill(actors.fill);
+
+        vm.prank(actors.fill);
+        vm.expectRevert(OrderEngine.ZeroActor.selector);
+        orderEngine.settle(fill, order, sig);
+    }
 }
