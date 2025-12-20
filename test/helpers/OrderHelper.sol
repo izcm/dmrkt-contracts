@@ -44,8 +44,8 @@ abstract contract OrderHelper is Test {
         return
             makeOrder(
                 OrderActs.Side.Ask,
-                collection,
                 false,
+                collection,
                 currency,
                 DEFAULT_PRICE,
                 actor,
@@ -63,8 +63,8 @@ abstract contract OrderHelper is Test {
         return
             makeOrder(
                 side,
-                defaultCollection,
                 isCollectionBid,
+                defaultCollection,
                 defaultCurrency,
                 DEFAULT_PRICE,
                 actor,
@@ -74,31 +74,8 @@ abstract contract OrderHelper is Test {
 
     function makeOrder(
         OrderActs.Side side,
-        address collection,
         bool isCollectionBid,
-        address currency,
-        uint256 price,
-        address actor,
-        uint256 nonce
-    ) internal view returns (OrderActs.Order memory) {
-        return
-            _makeOrder(
-                side,
-                collection,
-                isCollectionBid,
-                DEFAULT_TOKEN_ID,
-                currency,
-                price,
-                actor,
-                nonce
-            );
-    }
-
-    function _makeOrder(
-        OrderActs.Side side,
         address collection,
-        bool isCollectionBid,
-        uint256 tokenId,
         address currency,
         uint256 price,
         address actor,
@@ -107,12 +84,12 @@ abstract contract OrderHelper is Test {
         return
             OrderActs.Order({
                 side: side,
-                actor: actor,
                 isCollectionBid: isCollectionBid,
                 collection: collection,
+                tokenId: DEFAULT_TOKEN_ID,
                 currency: currency,
-                tokenId: tokenId,
                 price: price,
+                actor: actor,
                 start: 0,
                 end: uint64(block.timestamp + 1 days),
                 nonce: nonce
@@ -120,23 +97,6 @@ abstract contract OrderHelper is Test {
     }
 
     // === DIGEST / SIGNING ===
-
-    function makeDigest(
-        OrderActs.Order memory o
-    ) internal view returns (bytes32) {
-        return
-            keccak256(abi.encodePacked("\x19\x01", domainSeparator, o.hash()));
-    }
-
-    function makeDigestAndSign(
-        OrderActs.Order memory order,
-        uint256 signerPk
-    ) internal view returns (bytes32 digest, SigOps.Signature memory sig) {
-        digest = makeDigest(order);
-
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPk, digest);
-        sig = SigOps.Signature(v, r, s);
-    }
 
     function makeOrderDigestAndSign(
         address signer,
@@ -147,13 +107,32 @@ abstract contract OrderHelper is Test {
         returns (OrderActs.Order memory order, SigOps.Signature memory sig)
     {
         order = makeAsk(signer);
-        bytes32 digest = makeDigest(order);
+        bytes32 digest = _makeDigest(order);
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPk, digest);
         sig = SigOps.Signature({v: v, r: r, s: s});
     }
 
+    function makeDigestAndSign(
+        OrderActs.Order memory order,
+        uint256 signerPk
+    ) internal view returns (bytes32 digest, SigOps.Signature memory sig) {
+        digest = _makeDigest(order);
+
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPk, digest);
+        sig = SigOps.Signature(v, r, s);
+    }
+
     function dummySig() internal pure returns (SigOps.Signature memory) {
         return SigOps.Signature({v: 0, r: bytes32(0), s: bytes32(0)});
+    }
+
+    // === PRIVATE FUNCTIONS ===
+
+    function _makeDigest(
+        OrderActs.Order memory o
+    ) internal view returns (bytes32) {
+        return
+            keccak256(abi.encodePacked("\x19\x01", domainSeparator, o.hash()));
     }
 }

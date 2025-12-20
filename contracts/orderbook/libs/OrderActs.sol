@@ -11,12 +11,12 @@ library OrderActs {
     /// Maker's Intent
     struct Order {
         Side side;
-        address actor;
         bool isCollectionBid; // if side = bid and order is for any item in collection
         address collection;
         uint256 tokenId; // specific token for bid / ask, ignored if isCollectionBid = true
-        uint256 price;
         address currency;
+        uint256 price;
+        address actor;
         uint64 start;
         uint64 end;
         uint256 nonce;
@@ -36,8 +36,8 @@ library OrderActs {
     /// 1. Selling an NFT if order is `bid`
     /// 2. Buying an NFT if order is `ask`
     struct Fill {
-        address actor; // must be msg.sender
         uint256 tokenId; // used only when order.isCollectionBid = true
+        address actor; // must be msg.sender
     }
 
     // https://eips.ethereum.org/EIPS/eip-712#definition-of-hashstruct:
@@ -50,13 +50,13 @@ library OrderActs {
             keccak256(
                 abi.encode(
                     ORDER_TYPE_HASH,
-                    o.actor,
+                    o.side,
                     o.isCollectionBid,
                     o.collection,
                     o.tokenId,
-                    o.price,
                     o.currency,
-                    o.side,
+                    o.price,
+                    o.actor,
                     o.start,
                     o.end,
                     o.nonce
