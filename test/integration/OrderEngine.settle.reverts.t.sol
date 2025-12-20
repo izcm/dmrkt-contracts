@@ -20,22 +20,28 @@ import {MockERC721} from "mocks/MockERC721.sol";
 ///
 /// When behavior depends on `Side`, dedicated tests are added
 /// for `Ask`, `Bid`, and `CollectionBid`.
+
 contract OrderEngineSettleRevertsTest is OrderEngineSettleBase {
     /*//////////////////////////////////////////////////////////////
                     VALID SIGNATURE NOT REQUIRED
     //////////////////////////////////////////////////////////////*/
 
     function test_Settle_InvalidSender_Reverts() public {
-        Actors memory actors = someActors("invalid_sender");
         address txSender = vm.addr(actorCount() + 1); // private keys are [1, 2, 3... n]
+        (
+            ,
+            OrderActs.Order memory order,
+            OrderActs.Fill memory fill,
+            SigOps.Signature memory sig
+        ) = _setupBasicRevertTest("invalid_sender");
 
-        OrderActs.Order memory order = makeAsk(actors.order);
-        OrderActs.Fill memory fill = makeFill(actors.fill);
-        SigOps.Signature memory sig = dummySig();
-
-        vm.prank(txSender);
-        vm.expectRevert(OrderEngine.UnauthorizedFillActor.selector);
-        orderEngine.settle(fill, order, sig);
+        _expectSettleRevert(
+            fill,
+            order,
+            sig,
+            txSender,
+            OrderEngine.UnauthorizedFillActor.selector
+        );
     }
 
     function test_Settle_ZeroAsOrderActor_Reverts() public {
@@ -43,40 +49,39 @@ contract OrderEngineSettleRevertsTest is OrderEngineSettleBase {
             order: address(0),
             fill: actor("not_important")
         });
-
         OrderActs.Order memory order = makeAsk(actors.order);
-
+        OrderActs.Fill memory fill = makeFill(actors.fill);
         SigOps.Signature memory sig = dummySig();
 
-        OrderActs.Fill memory fill = makeFill(actors.fill);
-
-        vm.prank(actors.fill);
-        vm.expectRevert(OrderEngine.ZeroActor.selector);
-        orderEngine.settle(fill, order, sig);
+        _expectSettleRevert(
+            fill,
+            order,
+            sig,
+            actors.fill,
+            OrderEngine.ZeroActor.selector
+        );
     }
 
     function test_Settle_NonWhitelistedCurrency_Reverts() public {
-        string memory seed = "non_whitelisted_currency";
         MockERC721 supportedCollection = new MockERC721();
-
-        // per today orderbook only supports WETH
-        Actors memory actors = someActors(seed);
-
-        address nonWhitelistedCurrency = makeAddr(seed);
+        Actors memory actors = someActors("non_whitelisted_currency");
+        address nonWhitelistedCurrency = makeAddr("non_whitelisted_currency");
 
         OrderActs.Order memory order = makeAsk(
             address(supportedCollection),
             nonWhitelistedCurrency,
             actors.order
         );
-
+        OrderActs.Fill memory fill = makeFill(actors.fill);
         SigOps.Signature memory sig = dummySig();
 
-        OrderActs.Fill memory fill = makeFill(actors.fill);
-
-        vm.prank(actors.fill);
-        vm.expectRevert(OrderEngine.CurrencyNotWhitelisted.selector);
-        orderEngine.settle(fill, order, sig);
+        _expectSettleRevert(
+            fill,
+            order,
+            sig,
+            actors.fill,
+            OrderEngine.CurrencyNotWhitelisted.selector
+        );
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -84,38 +89,45 @@ contract OrderEngineSettleRevertsTest is OrderEngineSettleBase {
     //////////////////////////////////////////////////////////////*/
 
     function test_Settle_InvalidOrderSide_Reverts() public {
-        Actors memory actors = someActors("invalid_side");
-        uint256 signerPk = pkOf(actors.order);
-
-        OrderActs.Order memory order = makeAsk(actors.order);
+        (
+            Actors memory actors,
+            OrderActs.Order memory order,
+            OrderActs.Fill memory fill,
+            SigOps.Signature memory sig,
+            uint256 signerPk
+        ) = _setupSignedRevertTest("invalid_side");
 
         order.side = OrderActs.Side._COUNT; // invalid
+        (, sig) = signOrder(order, signerPk);
 
-        (, SigOps.Signature memory sig) = signOrder(order, signerPk);
-
-        OrderActs.Fill memory fill = makeFill(actors.fill);
-
-        vm.prank(actors.fill);
-        vm.expectRevert(OrderEngine.InvalidOrderSide.selector);
-        orderEngine.settle(fill, order, sig);
+        _expectSettleRevert(
+            fill,
+            order,
+            sig,
+            actors.fill,
+            OrderEngine.InvalidOrderSide.selector
+        );
     }
 
     function test_Settle_TamperedOrder_Reverts() public {
-        Actors memory actors = someActors("sig_mismatch");
-        uint256 signerPk = pkOf(actors.order);
+        (
+            Actors memory actors,
+            OrderActs.Order memory order,
+            OrderActs.Fill memory fill,
+            SigOps.Signature memory sig,
 
-        OrderActs.Order memory order = makeAsk(actors.order);
-
-        (, SigOps.Signature memory sig) = signOrder(order, signerPk);
-
-        OrderActs.Fill memory fill = makeFill(actors.fill);
+        ) = _setupSignedRevertTest("sig_mismatch");
 
         // tamper price
         order.price = 10;
 
-        vm.prank(actors.fill);
-        vm.expectRevert(SigOps.InvalidSignature.selector);
-        orderEngine.settle(fill, order, sig);
+        _expectSettleRevert(
+            fill,
+            order,
+            sig,
+            actors.fill,
+            SigOps.InvalidSignature.selector
+        );
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -123,14 +135,13 @@ contract OrderEngineSettleRevertsTest is OrderEngineSettleBase {
     //////////////////////////////////////////////////////////////*/
 
     function test_Settle_ReusedNonce_Reverts() public {
-        Actors memory actors = someActors("reuse_nonce");
-        uint256 signerPk = pkOf(actors.order);
+        (
+            Actors memory actors,
+            OrderActs.Order memory order,
+            OrderActs.Fill memory fill,
+            SigOps.Signature memory sig,
 
-        OrderActs.Order memory order = makeAsk(actors.order);
-
-        (, SigOps.Signature memory sig) = signOrder(order, signerPk);
-
-        OrderActs.Fill memory fill = makeFill(actors.fill);
+        ) = _setupSignedRevertTest("reuse_nonce");
 
         legitimizeSettlement(fill, order);
 
@@ -139,36 +150,90 @@ contract OrderEngineSettleRevertsTest is OrderEngineSettleBase {
         orderEngine.settle(fill, order, sig);
 
         // replay nonce - should revert
-        vm.prank(actors.fill);
-        vm.expectRevert(OrderEngine.InvalidNonce.selector);
-        orderEngine.settle(fill, order, sig);
+        _expectSettleRevert(
+            fill,
+            order,
+            sig,
+            actors.fill,
+            OrderEngine.InvalidNonce.selector
+        );
     }
 
     function test_Settle_UnsupportedCollection_Reverts() public {
+        MockUnsupported unsupportedCollection = new MockUnsupported();
         Actors memory actors = someActors("unsupported_collection");
         uint256 signerPk = pkOf(actors.order);
-
-        MockUnsupported unsupportedCollection = new MockUnsupported();
 
         OrderActs.Order memory order = makeAsk(
             address(unsupportedCollection),
             wethAddr(),
             actors.order
         );
-
         (, SigOps.Signature memory sig) = signOrder(order, signerPk);
-
         OrderActs.Fill memory fill = makeFill(actors.fill);
 
         // `legitimizeSettlement` mints nft while MockUnsupported does not mint implement `mint`
         // => explicitly do erc20 approvals
-        uint256 price = order.price;
-        address spender = actors.fill; // since order is `Ask`
+        wethDealAndApproveSpenderAllowance(actors.fill, order.price);
 
-        wethDealAndApproveSpenderAllowance(spender, price);
+        _expectSettleRevert(
+            fill,
+            order,
+            sig,
+            actors.fill,
+            OrderEngine.UnsupportedCollection.selector
+        );
+    }
 
-        vm.prank(actors.fill);
-        vm.expectRevert(OrderEngine.UnsupportedCollection.selector);
+    /*//////////////////////////////////////////////////////////////
+                                HELPERS
+    //////////////////////////////////////////////////////////////*/
+
+    function _expectSettleRevert(
+        OrderActs.Fill memory fill,
+        OrderActs.Order memory order,
+        SigOps.Signature memory sig,
+        address caller,
+        bytes4 errorSelector
+    ) internal {
+        vm.prank(caller);
+        vm.expectRevert(errorSelector);
         orderEngine.settle(fill, order, sig);
+    }
+
+    function _setupBasicRevertTest(
+        string memory seed
+    )
+        internal
+        returns (
+            Actors memory actors,
+            OrderActs.Order memory order,
+            OrderActs.Fill memory fill,
+            SigOps.Signature memory sig
+        )
+    {
+        actors = someActors(seed);
+        order = makeAsk(actors.order);
+        fill = makeFill(actors.fill);
+        sig = dummySig();
+    }
+
+    function _setupSignedRevertTest(
+        string memory seed
+    )
+        internal
+        returns (
+            Actors memory actors,
+            OrderActs.Order memory order,
+            OrderActs.Fill memory fill,
+            SigOps.Signature memory sig,
+            uint256 signerPk
+        )
+    {
+        actors = someActors(seed);
+        signerPk = pkOf(actors.order);
+        order = makeAsk(actors.order);
+        (, sig) = signOrder(order, signerPk);
+        fill = makeFill(actors.fill);
     }
 }
