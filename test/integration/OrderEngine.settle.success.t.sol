@@ -55,7 +55,7 @@ contract OrderEngineSettleSuccessTest is OrderEngineSettleBase {
             actors.order
         );
 
-        (, SigOps.Signature memory sig) = makeDigestAndSign(order, signerPk);
+        (, SigOps.Signature memory sig) = signOrder(order, signerPk);
 
         uint256 tokenIdFill = order.isBid() ? order.tokenId : 0;
 

@@ -43,7 +43,7 @@ contract SignatureOpsTest is OrderHelper {
         (
             OrderActs.Order memory order,
             SigOps.Signature memory sig
-        ) = makeOrderDigestAndSign(signer, signerPk);
+        ) = makeSignedAsk(signer, signerPk);
 
         vm.prank(user);
         verifier.verify(order, sig);
@@ -57,7 +57,7 @@ contract SignatureOpsTest is OrderHelper {
         (
             OrderActs.Order memory order,
             SigOps.Signature memory sig
-        ) = makeOrderDigestAndSign(signer, signerPk);
+        ) = makeSignedAsk(signer, signerPk);
 
         // mutate ANY field (pick one, doesn't matter)
         order.price += 1;
@@ -70,7 +70,7 @@ contract SignatureOpsTest is OrderHelper {
         (
             OrderActs.Order memory order,
             SigOps.Signature memory sig
-        ) = makeOrderDigestAndSign(signer, signerPk);
+        ) = makeSignedAsk(signer, signerPk);
 
         // simulate corrupt s <= n/2 https://eips.ethereum.org/EIPS/eip-2
         sig.s = bytes32(
@@ -88,7 +88,7 @@ contract SignatureOpsTest is OrderHelper {
         (
             OrderActs.Order memory order,
             SigOps.Signature memory sig
-        ) = makeOrderDigestAndSign(signer, signerPk);
+        ) = makeSignedAsk(signer, signerPk);
 
         assertTrue(sig.v == 27 || sig.v == 28);
 
@@ -103,7 +103,7 @@ contract SignatureOpsTest is OrderHelper {
         (
             OrderActs.Order memory order,
             SigOps.Signature memory sig
-        ) = makeOrderDigestAndSign(signer, signerPk);
+        ) = makeSignedAsk(signer, signerPk);
 
         order.actor = makeAddr("imposter");
 

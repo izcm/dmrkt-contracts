@@ -42,7 +42,7 @@ abstract contract OrderHelper is Test {
         address actor
     ) internal view returns (OrderActs.Order memory) {
         return
-            makeOrder(
+            _order(
                 OrderActs.Side.Ask,
                 false,
                 collection,
@@ -61,7 +61,7 @@ abstract contract OrderHelper is Test {
         address actor
     ) internal view returns (OrderActs.Order memory) {
         return
-            makeOrder(
+            _order(
                 side,
                 isCollectionBid,
                 defaultCollection,
@@ -72,7 +72,7 @@ abstract contract OrderHelper is Test {
             );
     }
 
-    function makeOrder(
+    function _order(
         OrderActs.Side side,
         bool isCollectionBid,
         address collection,
@@ -98,7 +98,7 @@ abstract contract OrderHelper is Test {
 
     // === DIGEST / SIGNING ===
 
-    function makeOrderDigestAndSign(
+    function makeSignedAsk(
         address signer,
         uint256 signerPk
     )
@@ -113,7 +113,7 @@ abstract contract OrderHelper is Test {
         sig = SigOps.Signature({v: v, r: r, s: s});
     }
 
-    function makeDigestAndSign(
+    function signOrder(
         OrderActs.Order memory order,
         uint256 signerPk
     ) internal view returns (bytes32 digest, SigOps.Signature memory sig) {

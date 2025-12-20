@@ -91,7 +91,7 @@ contract OrderEngineSettleRevertsTest is OrderEngineSettleBase {
 
         order.side = OrderActs.Side._COUNT; // invalid
 
-        (, SigOps.Signature memory sig) = makeDigestAndSign(order, signerPk);
+        (, SigOps.Signature memory sig) = signOrder(order, signerPk);
 
         OrderActs.Fill memory fill = makeFill(actors.fill);
 
@@ -106,7 +106,7 @@ contract OrderEngineSettleRevertsTest is OrderEngineSettleBase {
 
         OrderActs.Order memory order = makeAsk(actors.order);
 
-        (, SigOps.Signature memory sig) = makeDigestAndSign(order, signerPk);
+        (, SigOps.Signature memory sig) = signOrder(order, signerPk);
 
         OrderActs.Fill memory fill = makeFill(actors.fill);
 
@@ -128,7 +128,7 @@ contract OrderEngineSettleRevertsTest is OrderEngineSettleBase {
 
         OrderActs.Order memory order = makeAsk(actors.order);
 
-        (, SigOps.Signature memory sig) = makeDigestAndSign(order, signerPk);
+        (, SigOps.Signature memory sig) = signOrder(order, signerPk);
 
         OrderActs.Fill memory fill = makeFill(actors.fill);
 
@@ -156,7 +156,7 @@ contract OrderEngineSettleRevertsTest is OrderEngineSettleBase {
             actors.order
         );
 
-        (, SigOps.Signature memory sig) = makeDigestAndSign(order, signerPk);
+        (, SigOps.Signature memory sig) = signOrder(order, signerPk);
 
         OrderActs.Fill memory fill = makeFill(actors.fill);
 
