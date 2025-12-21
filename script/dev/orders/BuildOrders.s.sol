@@ -17,7 +17,7 @@ import {OrderEngine} from "orderbook/OrderEngine.sol";
 // local libs
 import {OrderActs} from "orderbook/libs/OrderActs.sol";
 import {SignatureOps as SigOps} from "orderbook/libs/SignatureOps.sol";
-import {OrderBuilder} from "periphery/OrderBuilder.sol";
+import {OrderFactory} from "periphery/factories/OrderFactory.sol";
 import {MarketSim} from "periphery/MarketSim.sol";
 
 interface DNFT {
@@ -141,7 +141,7 @@ contract BuildOrders is BaseDevScript, Config {
             uint256 price = MarketSim.priceOf(collection, tokenId);
             uint256 nonce = ++nonceOf[owner];
 
-            orders[i] = OrderBuilder.simpleAsk(
+            orders[i] = OrderFactory.simpleAsk(
                 owner,
                 collection,
                 currency,

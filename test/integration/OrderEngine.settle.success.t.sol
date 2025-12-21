@@ -12,6 +12,9 @@ import {OrderEngineSettleBase} from "./OrderEngine.settle.base.t.sol";
 import {OrderActs} from "orderbook/libs/OrderActs.sol";
 import {SignatureOps as SigOps} from "orderbook/libs/SignatureOps.sol";
 
+// periphery
+import {SettlementRoles} from "periphery/SettlementRoles.sol";
+
 struct Balances {
     uint256 spender;
     uint256 nftHolder;
@@ -63,11 +66,8 @@ contract OrderEngineSettleSuccessTest is OrderEngineSettleBase {
 
         legitimizeSettlement(fill, order);
 
-        (
-            address nftHolder,
-            address spender,
-            uint256 tokenId
-        ) = expectRolesAndAssets(fill, order);
+        (address nftHolder, address spender, uint256 tokenId) = SettlementRoles
+            .resolve(fill, order);
 
         // check balance of parties before settlement
         IERC20 token = IERC20(order.currency);

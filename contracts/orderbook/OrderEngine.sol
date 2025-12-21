@@ -22,8 +22,9 @@ contract OrderEngine is ReentrancyGuard {
 
     // invalid order fields
     error UnauthorizedFillActor();
-    error InvalidNonce();
     error ZeroActor();
+    error InvalidNonce();
+    error InvalidTimestamp();
     error InvalidOrderSide();
 
     // not supported behaviour
@@ -114,31 +115,6 @@ contract OrderEngine is ReentrancyGuard {
     // ===== INTERNAL FUNCTIONS =====
 
     /**
-     * @notice Validates order.
-     */
-    function _validateOrder(
-        OrderActs.Order calldata order,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) internal view {
-        // Signer != addr(0)
-        require(order.actor != address(0), ZeroActor());
-
-        // Valid order nonce
-        require(
-            !_isUserOrderNonceInvalid[order.actor][order.nonce],
-            InvalidNonce()
-        );
-
-        // Whitelisted currency
-        require(order.currency == WETH, CurrencyNotWhitelisted());
-
-        // Verify Signature
-        SigOps.verify(DOMAIN_SEPARATOR, order.hash(), order.actor, v, r, s);
-    }
-
-    /**
      * @param currency: per today always WETH.
      */
     function _settlePayment(
@@ -185,5 +161,38 @@ contract OrderEngine is ReentrancyGuard {
         }
 
         IERC721(collection).safeTransferFrom(from, to, tokenId);
+    }
+
+    // === INTERNAL VIEW FUNCTIONS ===
+
+    /**
+     * @notice Validates order.
+     */
+    function _validateOrder(
+        OrderActs.Order calldata order,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) internal view {
+        // Signer != addr(0)
+        require(order.actor != address(0), ZeroActor());
+
+        // Valid order nonce
+        require(
+            !_isUserOrderNonceInvalid[order.actor][order.nonce],
+            InvalidNonce()
+        );
+
+        // Valid timestamps
+        require(
+            order.start <= block.timestamp && order.end >= block.timestamp,
+            InvalidTimestamp()
+        );
+
+        // Whitelisted currency
+        require(order.currency == WETH, CurrencyNotWhitelisted());
+
+        // Verify Signature
+        SigOps.verify(DOMAIN_SEPARATOR, order.hash(), order.actor, v, r, s);
     }
 }

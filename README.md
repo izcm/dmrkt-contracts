@@ -26,14 +26,34 @@ Test suite organized by scope:
 - `helpers/` - Shared test utilities (OrderHelper, AccountsHelper, SettlementHelper)
 - `mocks/` - Test-only contracts (MockWETH, MockERC721)
 
-## Known Edge Cases
+---
 
-### Non-Collection Bids & `fill.tokenId`
+## Testing Scope
 
-For **non-collection bids**, `fill.tokenId` is **intentionally ignored**.
+This repository contains **both on-chain contracts and off-chain tooling**.
 
-The traded `tokenId` is always taken from `order.tokenId`.  
-This avoids introducing sentinel values (e.g. `0`) or partial validation rules for `fill.tokenId`, which would be ambiguous since `tokenId = 0` is a valid ERC-721 identifier.
+### 🔗 On-chain (production-critical, fully tested)
 
-Only **collection bids** require `fill.tokenId` to be meaningful.  
-In all other cases, the filler implicitly accepts the exact token specified by the order.
+These contracts are deployed on-chain and are covered by exhaustive tests:
+
+- `contracts/orderbook/`
+  - `OrderEngine.sol`
+  - `libs/OrderActs.sol`
+  - `libs/SignatureOps.sol`
+
+These contracts reach ~100% line / branch coverage and are the **security-critical surface**.
+
+Contracts in `contracts/nfts` are only meant for lab / dev environment and not part of the testing scope.
+
+---
+
+### 🧰 Periphery / Dev Tooling (not tested by design)
+
+The following directories are **not deployed on-chain** and are used only for
+local development, scripting, or simulation:
+
+- `periphery/`
+- `script/`
+- `script/dev/**`
+
+These are intentionally excluded from test coverage.

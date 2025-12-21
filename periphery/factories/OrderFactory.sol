@@ -3,7 +3,7 @@ pragma solidity ^0.8.30;
 
 import "orderbook/libs/OrderActs.sol";
 
-library OrderBuilder {
+library OrderFactory {
     function ask(
         address actor,
         address collection,

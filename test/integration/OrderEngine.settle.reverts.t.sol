@@ -84,6 +84,47 @@ contract OrderEngineSettleRevertsTest is OrderEngineSettleBase {
         );
     }
 
+    function test_Settle_OrderNotStarted_Reverts() public {
+        (
+            Actors memory actors,
+            OrderActs.Order memory order,
+            OrderActs.Fill memory fill,
+            SigOps.Signature memory sig
+        ) = _setupBasicRevertTest("not_started_order");
+
+        order.start = uint64(block.timestamp + 1 days);
+
+        _expectSettleRevert(
+            fill,
+            order,
+            sig,
+            fill.actor,
+            OrderEngine.InvalidTimestamp.selector
+        );
+    }
+
+    function test_Settle_OrderExpired_Reverts() public {
+        (
+            Actors memory actors,
+            OrderActs.Order memory order,
+            OrderActs.Fill memory fill,
+            SigOps.Signature memory sig
+        ) = _setupBasicRevertTest("expired_order");
+
+        order.start = 1;
+        order.end = 2;
+
+        vm.warp(3);
+
+        _expectSettleRevert(
+            fill,
+            order,
+            sig,
+            fill.actor,
+            OrderEngine.InvalidTimestamp.selector
+        );
+    }
+
     /*//////////////////////////////////////////////////////////////
                     VALID SIGNATURE REQUIRED
     //////////////////////////////////////////////////////////////*/
@@ -109,7 +150,7 @@ contract OrderEngineSettleRevertsTest is OrderEngineSettleBase {
         );
     }
 
-    function test_Settle_TamperedOrder_Reverts() public {
+    function test_Settle_SignatureMismatch_Reverts() public {
         (
             Actors memory actors,
             OrderActs.Order memory order,
