@@ -43,6 +43,16 @@ contract OrderEngine is ReentrancyGuard {
     mapping(address => mapping(uint256 => bool))
         private _isUserOrderNonceInvalid;
 
+    event Settlement(
+        bytes32 indexed orderHash,
+        address indexed collection,
+        uint256 tokenId,
+        address seller,
+        address buyer,
+        address currency,
+        uint256 price
+    );
+
     constructor(address weth, address feeRecipient) {
         DOMAIN_SEPARATOR = keccak256(
             abi.encode(
@@ -75,9 +85,12 @@ contract OrderEngine is ReentrancyGuard {
         // Fill request actor must be msg.sender
         require(msg.sender == fill.actor, UnauthorizedFillActor());
 
-        // Verify
+        // sig and hash
+        bytes32 orderHash = order.hash();
         (uint8 v, bytes32 r, bytes32 s) = sig.vrs();
-        _validateOrder(order, v, r, s);
+
+        // verify
+        _validateOrder(order, orderHash, v, r, s);
 
         // prevents replay
         _isUserOrderNonceInvalid[order.actor][order.nonce] = true;
@@ -103,6 +116,16 @@ contract OrderEngine is ReentrancyGuard {
         _settlePayment(order.currency, spender, nftHolder, order.price);
 
         _transferNft(order.collection, nftHolder, spender, tokenId);
+
+        emit Settlement(
+            orderHash,
+            order.collection,
+            tokenId,
+            spender,
+            nftHolder, // **the nftHolder PRE transfer**
+            order.currency, // future proofing
+            order.price
+        );
     }
 
     function isUserOrderNonceInvalid(
@@ -170,6 +193,7 @@ contract OrderEngine is ReentrancyGuard {
      */
     function _validateOrder(
         OrderActs.Order calldata order,
+        bytes32 orderHash,
         uint8 v,
         bytes32 r,
         bytes32 s
@@ -193,6 +217,6 @@ contract OrderEngine is ReentrancyGuard {
         require(order.currency == WETH, CurrencyNotWhitelisted());
 
         // Verify Signature
-        SigOps.verify(DOMAIN_SEPARATOR, order.hash(), order.actor, v, r, s);
+        SigOps.verify(DOMAIN_SEPARATOR, orderHash, order.actor, v, r, s);
     }
 }
