@@ -10,6 +10,11 @@ struct SignedOrder {
     SigOps.Signature sig;
 }
 
+struct Selection {
+    address collection;
+    uint256[] tokenIds;
+}
+
 enum SampleMode {
     Ask,
     Bid,

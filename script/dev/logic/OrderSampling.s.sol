@@ -14,114 +14,21 @@ import {IERC721} from "@openzeppelin/interfaces/IERC721.sol";
 import {ISettlementEngine} from "periphery/interfaces/ISettlementEngine.sol";
 import {DNFT} from "periphery/interfaces/DNFT.sol";
 
-// types
-import {SignedOrder, SampleMode} from "dev/state/Types.sol";
-
 abstract contract OrderSampling is Script {
-    address[] internal collections;
-
-    mapping(address => uint256[]) internal collectionSelected;
-
     address private weth;
     address private settlementContract;
 
-    uint256 epoch;
-
     // any child contract must call this method
     function _initOrderSampling(
-        uint256 _epoch,
-        address[] memory _collections,
         address _settlementContract,
         address _weth
     ) internal {
-        epoch = _epoch;
-        collections = _collections;
         settlementContract = _settlementContract;
         weth = _weth;
     }
 
-    function orderCount() internal view returns (uint256) {
-        uint256 count;
-
-        for (uint256 i = 0; i < collections.length; i++) {
-            count += collectionSelected[collections[i]].length;
-        }
-
-        return count;
-    }
-
-    function collect(SampleMode mode) internal {
-        _resetSelection();
-
-        if (mode == SampleMode.Ask) {
-            _selectAndStore(OrderModel.Side.Ask, false);
-        } else if (mode == SampleMode.Bid) {
-            _selectAndStore(OrderModel.Side.Bid, false);
-        } else {
-            _selectAndStore(OrderModel.Side.Bid, true);
-        }
-    }
-
-    function buildOrders(
-        OrderModel.Side side,
-        bool isCollectionBid
-    ) internal view returns (OrderModel.Order[] memory) {
-        uint256 count = orderCount();
-
-        OrderModel.Order[] memory orders = new OrderModel.Order[](count);
-
-        uint256 k;
-
-        // second pass: fill
-        for (uint256 i = 0; i < collections.length; i++) {
-            address collection = collections[i];
-            uint256[] storage tokens = collectionSelected[collection];
-
-            uint256 seed = _orderSalt(collection, side, isCollectionBid, epoch);
-
-            for (uint256 j = 0; j < tokens.length; j++) {
-                uint256 tokenId = tokens[j];
-
-                orders[k++] = _makeOrder(
-                    side,
-                    isCollectionBid,
-                    collection,
-                    tokenId,
-                    MarketSim.priceOf(collection, tokenId, seed)
-                );
-            }
-        }
-
-        return orders;
-    }
-
-    function _resetSelection() internal {
-        for (uint256 i = 0; i < collections.length; i++) {
-            delete collectionSelected[collections[i]];
-        }
-    }
-
-    function _selectAndStore(
-        OrderModel.Side side,
-        bool isCollectionBid
-    ) internal {
-        for (uint256 i = 0; i < collections.length; i++) {
-            address collection = collections[i];
-
-            uint256[] memory tokens = _hydrateAndSelectTokens(
-                side,
-                isCollectionBid,
-                collection
-            );
-
-            uint256[] storage acc = collectionSelected[collection];
-            for (uint256 j = 0; j < tokens.length; j++) {
-                acc.push(tokens[j]);
-            }
-        }
-    }
-
-    function _hydrateAndSelectTokens(
+    function hydrateAndSelectTokens(
+        uint256 epoch,
         OrderModel.Side side,
         bool isCollectionBid,
         address collection
@@ -137,19 +44,18 @@ abstract contract OrderSampling is Script {
         return MarketSim.selectTokens(collection, max, density, seed);
     }
 
-    function _makeOrder(
+    function makeOrder(
         OrderModel.Side side,
         bool isCollectionBid,
         address collection,
-        uint256 tokenId,
-        uint256 price
+        uint256 tokenId
     ) internal view returns (OrderModel.Order memory) {
         address owner = IERC721(collection).ownerOf(tokenId);
 
         uint256 j = 0;
 
         uint256 seed = uint256(
-            keccak256(abi.encode(collection, owner, side, isCollectionBid, j))
+            keccak256(abi.encode(collection, tokenId, side, isCollectionBid, j))
         );
 
         while (
@@ -168,7 +74,7 @@ abstract contract OrderSampling is Script {
                 collection: collection,
                 tokenId: tokenId,
                 currency: weth,
-                price: price,
+                price: MarketSim.priceOf(collection, tokenId, seed),
                 actor: owner,
                 start: uint64(block.timestamp),
                 end: uint64(block.timestamp + 7 days),

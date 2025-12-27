@@ -38,6 +38,14 @@ contract DevConfig is Config {
         return config.get("order_engine").toAddress();
     }
 
+    function readStartTs() internal view returns (uint256) {
+        return config.get("history_start_ts").toUint256();
+    }
+
+    function readNowTs() internal view returns (uint256) {
+        return config.get("now_ts").toUint256();
+    }
+
     function readCollections() internal view returns (address[] memory) {
         uint256 count = config.get("nft_count").toUint256();
         address[] memory nfts = new address[](count);
