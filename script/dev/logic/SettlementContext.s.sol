@@ -3,46 +3,24 @@ pragma solidity ^0.8.30;
 
 import {Script} from "forge-std/Script.sol";
 
-// core libs
+// core libraries
 import {OrderModel} from "orderbook/libs/OrderModel.sol";
-import {SignatureOps as SigOps} from "orderbook/libs/SignatureOps.sol";
-
-// periphery libs
-import {OrderBuilder} from "periphery/builders/OrderBuilder.sol";
 
 // interfaces
 import {IERC721} from "@openzeppelin/interfaces/IERC721.sol";
+import {ISettlementEngine} from "periphery/interfaces/ISettlementEngine.sol";
 
-// NOTE: interface is implemented to future proof
-interface ISettlementEngine {
-    function DOMAIN_SEPARATOR() external view returns (bytes32);
+import {OrderBuilder} from "periphery/builders/OrderBuilder.sol";
 
-    function isUserOrderNonceInvalid(
-        address user,
-        uint256 nonce
-    ) external view returns (bool);
-}
-
-abstract contract BaseSettlement is Script {
-    using OrderModel for OrderModel.Order;
-
-    address private settlementContract;
-    address private weth;
-
-    function _initBaseSettlement(
-        address _settlementContract,
-        address _weth
-    ) internal {
-        settlementContract = _settlementContract;
-        weth = _weth;
-    }
-
+abstract contract SettlementContext is Script {
     function makeOrder(
         OrderModel.Side side,
         bool isCollectionBid,
         address collection,
         uint256 tokenId,
-        uint256 price
+        address currency,
+        uint256 price,
+        address settlementContract
     ) internal view returns (OrderModel.Order memory) {
         address owner = IERC721(collection).ownerOf(tokenId);
 
@@ -67,26 +45,13 @@ abstract contract BaseSettlement is Script {
                 isCollectionBid,
                 collection,
                 tokenId,
-                weth,
+                currency,
                 price,
                 owner,
                 uint64(block.timestamp),
                 uint64(block.timestamp + 7 days),
                 _nonce(seed, j)
             );
-    }
-
-    function signOrder(
-        OrderModel.Order memory order,
-        uint256 signerPk
-    ) internal view returns (SigOps.Signature memory) {
-        bytes32 digest = SigOps.digest712(
-            ISettlementEngine(settlementContract).DOMAIN_SEPARATOR(),
-            order.hash()
-        );
-
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPk, digest);
-        return SigOps.Signature(v, r, s);
     }
 
     function orderSalt(

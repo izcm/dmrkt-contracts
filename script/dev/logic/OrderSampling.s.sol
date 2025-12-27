@@ -8,36 +8,15 @@ import {OrderModel} from "orderbook/libs/OrderModel.sol";
 import {MarketSim} from "periphery/MarketSim.sol";
 
 // scripts
-import {BaseSettlement} from "dev/BaseSettlement.s.sol";
+import {SettlementContext} from "dev/logic/SettlementContext.s.sol";
 
 // interfaces
 import {DNFT} from "periphery/interfaces/DNFT.sol";
 
-/*
-    TODO: MAYBE make more DRY with: 
+// types
+import {SignedOrder, SampleMode} from "dev/state/Types.sol";
 
-    enum SampleMode {
-        Ask,
-        Bid,
-        CollectionBid
-    }
-
-    function collect(SampleMode mode) internal {
-        _resetSelection();
-
-        if (mode == SampleMode.Ask) {
-            _selectAndStore(OrderModel.Side.Ask, false);
-        } else if (mode == SampleMode.Bid) {
-            _selectAndStore(OrderModel.Side.Bid, false);
-        } else {
-            _selectAndStore(OrderModel.Side.Bid, true);
-        }
-    }
-
-    Do this after implementing `SettleHistory`
- */
-
-abstract contract OrderSampling is BaseSettlement {
+abstract contract OrderSampling is SettlementContext {
     uint256 private epoch; // used to set order.timestamps
     uint256 private seedSalt; // lets child contracts influence seeds for selecting tokensIds
 
@@ -45,13 +24,20 @@ abstract contract OrderSampling is BaseSettlement {
 
     mapping(address => uint256[]) internal collectionSelected;
 
+    address private weth;
+    address private settlementContract;
+
     // any child contract must call this method
     function _initOrderSampling(
         uint256 _epoch,
+        address _settlementContract,
+        address _weth,
         uint256 _seedSalt,
         address[] memory _collections
     ) internal {
         epoch = _epoch;
+        settlementContract = _settlementContract;
+        weth = _weth;
         seedSalt = _seedSalt;
         collections = _collections;
     }
@@ -66,6 +52,20 @@ abstract contract OrderSampling is BaseSettlement {
         return count;
     }
 
+    function collect(SampleMode mode) internal {
+        _resetSelection();
+
+        if (mode == SampleMode.Ask) {
+            _selectAndStore(OrderModel.Side.Ask, false);
+        } else if (mode == SampleMode.Bid) {
+            _selectAndStore(OrderModel.Side.Bid, false);
+        } else {
+            _selectAndStore(OrderModel.Side.Bid, true);
+        }
+    }
+
+    // TODO: try to make these functions not collide so that
+    // one we dont need resetSelection() => signedOrders batch has both asks/bids and collectionbids
     function collectAsks() internal {
         _resetSelection();
 
@@ -165,7 +165,9 @@ abstract contract OrderSampling is BaseSettlement {
                     isCollectionBid,
                     collection,
                     tokenId,
-                    MarketSim.priceOf(collection, tokenId, seed)
+                    weth,
+                    MarketSim.priceOf(collection, tokenId, seed),
+                    settlementContract
                 );
             }
         }

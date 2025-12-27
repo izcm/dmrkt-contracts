@@ -7,23 +7,32 @@ import {SignatureOps as SigOps} from "orderbook/libs/SignatureOps.sol";
 
 // scripts
 import {BaseDevScript} from "dev/BaseDevScript.s.sol";
-import {BaseSettlement} from "dev/BaseSettlement.s.sol";
 import {DevConfig} from "dev/DevConfig.s.sol";
 import {OrderSampling} from "dev/logic/OrderSampling.s.sol";
 
-struct SignedOrder {
-    OrderModel.Order order;
-    SigOps.Signature sig;
-}
+import {SettlementSigner} from "dev/logic/SettlementSigner.s.sol";
+
+// types
+import {SignedOrder, SampleMode} from "dev/state/Types.sol";
+
+// interfaces
+import {ISettlementEngine} from "periphery/interfaces/ISettlementEngine.sol";
 
 contract SettleHistory is
-    BaseDevScript,
-    BaseSettlement,
     OrderSampling,
+    SettlementSigner,
+    BaseDevScript,
     DevConfig
 {
     // ctx
     uint256 private weekIdx;
+
+    address weth;
+
+    address settlementContract;
+    bytes32 domainSeparator;
+
+    SignedOrder[] signed;
 
     // === ENTRYPOINTS ===
 
@@ -33,6 +42,7 @@ contract SettleHistory is
         _jumpToWeek();
 
         _collect();
+        _handleSigned();
     }
 
     function finalize() external {
@@ -43,80 +53,58 @@ contract SettleHistory is
     // === SETUP / ENVIRONMENT ===
 
     function _bootstrap() internal {
-        address settlementContract = readSettlementContract();
-        address weth = readWeth();
+        settlementContract = readSettlementContract();
+        weth = readWeth();
 
         address[] memory collections = readCollections();
 
-        _initBaseSettlement(settlementContract, weth);
-        _initOrderSampling(0, 0, collections);
+        domainSeparator = ISettlementEngine(settlementContract)
+            .DOMAIN_SEPARATOR();
+
+        _initOrderSampling(0, settlementContract, weth, 0, collections);
     }
 
-    function _handleSigned(SignedOrder[] memory order) internal {
+    function _handleSigned() internal {
         if (!_isFinalWeek()) {
             // order by nonce and fulfill
         } else {
-            // write to
+            // persistSignedOrders(signed, _jsonFilePath());
+            // logSeparator();
+            // console.log("ORDERS SAVED TO: %s", path);
+            // logSeparator();
         }
     }
 
     function _collect() internal {
-        // === collect => build ===
+        for (uint256 i = 0; i < uint256(SampleMode.COUNT_); i++) {
+            SampleMode mode = SampleMode(i);
 
-        {
-            collectAsks(); // collects and stores tokenids with `ask` seed
-
-            SignedOrder[] memory signed = _buildAndSignAsks();
-
-            // _persistSignedOrders(signed, string.concat(basePath, ".ask.json"));
-        }
-
-        // BIDS
-
-        {
-            collectBids(); // collects and stores tokenids with `ask` seed
-
-            SignedOrder[] memory signed = _buildAndSignBids();
-
-            // _persistSignedOrders(signed, string.concat(basePath, ".bid.json"));
-        }
-
-        // COLLECTION BIDS
-
-        {
-            collectCollectionBids(); // collects and stores tokenids with `ask` seed
-
-            SignedOrder[] memory signed = _buildAndSignCollectionBids();
-
-            // _persistSignedOrders(signed, string.concat(basePath, ".cb.json"));
+            collect(mode);
+            _buildAndSignOrders(mode);
         }
     }
 
-    function _buildAndSignAsks() internal view returns (SignedOrder[] memory) {
-        return _buildAndSignOrders(OrderModel.Side.Ask, false);
-    }
-
-    function _buildAndSignBids() internal view returns (SignedOrder[] memory) {
-        return _buildAndSignOrders(OrderModel.Side.Bid, false);
-    }
-
-    function _buildAndSignCollectionBids()
-        internal
-        view
-        returns (SignedOrder[] memory)
-    {
-        return _buildAndSignOrders(OrderModel.Side.Bid, true);
+    function _buildAndSignOrders(SampleMode mode) internal {
+        if (mode == SampleMode.Ask) {
+            _buildAndSignOrders(OrderModel.Side.Ask, false);
+        } else if (mode == SampleMode.Bid) {
+            _buildAndSignOrders(OrderModel.Side.Bid, false);
+        } else if (mode == SampleMode.CollectionBid) {
+            _buildAndSignOrders(OrderModel.Side.Bid, true);
+        } else {
+            revert("INVALID MODE");
+        }
     }
 
     function _buildAndSignOrders(
         OrderModel.Side side,
         bool isCollectionBid
-    ) internal view returns (SignedOrder[] memory) {
+    ) internal {
         OrderModel.Order[] memory orders = buildOrders(side, isCollectionBid); // builds the orders stored in `OrderSampling.collectionSelected`
 
         uint256 count = orders.length;
 
-        SignedOrder[] memory signed = new SignedOrder[](count);
+        // SignedOrder[] memory signed = new SignedOrder[](count);
 
         for (uint256 i = 0; i < count; i++) {
             OrderModel.Order memory order = orders[i];
@@ -124,18 +112,20 @@ contract SettleHistory is
             uint256 pk = pkOf(order.actor);
             require(pk != 0, "NO PK FOR ACTOR");
 
-            (SigOps.Signature memory sig) = signOrder(order, pk);
+            (SigOps.Signature memory sig) = signOrder(
+                domainSeparator,
+                order,
+                pk
+            );
 
-            signed[i] = SignedOrder({order: order, sig: sig});
+            signed.push(SignedOrder({order: order, sig: sig}));
         }
-
-        return signed;
     }
 
     // === TIME HELPERS ===
 
     function _jumpToWeek() internal {
-        uint256 startTs = _readStartTimestamp();
+        uint256 startTs = _readStartTS();
         vm.warp(startTs + (weekIdx * 7 days));
     }
 
@@ -146,7 +136,7 @@ contract SettleHistory is
     // === PRIVATE ===
 
     // only this script uses reads timestamp so readers are moved here
-    function _readStartTimestamp() private view returns (uint256) {
+    function _readStartTS() private view returns (uint256) {
         return config.get("history_start_ts").toUint256();
     }
 
@@ -154,8 +144,12 @@ contract SettleHistory is
         return config.get("final_week_idx").toUint256() == weekIdx;
     }
 
-    function _basePath() private view returns (string memory) {
+    function _jsonFilePath() private view returns (string memory) {
         return
-            string.concat("./data/", vm.toString(block.chainid), "/orders-raw");
+            string.concat(
+                "./data/",
+                vm.toString(block.chainid),
+                "/orders-raw.json"
+            );
     }
 }

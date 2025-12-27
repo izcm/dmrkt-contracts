@@ -39,9 +39,6 @@ contract DeployCore is BaseDevScript, DevConfig {
 
         vm.stopBroadcast();
 
-        // push nft addresses to array
-        address[NFT_COUNT] memory nfts = [address(gremlin), address(seal)];
-
         // log deployments
         logDeployment("OrderEngine", address(orderEngine));
 
@@ -59,6 +56,6 @@ contract DeployCore is BaseDevScript, DevConfig {
         config.set("nft_0", address(gremlin));
         config.set("nft_1", address(seal));
 
-        config.set("nftCount", NFT_COUNT);
+        config.set("nft_count", NFT_COUNT);
     }
 }

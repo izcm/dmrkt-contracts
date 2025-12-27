@@ -1,53 +1,20 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
+import {Script} from "forge-std/Script.sol";
 import {console} from "forge-std/console.sol";
 
 // core libraries
 import {OrderModel} from "orderbook/libs/OrderModel.sol";
 import {SignatureOps as SigOps} from "orderbook/libs/SignatureOps.sol";
 
-// scripts
-import {BaseDevScript} from "dev/BaseDevScript.s.sol";
-import {DevConfig} from "dev/DevConfig.s.sol";
-import {OrderSampling} from "dev/logic/OrderSampling.s.sol";
-
 struct SignedOrder {
     OrderModel.Order order;
     SigOps.Signature sig;
 }
 
-contract OpenListings is BaseDevScript, OrderSampling, DevConfig {
-    // ctx
-    uint256 chainId;
-
-    function run() external {
-        chainId = block.chainid;
-
-        // === LOAD CONFIG ===
-
-        {
-            // currencies
-            address weth = readWeth();
-
-            // deployed contracts
-            address[] memory collections = readCollections();
-
-            address settlementContract = readSettlementContract();
-
-            logAddress("SETTLER ", settlementContract);
-
-            // === INITIALIZE ===
-
-            _initBaseSettlement(settlementContract, weth);
-            _initOrderSampling(0, 0, collections);
-
-            // loads pk => addr => to easily fetch addresses
-            _loadParticipants();
-        }
-    }
-
-    function _persistSignedOrders(
+contract OpenListings is Script {
+    function persistSignedOrders(
         SignedOrder[] memory signedOrders,
         string memory path
     ) internal {
@@ -55,7 +22,7 @@ contract OpenListings is BaseDevScript, OrderSampling, DevConfig {
         string memory root = "root";
 
         // metadata
-        vm.serializeUint(root, "chainId", chainId);
+        vm.serializeUint(root, "chainId", block.chainid);
 
         // signedOrders array
         string[] memory entries = new string[](signedOrderCount);
@@ -97,10 +64,6 @@ contract OpenListings is BaseDevScript, OrderSampling, DevConfig {
         );
 
         vm.writeJson(finalJson, path);
-
-        logSeparator();
-        console.log("ORDERS SAVED TO: %s", path);
-        logSeparator();
     }
 
     function _serializeOrder(
