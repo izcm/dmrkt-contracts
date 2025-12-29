@@ -43,15 +43,39 @@ abstract contract BaseDevScript is Script {
         return _participants;
     }
 
-    function pkOf(address actor) internal view returns (uint256) {
-        return _ownerPk[actor];
+    function otherParticipant(
+        address excluded,
+        uint256 seed
+    ) internal view returns (address) {
+        address[] memory ps = participants();
+        require(ps.length > 1, "Need at least 2 participants");
+
+        uint256 excludedIdx = _indexOfParticipant(excluded);
+        uint256 idx = uint256(keccak256(abi.encode(seed))) % (ps.length - 1);
+
+        if (idx >= excludedIdx) idx++;
+        return ps[idx];
+    }
+
+    function pkOf(address a) internal view returns (uint256) {
+        return _ownerPk[a];
     }
 
     function addrOf(uint256 pk) internal pure returns (address) {
         return vm.addr(pk);
     }
 
-    // --- LOG HELPERS ---
+    // === PRIVATE FUNCTIONS ===
+
+    function _indexOfParticipant(address a) internal view returns (uint256) {
+        address[] memory parts = participants();
+        for (uint256 i = 0; i < parts.length; i++) {
+            if (parts[i] == a) return i;
+        }
+        revert("Address not found in participants");
+    }
+
+    // === LOG HELPERS ===
 
     function logSection(string memory title) internal pure {
         logSeparator();

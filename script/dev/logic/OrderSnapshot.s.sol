@@ -11,10 +11,7 @@ import {SignatureOps as SigOps} from "orderbook/libs/SignatureOps.sol";
 import {SignedOrder} from "dev/state/Types.sol";
 
 contract OrderSnapshot is Script {
-    function persistSignedOrders(
-        SignedOrder[] memory signedOrders,
-        string memory path
-    ) internal {
+    function persistSignedOrders(SignedOrder[] memory signedOrders, string memory path) internal {
         uint256 signedOrderCount = signedOrders.length;
         string memory root = "root";
 
@@ -27,10 +24,7 @@ contract OrderSnapshot is Script {
         for (uint256 i = 0; i < signedOrderCount; i++) {
             SignedOrder memory signed = signedOrders[i];
 
-            string memory oKey = string.concat(
-                "order_",
-                vm.toString(uint256(1))
-            );
+            string memory oKey = string.concat("order_", vm.toString(uint256(1)));
 
             entries[i] = _serializeOrder(signed.order, oKey);
 
@@ -46,27 +40,16 @@ contract OrderSnapshot is Script {
             // Foundry serialize API requires a terminal value to emit object
             string memory sigOut = vm.serializeString(sKey, "_", "0");
 
-            string memory output = vm.serializeString(
-                oKey,
-                "signature",
-                sigOut
-            );
+            string memory output = vm.serializeString(oKey, "signature", sigOut);
             entries[i] = output;
         }
 
-        string memory finalJson = vm.serializeString(
-            root,
-            "signedOrders",
-            entries
-        );
+        string memory finalJson = vm.serializeString(root, "signedOrders", entries);
 
         vm.writeJson(finalJson, path);
     }
 
-    function _serializeOrder(
-        OrderModel.Order memory o,
-        string memory objKey
-    ) internal returns (string memory) {
+    function _serializeOrder(OrderModel.Order memory o, string memory objKey) internal returns (string memory) {
         string memory key = objKey;
 
         // ---- order ----

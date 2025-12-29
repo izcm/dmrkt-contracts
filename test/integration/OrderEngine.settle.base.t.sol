@@ -14,11 +14,7 @@ import {SettlementHelper} from "test-helpers/SettlementHelper.sol";
 import {MockWETH} from "mocks/MockWETH.sol";
 import {MockERC721} from "mocks/MockERC721.sol";
 
-abstract contract OrderEngineSettleBase is
-    AccountsHelper,
-    OrderHelper,
-    SettlementHelper
-{
+abstract contract OrderEngineSettleBase is AccountsHelper, OrderHelper, SettlementHelper {
     using OrderModel for OrderModel.Order;
 
     uint256 internal constant DEFAULT_ACTOR_COUNT = 10;

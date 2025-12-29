@@ -57,7 +57,7 @@ contract BootstrapAccounts is BaseDevScript, DevConfig {
 
             logBalance("PRE ", a);
 
-            (bool ok, ) = payable(a).call{value: bootstrapEth}("");
+            (bool ok,) = payable(a).call{value: bootstrapEth}("");
 
             if (!ok) {
                 console.log("TRANSFER FAILED -> %s", a);

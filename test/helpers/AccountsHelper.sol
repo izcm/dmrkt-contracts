@@ -41,9 +41,7 @@ abstract contract AccountsHelper is Test {
         return addrOf(testKeys[idx]);
     }
 
-    function someActors(
-        string memory seed
-    ) internal view returns (Actors memory a) {
+    function someActors(string memory seed) internal view returns (Actors memory a) {
         a.order = actor(string.concat(seed, "_order"));
         a.fill = actor(string.concat(seed, "_fill"));
 

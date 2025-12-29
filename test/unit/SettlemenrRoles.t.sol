@@ -18,9 +18,7 @@ contract SettlementRolesTest is OrderHelper {
         orderActor = makeAddr("order_actor");
         fillActor = makeAddr("fill_actor");
 
-        bytes32 dummyDomainSeparator = bytes32(
-            keccak256(abi.encode("dummy_separator"))
-        );
+        bytes32 dummyDomainSeparator = bytes32(keccak256(abi.encode("dummy_separator")));
 
         address dummyCollection = makeAddr("dummy_collection");
         address dummyCurrency = makeAddr("dummy_currency");
@@ -33,20 +31,12 @@ contract SettlementRolesTest is OrderHelper {
     //////////////////////////////////////////////////////////////*/
 
     function test_Resolve_Ask_ReturnsCorrectRoles() public {
-        OrderModel.Order memory order = makeOrder(
-            OrderModel.Side.Ask,
-            false,
-            orderActor
-        );
+        OrderModel.Order memory order = makeOrder(OrderModel.Side.Ask, false, orderActor);
 
         // ensure fill tokenId is ignored for asks
-        OrderModel.Fill memory fill = OrderModel.Fill({
-            tokenId: 999,
-            actor: fillActor
-        });
+        OrderModel.Fill memory fill = OrderModel.Fill({tokenId: 999, actor: fillActor});
 
-        (address nftHolder, address spender, uint256 tokenId) = SettlementRoles
-            .resolve(fill, order);
+        (address nftHolder, address spender, uint256 tokenId) = SettlementRoles.resolve(fill, order);
 
         assertEq(nftHolder, orderActor);
         assertEq(spender, fillActor);
@@ -54,19 +44,11 @@ contract SettlementRolesTest is OrderHelper {
     }
 
     function test_Resolve_Bid_SpecificToken_ReturnsCorrectRoles() public {
-        OrderModel.Order memory order = makeOrder(
-            OrderModel.Side.Bid,
-            false,
-            orderActor
-        );
+        OrderModel.Order memory order = makeOrder(OrderModel.Side.Bid, false, orderActor);
 
-        OrderModel.Fill memory fill = OrderModel.Fill({
-            tokenId: 888,
-            actor: fillActor
-        });
+        OrderModel.Fill memory fill = OrderModel.Fill({tokenId: 888, actor: fillActor});
 
-        (address nftHolder, address spender, uint256 tokenId) = SettlementRoles
-            .resolve(fill, order);
+        (address nftHolder, address spender, uint256 tokenId) = SettlementRoles.resolve(fill, order);
 
         assertEq(nftHolder, fillActor);
         assertEq(spender, orderActor);
@@ -74,21 +56,13 @@ contract SettlementRolesTest is OrderHelper {
     }
 
     function test_Resolve_Bid_CollectionBid_UsesFillTokenId() public {
-        OrderModel.Order memory order = makeOrder(
-            OrderModel.Side.Bid,
-            true,
-            orderActor
-        );
+        OrderModel.Order memory order = makeOrder(OrderModel.Side.Bid, true, orderActor);
 
         uint256 collectionTokenId = 777;
 
-        OrderModel.Fill memory fill = OrderModel.Fill({
-            tokenId: collectionTokenId,
-            actor: fillActor
-        });
+        OrderModel.Fill memory fill = OrderModel.Fill({tokenId: collectionTokenId, actor: fillActor});
 
-        (address nftHolder, address spender, uint256 tokenId) = SettlementRoles
-            .resolve(fill, order);
+        (address nftHolder, address spender, uint256 tokenId) = SettlementRoles.resolve(fill, order);
 
         assertEq(nftHolder, fillActor);
         assertEq(spender, orderActor);
@@ -113,20 +87,14 @@ contract SettlementRolesTest is OrderHelper {
             nonce: 0
         });
 
-        OrderModel.Fill memory fill = OrderModel.Fill({
-            tokenId: 1,
-            actor: fillActor
-        });
+        OrderModel.Fill memory fill = OrderModel.Fill({tokenId: 1, actor: fillActor});
 
         vm.expectRevert(SettlementRoles.InvalidOrderSide.selector);
         this._resolveExternal(fill, order);
     }
 
     // generates CALL opCode
-    function _resolveExternal(
-        OrderModel.Fill memory f,
-        OrderModel.Order memory o
-    ) external pure {
+    function _resolveExternal(OrderModel.Fill memory f, OrderModel.Order memory o) external pure {
         SettlementRoles.resolve(f, o);
     }
 }

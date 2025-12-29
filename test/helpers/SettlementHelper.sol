@@ -26,20 +26,15 @@ abstract contract SettlementHelper is Test {
 
     address private weth;
 
-    function _initSettlementHelper(
-        address _weth,
-        address _nftTransferOperator,
-        address _erc20AllowanceSpender
-    ) internal {
+    function _initSettlementHelper(address _weth, address _nftTransferOperator, address _erc20AllowanceSpender)
+        internal
+    {
         weth = _weth;
         nftTransferOperator = _nftTransferOperator;
         erc20AllowanceSpender = _erc20AllowanceSpender;
     }
 
-    function wethDealAndApproveSpenderAllowance(
-        address wethReceiver,
-        uint256 amount
-    ) internal {
+    function wethDealAndApproveSpenderAllowance(address wethReceiver, uint256 amount) internal {
         vm.deal(wethReceiver, amount);
 
         vm.startPrank(wethReceiver);
@@ -49,11 +44,7 @@ abstract contract SettlementHelper is Test {
         vm.stopPrank();
     }
 
-    function nftMintAndApproveTransferOperator(
-        address collection,
-        address nftReceiver,
-        uint256 tokenId
-    ) internal {
+    function nftMintAndApproveTransferOperator(address collection, address nftReceiver, uint256 tokenId) internal {
         // group setup actions under a single actor context
         vm.startPrank(nftReceiver);
 
@@ -63,16 +54,12 @@ abstract contract SettlementHelper is Test {
         vm.stopPrank();
     }
 
-    function legitimizeSettlement(
-        OrderModel.Fill memory f,
-        OrderModel.Order memory o
-    ) internal {
+    function legitimizeSettlement(OrderModel.Fill memory f, OrderModel.Order memory o) internal {
         address collection = o.collection;
         uint256 price = o.price;
         address currency = o.currency;
 
-        (address nftHolder, address spender, uint256 tokenId) = SettlementRoles
-            .resolve(f, o);
+        (address nftHolder, address spender, uint256 tokenId) = SettlementRoles.resolve(f, o);
 
         // future proofing in case future support for other currencies
         if (currency == weth) {
@@ -88,41 +75,25 @@ abstract contract SettlementHelper is Test {
 
     // === MAKE FILL ====
 
-    function makeFill(
-        address actor
-    ) internal pure returns (OrderModel.Fill memory fill) {
+    function makeFill(address actor) internal pure returns (OrderModel.Fill memory fill) {
         return OrderModel.Fill({actor: actor, tokenId: DEFAULT_TOKEN_ID});
     }
 
-    function makeFill(
-        address actor,
-        uint256 tokenId
-    ) internal pure returns (OrderModel.Fill memory fill) {
+    function makeFill(address actor, uint256 tokenId) internal pure returns (OrderModel.Fill memory fill) {
         return OrderModel.Fill({actor: actor, tokenId: tokenId});
     }
 
     // === PRIVATE FUNCTIONS ===
 
-    function _forceApproveAllowance(
-        address tokenContract,
-        address spender,
-        uint256 value
-    ) private {
+    function _forceApproveAllowance(address tokenContract, address spender, uint256 value) private {
         IERC20(tokenContract).forceApprove(spender, value);
     }
 
-    function _mintMockNft(
-        address collection,
-        address to,
-        uint256 tokenId
-    ) private {
+    function _mintMockNft(address collection, address to, uint256 tokenId) private {
         IMintable721(collection).mint(to, tokenId);
     }
 
-    function _approveNftTransferOperator(
-        address collection,
-        uint256 tokenId
-    ) private {
+    function _approveNftTransferOperator(address collection, uint256 tokenId) private {
         IERC721(collection).approve(nftTransferOperator, tokenId);
     }
 }

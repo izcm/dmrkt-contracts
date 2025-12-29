@@ -8,10 +8,7 @@ library SettlementRoles {
 
     error InvalidOrderSide();
 
-    function resolve(
-        OrderModel.Fill memory f,
-        OrderModel.Order memory o
-    )
+    function resolve(OrderModel.Fill memory f, OrderModel.Order memory o)
         internal
         pure
         returns (address nftHolder, address spender, uint256 tokenId)
@@ -28,11 +25,7 @@ library SettlementRoles {
             // if order is a collection bid:
             // true: any tokenId specified in `fill` will work as long as its the correct collection
             // false: the tokenId provided in fill is !IGNORED! order.tokenId
-            return (
-                f.actor,
-                o.actor,
-                o.isCollectionBid ? f.tokenId : o.tokenId
-            );
+            return (f.actor, o.actor, o.isCollectionBid ? f.tokenId : o.tokenId);
         }
 
         revert InvalidOrderSide();
