@@ -215,9 +215,6 @@ contract BuildHistory is
             seed
         );
 
-        // annoying stack too deep...
-        // (uint64 start, uint64 end) = _resolveDates(seed);
-
         order = OrderBuilder.build(
             side,
             isCollectionBid,
@@ -226,24 +223,26 @@ contract BuildHistory is
             currency,
             orderPrice(collection, tokenId, seed),
             actor,
-            0,
-            1,
+            _resolveStartDate(seed),
+            _resolveEndDate(seed),
             orderNonce(seed, orderIdx)
         );
     }
 
-    function _resolveDates(
-        uint256 seed
-    ) internal view returns (uint64 start, uint64 end) {
-        uint256 offset = (seed % epochSize) + MIN_OFFSET_DATES;
-        uint256 epochAnchor = block.timestamp + (epoch * epochSize);
+    function _resolveStartDate(uint256 seed) internal view returns (uint64) {
+        uint64 epochAnchor = _epochAnchor();
 
-        // casting to 'uint64' is safe because start is a date
-        // forge-lint: disable-next-line(unsafe-typecast)
-        start = uint64(epochAnchor - offset);
+        uint64 offset = _resolveTimeOffset(seed);
 
-        // forge-lint: disable-next-line(unsafe-typecast)
-        end = uint64(epochAnchor + offset);
+        return uint64(epochAnchor - offset);
+    }
+
+    function _resolveEndDate(uint256 seed) internal view returns (uint64) {
+        uint64 epochAnchor = _epochAnchor();
+
+        uint64 offset = _resolveTimeOffset(seed);
+
+        return uint64(epochAnchor + offset);
     }
 
     function _resolveActor(
@@ -280,5 +279,15 @@ contract BuildHistory is
 
             arr[j] = key;
         }
+    }
+
+    // === PRIVATE FUNCTIONS ===
+    function _resolveTimeOffset(uint256 seed) private view returns (uint64) {
+        // forge-lint: disable-next-line(unsafe-typecast)
+        return uint64((seed % epochSize) + MIN_OFFSET_DATES); // safe because date
+    }
+    function _epochAnchor() private view returns (uint64) {
+        // forge-lint: disable-next-line(unsafe-typecast)
+        return uint64(block.timestamp + (epoch * epochSize)); // safe because date
     }
 }
