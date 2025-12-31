@@ -140,6 +140,17 @@ weth-balance:
 		$(ADDR) \
 		--rpc-url $(RPC_URL) | cast from-wei
 
+token-owner:
+	@if [ -z "$(COL)" ] || [ -z "$(ID)" ]; then \
+		echo "❌ Missing COL or ADDR. Usage: make weth-balance COL=0xCollectionAddr ID=TokenId"; \
+		exit 1; \
+	fi
+	@cast call \
+		$(COL) \
+		"ownerOf(uint256)" \
+		$(ID) \
+		--rpc-url $(RPC_URL) 
+
 # ───────────────────────────────────────────────
 #   MISC
 # ───────────────────────────────────────────────

@@ -180,7 +180,7 @@ contract BuildHistory is
         for (uint256 i; i < selections.length; i++) {
             Selection memory sel = selections[i];
             for (uint256 j; j < sel.tokenIds.length; j++) {
-                uint256 tokenId = sel.tokenIds[j];
+                uint256 tokenId = !isCollectionBid ? sel.tokenIds[j] : 0;
 
                 address actor = _resolveActor(
                     side,

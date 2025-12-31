@@ -18,6 +18,7 @@ import {FillBid} from "dev/logic/FillBid.s.sol";
 
 // interfaces
 import {IERC20, SafeERC20} from "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
+import {IERC721} from "periphery/interfaces/DNFT.sol";
 import {ISettlementEngine} from "periphery/interfaces/ISettlementEngine.sol";
 
 // types
@@ -32,7 +33,7 @@ contract ExecuteHistory is OrdersJson, FillBid, BaseDevScript, DevConfig {
 
     function run() external {
         // read deployments.toml
-        address settlementContract = readSettlementContract();
+        address orderSettler = readSettlementContract();
 
         _loadParticipants();
 
@@ -51,32 +52,24 @@ contract ExecuteHistory is OrdersJson, FillBid, BaseDevScript, DevConfig {
 
             OrderModel.Fill memory fill = _produceFill(order);
 
-            // TODO: needs to check for tokenid changes and either:
-            // 1. try catch and ignore any invalid settles
-            // 2. validate before `settle`
+            if (!_isValidActors(fill, order)) {
+                break;
+            }
             vm.startBroadcast(pkOf(fill.actor));
-
-            _trySettle(fill, order, sig, settlementContract);
-
+            ISettlementEngine(orderSettler).settle(fill, order, sig);
             vm.stopBroadcast();
         }
     }
 
-    function _trySettle(
-        OrderModel.Fill memory fill,
-        OrderModel.Order memory order,
-        SigOps.Signature memory sig,
-        address sc
-    ) internal {
-        try ISettlementEngine(sc).settle(fill, order, sig) {
-            console.log("settle ok | tokenId:", order.tokenId);
-        } catch Error(string memory reason) {
-            // Error(string)
-            console.log("settle reverted (string):", reason);
-        } catch (bytes memory data) {
-            // custom errors
-            console.log("settle reverted (custom/low-level)");
-            console.logBytes(data);
+    function _isValidActors(
+        OrderModel.Fill memory f,
+        OrderModel.Order memory o
+    ) internal view returns (bool) {
+        if (o.isAsk()) {
+            // order is ask => order.actor must be tokenId owner
+            return IERC721(o.collection).ownerOf(o.tokenId) == o.actor;
+        } else {
+            return IERC721(o.collection).ownerOf(f.tokenId) == f.actor;
         }
     }
 
