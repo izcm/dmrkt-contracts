@@ -9,9 +9,10 @@ import {OrderModel} from "orderbook/libs/OrderModel.sol";
 // periphery libs
 import {MarketSim} from "periphery/MarketSim.sol";
 
+// interfaces
 import {DNFT} from "periphery/interfaces/DNFT.sol";
-import {ISettlementEngine} from "periphery/interfaces/ISettlementEngine.sol";
 
+// types
 import {Selection} from "dev/state/Types.sol";
 
 abstract contract OrderSampling is Script {
@@ -41,47 +42,32 @@ abstract contract OrderSampling is Script {
         }
     }
 
-    // TODO: this only works with `asks` since `owner` is always order.actor
-    function makeOrder(
-        OrderModel.Side side,
-        bool isCollectionBid,
-        address collection,
-        uint256 tokenId,
-        address currency,
-        address actor,
-        address settlementContract,
-        uint256 nonceIdx
-    ) internal view returns (OrderModel.Order memory order) {
-        uint256 seed = uint256(
-            orderSalt(side, isCollectionBid, collection, nonceIdx)
-        );
-
-        order = OrderModel.Order({
-            side: side,
-            isCollectionBid: isCollectionBid,
-            collection: collection,
-            tokenId: tokenId,
-            currency: currency,
-            price: MarketSim.priceOf(collection, tokenId, seed),
-            actor: actor,
-            start: uint64(block.timestamp), // todo: pass this
-            end: uint64(block.timestamp + 7 days), // todo: pass this
-            nonce: _nonce(seed, nonceIdx)
-        });
-    }
-
     function orderSalt(
         OrderModel.Side side,
         bool isCollectionBid,
         address collection,
-        uint256 saltSeed
+        uint256 mixIn
     ) internal pure returns (uint256) {
         return
             uint256(
-                keccak256(
-                    abi.encode(collection, side, isCollectionBid, saltSeed)
-                )
+                keccak256(abi.encode(collection, side, isCollectionBid, mixIn))
             );
+    }
+
+    function orderPrice(
+        address collection,
+        uint256 tokenId,
+        uint256 seed
+    ) internal pure returns (uint256) {
+        return MarketSim.priceOf(collection, tokenId, seed);
+    }
+
+    // eg. use orderSalt() to compute seed
+    function orderNonce(
+        uint256 seed,
+        uint256 mixIn
+    ) internal pure returns (uint256) {
+        return uint256(keccak256(abi.encode(seed, mixIn)));
     }
 
     function _hydrateAndSelectTokens(
@@ -89,22 +75,13 @@ abstract contract OrderSampling is Script {
         bool isCollectionBid,
         address collection,
         uint256 scanLimit,
-        uint256 seedSalt
+        uint256 mixIn
     ) internal pure returns (uint256[] memory) {
-        uint256 seed = orderSalt(side, isCollectionBid, collection, seedSalt);
+        uint256 seed = orderSalt(side, isCollectionBid, collection, mixIn);
         // Safe: uint8(seed) % 6 ∈ [0..5], +2 ⇒ [2..7]
         // forge-lint: disable-next-line(unsafe-typecast)
         uint8 density = (uint8(seed) % 6) + 2;
 
         return MarketSim.selectTokens(collection, scanLimit, density, seed);
-    }
-
-    // === PRIVATE FUNCTIONS ===
-
-    function _nonce(
-        uint256 seed,
-        uint256 attempt
-    ) private pure returns (uint256) {
-        return uint256(keccak256(abi.encode(seed, attempt)));
     }
 }

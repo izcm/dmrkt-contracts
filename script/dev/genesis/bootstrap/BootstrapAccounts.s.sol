@@ -21,7 +21,7 @@ contract BootstrapAccounts is BaseDevScript, DevConfig {
         address weth = readWeth();
 
         // read .env
-        uint256 funderPk = uint256(uint256(vm.envUint("PRIVATE_KEY")));
+        uint256 funderPk = uint256(vm.envUint("PRIVATE_KEY"));
 
         // --------------------------------
         // PHASE 1: FUND ETH

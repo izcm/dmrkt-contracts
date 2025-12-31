@@ -40,7 +40,11 @@ abstract contract OrdersJson is Script {
 
     function ordersJsonDir() internal view returns (string memory) {
         return
-            string.concat("./data/", vm.toString(block.chainid), "/orders-raw");
+            string.concat(
+                "./data/",
+                vm.toString(block.chainid),
+                "/orders-raw/"
+            );
     }
 
     function ordersToJson(

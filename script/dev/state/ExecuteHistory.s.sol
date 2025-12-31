@@ -31,20 +31,28 @@ contract ExecuteHistory is OrdersJson, FillBid, BaseDevScript, DevConfig {
     // ctx
     uint256 epoch;
 
-    function run() external {
-        // read deployments.toml
+    function run(uint256 _epoch) external {
+        // === LOAD CONFIG & SETUP ===
+
         address orderSettler = readSettlementContract();
 
         _loadParticipants();
 
-        // read signed orders from .json
+        // === PARSE JSON ORDERS ===
+
         SignedOrder[] memory signed = ordersFromJson(
-            string.concat(ordersJsonDir(), ".4.json")
+            string.concat(
+                ordersJsonDir(),
+                string.concat(vm.toString(_epoch), ".json")
+            )
         );
 
         uint256 count = signed.length;
 
-        OrderModel.Fill[] memory fills = new OrderModel.Fill[](count);
+        // === MATCH FILL AND EXECUTE ===
+
+        uint256 txCount;
+        uint256 invalidCount;
 
         for (uint256 i; i < count; i++) {
             OrderModel.Order memory order = signed[i].order;
@@ -53,12 +61,22 @@ contract ExecuteHistory is OrdersJson, FillBid, BaseDevScript, DevConfig {
             OrderModel.Fill memory fill = _produceFill(order);
 
             if (!_isValidActors(fill, order)) {
-                break;
+                invalidCount++;
+                continue;
             }
+
             vm.startBroadcast(pkOf(fill.actor));
             ISettlementEngine(orderSettler).settle(fill, order, sig);
             vm.stopBroadcast();
+
+            txCount++;
         }
+
+        console.log("Completed with %s transactions!", txCount);
+
+        logSeparator();
+
+        console.log("%s invalid settlements.", invalidCount);
     }
 
     function _isValidActors(
@@ -66,10 +84,16 @@ contract ExecuteHistory is OrdersJson, FillBid, BaseDevScript, DevConfig {
         OrderModel.Order memory o
     ) internal view returns (bool) {
         if (o.isAsk()) {
-            // order is ask => order.actor must be tokenId owner
+            // order is ask => order.actor must be o.tokenId owner
             return IERC721(o.collection).ownerOf(o.tokenId) == o.actor;
         } else {
-            return IERC721(o.collection).ownerOf(f.tokenId) == f.actor;
+            if (o.isCollectionBid) {
+                // order is collection bid => fill.actor must be owner of fill.tokenId
+                return IERC721(o.collection).ownerOf(o.tokenId) == f.actor;
+            } else {
+                // order is regular bid => fill.actor must be owner of order.tokenId
+                return IERC721(o.collection).ownerOf(f.tokenId) == f.actor;
+            }
         }
     }
 

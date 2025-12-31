@@ -5,6 +5,9 @@ pragma solidity ^0.8.30;
 import {OrderModel} from "orderbook/libs/OrderModel.sol";
 import {SignatureOps as SigOps} from "orderbook/libs/SignatureOps.sol";
 
+// periphery libraries
+import {OrderBuilder} from "periphery/builders/OrderBuilder.sol";
+
 // scripts
 import {BaseDevScript} from "dev/BaseDevScript.s.sol";
 import {DevConfig} from "dev/DevConfig.s.sol";
@@ -30,12 +33,15 @@ contract BuildHistory is
     BaseDevScript,
     DevConfig
 {
+    uint256 constant MIN_OFFSET_DATES = 2;
+
     // ctx
     uint256 private epoch;
+    uint256 private epochSize;
 
     // === ENTRYPOINTS ===
 
-    function runWeek(uint256 _epoch) external {
+    function run(uint256 _epoch, uint256 _epochSize) external {
         // === LOAD CONFIG & SETUP ===
 
         address settlementContract = readSettlementContract();
@@ -47,6 +53,7 @@ contract BuildHistory is
         _loadParticipants();
 
         epoch = _epoch;
+        epochSize = _epochSize;
 
         logSection("BUILD ORDERS");
         console.log("Epoch: %s", epoch);
@@ -57,11 +64,7 @@ contract BuildHistory is
 
         // === BUILD ORDERS ===
 
-        OrderModel.Order[] memory orders = _buildOrders(
-            settlementContract,
-            weth,
-            collections
-        );
+        OrderModel.Order[] memory orders = _buildOrders(weth, collections);
 
         // === SIGN ORDERS ===
 
@@ -88,7 +91,8 @@ contract BuildHistory is
         console.log("Sorting by nonce completed");
 
         // === EXPORT AS JSON ===
-        ordersToJson(signed, _jsonFilePath());
+        string memory fileName = string.concat(vm.toString(epoch), ".json");
+        ordersToJson(signed, string.concat(ordersJsonDir(), fileName));
 
         logSeparator();
         console.log(
@@ -100,7 +104,6 @@ contract BuildHistory is
     }
 
     function _buildOrders(
-        address settlementContract,
         address weth,
         address[] memory collections
     ) internal view returns (OrderModel.Order[] memory orders) {
@@ -143,8 +146,7 @@ contract BuildHistory is
             OrderModel.Side.Ask,
             false,
             selectionAsks,
-            weth,
-            settlementContract
+            weth
         );
 
         idx = _appendOrders(
@@ -153,8 +155,7 @@ contract BuildHistory is
             OrderModel.Side.Bid,
             false,
             selectionBids,
-            weth,
-            settlementContract
+            weth
         );
 
         _appendOrders(
@@ -163,8 +164,7 @@ contract BuildHistory is
             OrderModel.Side.Bid,
             true,
             selectionCbs,
-            weth,
-            settlementContract
+            weth
         );
     }
 
@@ -174,44 +174,85 @@ contract BuildHistory is
         OrderModel.Side side,
         bool isCollectionBid,
         Selection[] memory selections,
-        address weth,
-        address settlementContract
+        address currency
     ) internal view returns (uint256) {
         for (uint256 i; i < selections.length; i++) {
             Selection memory sel = selections[i];
             for (uint256 j; j < sel.tokenIds.length; j++) {
+                uint256 orderIdx = i + j;
+
+                address collection = sel.collection;
                 uint256 tokenId = !isCollectionBid ? sel.tokenIds[j] : 0;
 
-                address actor = _resolveActor(
+                orders[idx++] = _buildOrder(
                     side,
                     isCollectionBid,
-                    sel.collection,
-                    tokenId
-                );
-
-                orders[idx++] = makeOrder(
-                    side,
-                    isCollectionBid,
-                    sel.collection,
+                    collection,
                     tokenId,
-                    weth,
-                    actor,
-                    settlementContract,
-                    j + i
+                    currency,
+                    orderIdx
                 );
             }
         }
         return idx;
     }
 
+    function _buildOrder(
+        OrderModel.Side side,
+        bool isCollectionBid,
+        address collection,
+        uint256 tokenId,
+        address currency,
+        uint256 orderIdx
+    ) internal view returns (OrderModel.Order memory order) {
+        uint256 seed = orderSalt(side, isCollectionBid, collection, orderIdx);
+
+        address actor = _resolveActor(
+            side,
+            isCollectionBid,
+            collection,
+            tokenId,
+            seed
+        );
+
+        // annoying stack too deep...
+        // (uint64 start, uint64 end) = _resolveDates(seed);
+
+        order = OrderBuilder.build(
+            side,
+            isCollectionBid,
+            collection,
+            tokenId,
+            currency,
+            orderPrice(collection, tokenId, seed),
+            actor,
+            0,
+            1,
+            orderNonce(seed, orderIdx)
+        );
+    }
+
+    function _resolveDates(
+        uint256 seed
+    ) internal view returns (uint64 start, uint64 end) {
+        uint256 offset = (seed % epochSize) + MIN_OFFSET_DATES;
+        uint256 epochAnchor = block.timestamp + (epoch * epochSize);
+
+        // casting to 'uint64' is safe because start is a date
+        // forge-lint: disable-next-line(unsafe-typecast)
+        start = uint64(epochAnchor - offset);
+
+        // forge-lint: disable-next-line(unsafe-typecast)
+        end = uint64(epochAnchor + offset);
+    }
+
     function _resolveActor(
         OrderModel.Side side,
         bool isCollectionBid,
         address collection,
-        uint256 tokenId
+        uint256 tokenId,
+        uint256 seed
     ) internal view returns (address) {
-        uint256 seed = orderSalt(side, isCollectionBid, collection, epoch);
-
         if (isCollectionBid) {
             address[] memory ps = participants();
             return ps[seed % ps.length];
@@ -239,18 +280,5 @@ contract BuildHistory is
 
             arr[j] = key;
         }
-    }
-
-    // === PRIVATE ===
-
-    function _jsonFilePath() private view returns (string memory) {
-        return
-            string.concat(
-                "./data/",
-                vm.toString(block.chainid),
-                "/orders-raw.",
-                vm.toString(epoch),
-                ".json"
-            );
     }
 }
