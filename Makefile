@@ -105,10 +105,15 @@ dev-approve:
 #   DEV — STATE / SCENARIOS
 # ───────────────────────────────────────────────
 
-dev-history:
-	@echo "📊 Settling historical orders..."
-	forge script $(DEV_STATE)/SettleHistory.s.sol \
+dev-build-history:
+	@echo "📊 Building historical orders..."
+	forge script $(DEV_STATE)/BuildHistory.s.sol \
 		--sig "runWeek(uint256)" 4 \
+		$(FORGE_COMMON_FLAGS)
+
+dev-execute-history:
+	@echo "📊 Executing historical orders..."
+	forge script $(DEV_STATE)/ExecuteHistory.s.sol \
 		$(FORGE_COMMON_FLAGS)
 
 # ───────────────────────────────────────────────

@@ -3,18 +3,22 @@ pragma solidity ^0.8.30;
 
 // core libraries
 import {OrderModel} from "orderbook/libs/OrderModel.sol";
+import {SignatureOps as SigOps} from "orderbook/libs/SignatureOps.sol";
 
 // scripts
 import {BaseDevScript} from "dev/BaseDevScript.s.sol";
 import {DevConfig} from "dev/DevConfig.s.sol";
 
-import {OrderIO} from "dev/logic/OrderIO.s.sol";
+import {OrdersJson} from "dev/logic/OrdersJson.s.sol";
 import {FillBid} from "dev/logic/FillBid.s.sol";
 
 // interfaces
 import {IERC20, SafeERC20} from "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
 
-contract ExecuteHistory is OrderIO, FillBid, BaseDevScript, DevConfig {
+// types
+import {SignedOrder} from "dev/state/Types.sol";
+
+contract ExecuteHistory is OrdersJson, FillBid, BaseDevScript, DevConfig {
     using SafeERC20 for IERC20;
     using OrderModel for OrderModel.Order;
 
@@ -23,6 +27,11 @@ contract ExecuteHistory is OrderIO, FillBid, BaseDevScript, DevConfig {
 
     function run() external {
         _loadParticipants();
+
+        // read signed orders from .json
+        SignedOrder[] memory signed = ordersFromJson(
+            string.concat(ordersJsonDir(), ".4.json")
+        );
     }
 
     function _produceFills(
@@ -79,16 +88,5 @@ contract ExecuteHistory is OrderIO, FillBid, BaseDevScript, DevConfig {
 
     function _jumpToNow() internal {
         vm.warp(readNowTs());
-    }
-
-    // === PRIVATE ===
-
-    function _jsonFilePath() private view returns (string memory) {
-        return
-            string.concat(
-                "./data/",
-                vm.toString(block.chainid),
-                "/orders-raw.json"
-            );
     }
 }

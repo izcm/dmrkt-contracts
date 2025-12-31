@@ -9,9 +9,6 @@ import {OrderModel} from "orderbook/libs/OrderModel.sol";
 // periphery libs
 import {MarketSim} from "periphery/MarketSim.sol";
 
-// interfaces
-import {IERC721} from "@openzeppelin/interfaces/IERC721.sol";
-
 import {DNFT} from "periphery/interfaces/DNFT.sol";
 import {ISettlementEngine} from "periphery/interfaces/ISettlementEngine.sol";
 
@@ -51,19 +48,18 @@ abstract contract OrderSampling is Script {
         address collection,
         uint256 tokenId,
         address currency,
+        address actor,
         address settlementContract
     ) internal view returns (OrderModel.Order memory order) {
-        address owner = IERC721(collection).ownerOf(tokenId);
-
         uint256 nonceIdx = 0;
 
         uint256 seed = uint256(
-            orderSalt(collection, side, isCollectionBid, nonceIdx)
+            orderSalt(side, isCollectionBid, collection, nonceIdx)
         );
 
         while (
             ISettlementEngine(settlementContract).isUserOrderNonceInvalid(
-                owner,
+                actor,
                 _nonce(seed, nonceIdx)
             )
         ) {
@@ -77,17 +73,17 @@ abstract contract OrderSampling is Script {
             tokenId: tokenId,
             currency: currency,
             price: MarketSim.priceOf(collection, tokenId, seed),
-            actor: owner,
-            start: uint64(block.timestamp),
-            end: uint64(block.timestamp + 7 days),
+            actor: actor,
+            start: uint64(block.timestamp), // todo: pass this
+            end: uint64(block.timestamp + 7 days), // todo: pass this
             nonce: _nonce(seed, nonceIdx)
         });
     }
 
     function orderSalt(
-        address collection,
         OrderModel.Side side,
         bool isCollectionBid,
+        address collection,
         uint256 saltSeed
     ) internal pure returns (uint256) {
         return
@@ -105,7 +101,7 @@ abstract contract OrderSampling is Script {
         uint256 scanLimit,
         uint256 seedSalt
     ) internal pure returns (uint256[] memory) {
-        uint256 seed = orderSalt(collection, side, isCollectionBid, seedSalt);
+        uint256 seed = orderSalt(side, isCollectionBid, collection, seedSalt);
         // Safe: uint8(seed) % 6 ∈ [0..5], +2 ⇒ [2..7]
         // forge-lint: disable-next-line(unsafe-typecast)
         uint8 density = (uint8(seed) % 6) + 2;

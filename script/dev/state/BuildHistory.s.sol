@@ -10,7 +10,7 @@ import {BaseDevScript} from "dev/BaseDevScript.s.sol";
 import {DevConfig} from "dev/DevConfig.s.sol";
 
 import {OrderSampling} from "dev/logic/OrderSampling.s.sol";
-import {OrderIO} from "dev/logic/OrderIO.s.sol";
+import {OrdersJson} from "dev/logic/OrdersJson.s.sol";
 import {SettlementSigner} from "dev/logic/SettlementSigner.s.sol";
 
 // types
@@ -18,15 +18,15 @@ import {SignedOrder, Selection} from "dev/state/Types.sol";
 
 // interfaces
 import {ISettlementEngine} from "periphery/interfaces/ISettlementEngine.sol";
-import {DNFT} from "periphery/interfaces/DNFT.sol";
+import {IERC721} from "periphery/interfaces/DNFT.sol";
 
 // logging
 import {console} from "forge-std/console.sol";
 
 contract BuildHistory is
     OrderSampling,
-    OrderIO,
     SettlementSigner,
+    OrdersJson,
     BaseDevScript,
     DevConfig
 {
@@ -76,7 +76,7 @@ contract BuildHistory is
                 pkOf(orders[i].actor)
             );
 
-            signed[i] = SignedOrder(orders[i], sig);
+            signed[i] = SignedOrder({order: orders[i], sig: sig});
         }
 
         console.log("Orders signed: %s", signed.length);
@@ -88,7 +88,7 @@ contract BuildHistory is
         console.log("Sorting by nonce completed");
 
         // === EXPORT AS JSON ===
-        persistSignedOrders(signed, _jsonFilePath());
+        ordersToJson(signed, _jsonFilePath());
 
         logSeparator();
         console.log(
@@ -180,17 +180,47 @@ contract BuildHistory is
         for (uint256 i; i < selections.length; i++) {
             Selection memory sel = selections[i];
             for (uint256 j; j < sel.tokenIds.length; j++) {
+                uint256 tokenId = sel.tokenIds[j];
+
+                address actor = _resolveActor(
+                    side,
+                    isCollectionBid,
+                    sel.collection,
+                    tokenId
+                );
+
                 orders[idx++] = makeOrder(
                     side,
                     isCollectionBid,
                     sel.collection,
-                    sel.tokenIds[j],
+                    tokenId,
                     weth,
+                    actor,
                     settlementContract
                 );
             }
         }
         return idx;
+    }
+
+    function _resolveActor(
+        OrderModel.Side side,
+        bool isCollectionBid,
+        address collection,
+        uint256 tokenId
+    ) internal view returns (address) {
+        uint256 seed = orderSalt(side, isCollectionBid, collection, epoch);
+
+        if (isCollectionBid) {
+            address[] memory ps = participants();
+            return ps[seed % ps.length];
+        } else {
+            address nftHolder = IERC721(collection).ownerOf(tokenId);
+            return
+                side == OrderModel.Side.Ask
+                    ? nftHolder
+                    : otherParticipant(nftHolder, seed);
+        }
     }
 
     function _sortByNonce(SignedOrder[] memory arr) internal pure {
