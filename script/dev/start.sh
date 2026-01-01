@@ -1,7 +1,6 @@
 #!/bin/bash
 
-ENV_FILE="../../.env"
-source $ENV_FILE
+source .env
 
 # Kill previous anvil if running
 pkill anvil 2>/dev/null
@@ -10,9 +9,9 @@ pkill anvil 2>/dev/null
 # + write the blocknumber timestamp to .env or deployments.toml
 
 # use hardcoced value temporarily:
-TARGET_BLOCK= # 0x15f9000
-#HISTORY_START_TS=<derived once>
-#NOW_TS=$(date +%s)
+# TARGET_BLOCK=0x15f9000
+# HISTORY_START_TS=<derived once>
+# NOW_TS=$(date +%s)
 
 # Start a fresh fork
 # https://getfoundry.sh/anvil/reference/anvil/

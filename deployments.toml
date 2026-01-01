@@ -1,5 +1,5 @@
 [1337]
-endpoint_url = "${ANVIL_RPC_URL}"
+endpoint_url = "http://localhost:8545"
 
 [1337.address]
 funder = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"

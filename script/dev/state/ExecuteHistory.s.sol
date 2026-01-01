@@ -15,23 +15,30 @@ import {DevConfig} from "dev/DevConfig.s.sol";
 // scripts order logic
 import {OrdersJson} from "dev/logic/OrdersJson.s.sol";
 import {FillBid} from "dev/logic/FillBid.s.sol";
+import {SettlementValidation} from "dev/logic/SettlementValidation.s.sol";
 
 // interfaces
 import {IERC20, SafeERC20} from "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
-import {IERC721} from "periphery/interfaces/DNFT.sol";
 import {ISettlementEngine} from "periphery/interfaces/ISettlementEngine.sol";
 
 // types
 import {SignedOrder} from "dev/state/Types.sol";
 
-contract ExecuteHistory is OrdersJson, FillBid, BaseDevScript, DevConfig {
+contract ExecuteHistory is
+    OrdersJson,
+    FillBid,
+    SettlementValidation,
+    BaseDevScript,
+    DevConfig
+{
     using SafeERC20 for IERC20;
     using OrderModel for OrderModel.Order;
 
-    // ctx
-    uint256 epoch;
+    function run(uint256 _epoch, uint256 _epochSize) external {
+        // === TIME WARP ===
 
-    function run(uint256 _epoch) external {
+        _jumpToEpoch(_epoch, _epochSize);
+
         // === LOAD CONFIG & SETUP ===
 
         address orderSettler = readSettlementContract();
@@ -51,8 +58,11 @@ contract ExecuteHistory is OrdersJson, FillBid, BaseDevScript, DevConfig {
 
         // === MATCH FILL AND EXECUTE ===
 
-        uint256 txCount;
-        uint256 invalidCount;
+        uint256 executedCount;
+
+        uint256 invalidTimestamps;
+        uint256 invalidOwnership;
+        uint256 invalidNonce;
 
         for (uint256 i; i < count; i++) {
             OrderModel.Order memory order = signed[i].order;
@@ -60,8 +70,21 @@ contract ExecuteHistory is OrdersJson, FillBid, BaseDevScript, DevConfig {
 
             OrderModel.Fill memory fill = _produceFill(order);
 
-            if (!_isValidActors(fill, order)) {
-                invalidCount++;
+            if (!validTimestamps(order)) {
+                invalidTimestamps++;
+                continue;
+            }
+
+            if (!validNftOwnership(fill, order)) {
+                invalidOwnership++;
+                continue;
+            }
+
+            bool isInvalidNonce = ISettlementEngine(orderSettler)
+                .isUserOrderNonceInvalid(order.actor, order.nonce);
+
+            if (isInvalidNonce) {
+                invalidNonce++;
                 continue;
             }
 
@@ -69,32 +92,25 @@ contract ExecuteHistory is OrdersJson, FillBid, BaseDevScript, DevConfig {
             ISettlementEngine(orderSettler).settle(fill, order, sig);
             vm.stopBroadcast();
 
-            txCount++;
+            executedCount++;
         }
 
-        console.log("Completed with %s transactions!", txCount);
+        console.log("=== EXECUTION SUMMARY ===");
+        console.log("Total Orders: %s", count);
+        console.log("Executed: %s", executedCount);
+        console.log("Invalid Timestamps: %s", invalidTimestamps);
+        console.log("Invalid Ownership: %s", invalidOwnership);
+        console.log("Invalid Nonce: %s", invalidNonce);
+        console.log("Total Skipped: %s", count - executedCount);
 
         logSeparator();
-
-        console.log("%s invalid settlements.", invalidCount);
     }
 
-    function _isValidActors(
+    function _isValidSettlement(
         OrderModel.Fill memory f,
         OrderModel.Order memory o
     ) internal view returns (bool) {
-        if (o.isAsk()) {
-            // order is ask => order.actor must be o.tokenId owner
-            return IERC721(o.collection).ownerOf(o.tokenId) == o.actor;
-        } else {
-            if (o.isCollectionBid) {
-                // order is collection bid => fill.actor must be owner of fill.tokenId
-                return IERC721(o.collection).ownerOf(o.tokenId) == f.actor;
-            } else {
-                // order is regular bid => fill.actor must be owner of order.tokenId
-                return IERC721(o.collection).ownerOf(f.tokenId) == f.actor;
-            }
-        }
+        return (validTimestamps(o) && validNftOwnership(f, o));
     }
 
     function _produceFill(
@@ -122,12 +138,12 @@ contract ExecuteHistory is OrdersJson, FillBid, BaseDevScript, DevConfig {
 
     // === TIME HELPERS ===
 
-    function _jumpToWeek() internal {
+    function _jumpToEpoch(uint256 epoch, uint256 eSize) private {
         uint256 startTs = readStartTs();
-        vm.warp(startTs + (epoch * 7 days));
+        vm.warp(startTs + (epoch * eSize));
     }
 
-    function _jumpToNow() internal {
+    function _jumpToNow() private {
         vm.warp(readNowTs());
     }
 }

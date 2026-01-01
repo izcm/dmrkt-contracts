@@ -33,8 +33,6 @@ contract BuildHistory is
     BaseDevScript,
     DevConfig
 {
-    uint256 constant MIN_OFFSET_DATES = 2;
-
     // ctx
     uint256 private epoch;
     uint256 private epochSize;
@@ -205,7 +203,12 @@ contract BuildHistory is
         address currency,
         uint256 orderIdx
     ) internal view returns (OrderModel.Order memory order) {
-        uint256 seed = orderSalt(side, isCollectionBid, collection, orderIdx);
+        uint256 seed = orderSalt(
+            side,
+            isCollectionBid,
+            collection,
+            (epoch + orderIdx)
+        );
 
         address actor = _resolveActor(
             side,
@@ -277,7 +280,7 @@ contract BuildHistory is
 
     function _resolveTimeOffset(uint256 seed) private view returns (uint64) {
         // forge-lint: disable-next-line(unsafe-typecast)
-        return uint64((seed % epochSize) + MIN_OFFSET_DATES); // safe because date
+        return uint64((seed % epochSize) + epochSize); // safe because date
     }
     function _epochAnchor() private view returns (uint64) {
         // forge-lint: disable-next-line(unsafe-typecast)

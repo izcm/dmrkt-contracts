@@ -78,9 +78,9 @@ abstract contract OrderSampling is Script {
         uint256 mixIn
     ) internal pure returns (uint256[] memory) {
         uint256 seed = orderSalt(side, isCollectionBid, collection, mixIn);
-        // Safe: uint8(seed) % 6 ∈ [0..5], +2 ⇒ [2..7]
+        // Safe: uint8(seed) % 10 ∈ [0..5], +5 ⇒ [5..10]
         // forge-lint: disable-next-line(unsafe-typecast)
-        uint8 density = (uint8(seed) % 6) + 2;
+        uint8 density = (uint8(seed) % 6) + 5;
 
         return MarketSim.selectTokens(collection, scanLimit, density, seed);
     }

@@ -8,6 +8,8 @@ include .env
 #   ROOTS
 # ───────────────────────────────────────────────
 
+export ENV_ROOT := $(PWD)
+
 SCRIPT_ROOT := script
 DEV_ROOT    := $(SCRIPT_ROOT)/dev
 
@@ -16,13 +18,13 @@ DEV_BASE        := $(DEV_ROOT)
 DEV_SETUP       := $(DEV_ROOT)/genesis
 DEV_BOOTSTRAP   := $(DEV_SETUP)/bootstrap
 DEV_LOGIC       := $(DEV_ROOT)/logic
-DEV_STATE       := $(DEV_ROOT)/state
+
+export DEV_STATE       := $(DEV_ROOT)/state
 
 # entrypoints
 DEPLOY_ORDER_ENGINE := $(SCRIPT_ROOT)/DeployOrderEngine.s.sol
 
 # chain
-RPC_URL := $(ANVIL_RPC_URL)
 WETH    := 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2
 
 # ───────────────────────────────────────────────
@@ -75,7 +77,7 @@ pipeline-state: dev-open dev-history
 
 dev-fork:
 	@echo "🧬 Starting anvil fork..."
-	@cd $(DEV_ROOT) && bash start.sh
+	@./$(DEV_ROOT)/start.sh
 
 # ───────────────────────────────────────────────
 #   DEV — SETUP / GENESIS
@@ -105,11 +107,9 @@ dev-approve:
 #   DEV — STATE / SCENARIOS
 # ───────────────────────────────────────────────
 
-dev-build-history:
+dev-history: 
 	@echo "📊 Building historical orders..."
-	forge script $(DEV_STATE)/BuildHistory.s.sol \
-		--sig "runWeek(uint256)" 4 \
-		$(FORGE_COMMON_FLAGS)
+	@./$(DEV_STATE)/start-history.sh 0 4 604800
 
 dev-execute-history:
 	@echo "📊 Executing historical orders..."
