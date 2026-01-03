@@ -1,7 +1,5 @@
 #!/bin/bash
 
-source .env
-
 # Kill previous anvil if running
 pkill anvil 2>/dev/null
 

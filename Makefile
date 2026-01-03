@@ -3,12 +3,11 @@
 # ───────────────────────────────────────────────
 
 include .env
+export 
 
 # ───────────────────────────────────────────────
 #   ROOTS
 # ───────────────────────────────────────────────
-
-export ENV_ROOT := $(PWD)
 
 SCRIPT_ROOT := script
 DEV_ROOT    := $(SCRIPT_ROOT)/dev
@@ -26,6 +25,9 @@ DEPLOY_ORDER_ENGINE := $(SCRIPT_ROOT)/DeployOrderEngine.s.sol
 
 # chain
 WETH    := 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2
+
+# args
+DAYS_AGO=28 # find eth blocknumber this number of days ago => spin up dev fork at that block
 
 # ───────────────────────────────────────────────
 #   LOGGING / VERBOSITY
@@ -78,6 +80,10 @@ pipeline-state: dev-open dev-history
 dev-fork:
 	@echo "🧬 Starting anvil fork..."
 	@./$(DEV_ROOT)/start.sh
+
+fork-prepare: 
+	@echo "🔢 Finding block number X days ago..."
+	@node ./$(DEV_ROOT)/find-block.js $(DAYS_AGO)
 
 # ───────────────────────────────────────────────
 #   DEV — SETUP / GENESIS
