@@ -24,6 +24,7 @@ import {ISettlementEngine} from "periphery/interfaces/ISettlementEngine.sol";
 // types
 import {SignedOrder} from "dev/state/Types.sol";
 
+// TODO: have a seperate bash script that sets nowts() after all scripts finish
 contract ExecuteHistory is
     OrdersJson,
     FillBid,
@@ -139,7 +140,7 @@ contract ExecuteHistory is
         vm.warp(startTs + (epoch * eSize));
     }
 
-    function _jumpToNow() private {
-        vm.warp(readNowTs());
+    function _jumpToEnd() private {
+        vm.warp(readEndTs());
     }
 }

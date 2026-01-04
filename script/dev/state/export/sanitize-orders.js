@@ -1,6 +1,5 @@
 import fs from "node:fs/promises";
 
-// const basePath = "../../../data/1337";
 const basePath = "./data/1337";
 
 const inFile = `${basePath}/orders-raw.json`;
@@ -25,4 +24,6 @@ const cleaned = {
 
 await fs.writeFile(outFile, JSON.stringify(cleaned));
 
+console.log("\n" + "=".repeat(60));
 console.log(`Orders sanitized ✔`);
+console.log("\n" + "=".repeat(60));

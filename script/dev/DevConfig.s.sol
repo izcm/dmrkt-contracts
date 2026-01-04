@@ -50,8 +50,8 @@ contract DevConfig is Config {
         return config.get("history_start_ts").toUint256();
     }
 
-    function readNowTs() internal view returns (uint256) {
-        return config.get("now_ts").toUint256();
+    function readEndTs() internal view returns (uint256) {
+        return config.get("history_end_ts").toUint256();
     }
 
     function readCollections() internal view returns (address[] memory) {

@@ -11,5 +11,5 @@ nft_c_1 = "0xaa38b98b510781C6c726317FEb12610BEe90aE20"
 [1337.uint]
 nft_c_count = 2
 final_week_Idx = 4
-history_start_ts = 1761257000
-now_ts = 1766342000
+history_start_ts = 1765070699
+history_end_ts = 1767489904

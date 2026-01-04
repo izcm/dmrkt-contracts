@@ -77,13 +77,13 @@ pipeline-state: dev-open dev-history
 #   DEV — ENVIRONMENT BOOT
 # ───────────────────────────────────────────────
 
-dev-fork:
+dev-fork:dev-prepare
 	@echo "🧬 Starting anvil fork..."
 	@./$(DEV_ROOT)/start.sh
 
-fork-prepare: 
-	@echo "🔢 Finding block number X days ago..."
-	@node ./$(DEV_ROOT)/find-block.js $(DAYS_AGO)
+dev-prepare: 
+	@echo "🔢 Finding block number and timestamps..."
+	@node ./$(DEV_ROOT)/prepare-fork.js $(DAYS_AGO)
 
 # ───────────────────────────────────────────────
 #   DEV — SETUP / GENESIS

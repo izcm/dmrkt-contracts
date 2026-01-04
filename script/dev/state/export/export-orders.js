@@ -26,4 +26,6 @@ orders.map(async (order) => {
   }
 });
 
+console.log("\n" + "=".repeat(60));
 console.log("Orders exported ✔");
+console.log("\n" + "=".repeat(60));
