@@ -10,6 +10,8 @@ import {DNFT} from "periphery/interfaces/DNFT.sol";
 
 contract BootstrapNFTs is BaseDevScript, DevConfig {
     function run() external {
+        logBlockTimestamp();
+
         // --------------------------------
         // PHASE 0: LOAD CONFIG
         // --------------------------------

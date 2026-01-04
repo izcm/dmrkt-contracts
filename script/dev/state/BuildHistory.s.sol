@@ -46,6 +46,7 @@ contract BuildHistory is
 
     function run(uint256 _epoch, uint256 _epochSize) external {
         // === LOAD CONFIG & SETUP ===
+
         address settlementContract = readSettlementContract();
         address weth = readWeth();
 

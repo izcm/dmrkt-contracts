@@ -24,7 +24,15 @@ do
 
     sleep $SLEEP_SECONDS
     
-    echo "🎬 Execute history for epoch $EPOCH"
+    # defaults to localhost:8545
+    cast block latest > output.txt
+
+    cast rpc evm_increaseTime $EPOCH_SIZE
+    cast rpc evm_mine
+
+    cast block latest >> output.txt
+
+    echo "🎬 Execute history for epoch $epoch"
 
     #./$DEV_STATE/execute-epoch.sh $epoch $EPOCH_SIZE
     forge script $DEV_STATE/ExecuteHistory.s.sol \

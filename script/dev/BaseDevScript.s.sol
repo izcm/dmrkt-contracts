@@ -127,4 +127,8 @@ abstract contract BaseDevScript is Script {
             to
         );
     }
+
+    function logBlockTimestamp() internal view {
+        console.log("TIMESTAMP | unix: %s", vm.getBlockTimestamp());
+    }
 }

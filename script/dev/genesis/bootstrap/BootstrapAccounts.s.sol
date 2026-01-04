@@ -12,6 +12,8 @@ import {IWETH} from "periphery/interfaces/IWETH.sol";
 
 contract BootstrapAccounts is BaseDevScript, DevConfig {
     function run() external {
+        logBlockTimestamp();
+
         // --------------------------------
         // PHASE 0: LOAD CONFIG
         // --------------------------------

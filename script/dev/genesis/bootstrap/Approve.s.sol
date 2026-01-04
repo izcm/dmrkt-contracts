@@ -13,6 +13,8 @@ import {IERC20} from "@openzeppelin/interfaces/IERC20.sol";
 
 contract Approve is BaseDevScript, DevConfig {
     function run() external {
+        logBlockTimestamp();
+
         // --------------------------------
         // PHASE 0: LOAD CONFIG
         // --------------------------------

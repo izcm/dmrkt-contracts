@@ -36,20 +36,22 @@ contract ExecuteHistory is
     using OrderModel for OrderModel.Order;
 
     function run(uint256 _epoch, uint256 _epochSize) external {
+        logBlockTimestamp();
+
         // === TIME WARP ===
 
         _jumpToEpoch(_epoch, _epochSize);
-
-        logSection("EXECUTING ORDERS");
-        console.log("Block timestamp: %s", block.timestamp);
-        console.log("Epoch: %s", _epoch);
-        logSeparator();
 
         // === LOAD CONFIG & SETUP ===
 
         address orderSettler = readSettlementContract();
 
         _loadParticipants();
+
+        logSection("EXECUTING ORDERS");
+        console.log("Block timestamp: %s", block.timestamp);
+        console.log("Epoch: %s", _epoch);
+        logSeparator();
 
         // === PARSE JSON ORDERS ===
 
@@ -68,6 +70,10 @@ contract ExecuteHistory is
         for (uint256 i; i < count; i++) {
             OrderModel.Order memory order = signed[i].order;
             SigOps.Signature memory sig = signed[i].sig;
+
+            console.log("Order %s | nonce: %s", i, order.nonce);
+            console.log("  actor: %s", order.actor);
+            console.log("  START: %s | END: %s", order.start, order.end);
 
             OrderModel.Fill memory fill = _produceFill(order);
 
