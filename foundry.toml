@@ -21,6 +21,6 @@ fs_permissions = [
 fork = "http://localhost:8545"
 
 [lint]
-exclude_lints = ["unaliased-plain-import", "mixed-case-function", "asm-keccak256"]
+exclude_lints = ["unaliased-plain-import", "mixed-case-function", "asm-keccak256", "unsafe-cheatcode"]
 
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options

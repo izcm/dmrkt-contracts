@@ -10,6 +10,7 @@ import {DNFT} from "periphery/interfaces/DNFT.sol";
 abstract contract FillBid {
     function fillBid(
         OrderModel.Order memory bid
+        // uint256[] memory excludedCb
     ) internal view returns (OrderModel.Fill memory) {
         if (bid.isCollectionBid) {
             return _fillCollectionBid(bid.collection, bid.actor, bid.nonce);

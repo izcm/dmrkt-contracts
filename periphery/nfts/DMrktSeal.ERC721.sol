@@ -10,7 +10,7 @@ import {DNFT} from "periphery/interfaces/DNFT.sol";
 // free mint, used in DEV env setup
 // see Script/dev-setup
 contract DMrktSeal is DNFT, ERC721 {
-    uint256 public constant MAX_SUPPLY = 10;
+    uint256 public constant MAX_SUPPLY = 100;
     uint256 private _nextTokenId;
 
     constructor() ERC721("DMrktSeal", "DSEAL") {}

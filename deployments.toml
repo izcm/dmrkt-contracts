@@ -4,13 +4,13 @@ endpoint_url = "http://localhost:8545"
 [1337.address]
 funder = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
 weth = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
-order_engine = "0x0991d3831Ee86D349497039bB604FA1FB2aE0571"
-nft_c_0 = "0x8806fc80A0274Eda6a45E2944f6bB6E6Bb635831"
-nft_c_1 = "0x4f07450Ef721147D38f29739eEe8079bC147f1f6"
+order_engine = "0x4C1EeD13C1ef880fF5E36dFc377DfE1B80E451B0"
+nft_c_0 = "0xedEe4820327176Bd433d13421DD558A7191193Aa"
+nft_c_1 = "0xc5B86EcB7Cf82213B392D668614429A0d0763745"
 
 [1337.uint]
 nft_c_count = 2
 final_week_Idx = 4
-pipeline_start_ts = 1765135427
-pipeline_end_ts = 1767554636
-fork_block_number = 23963022
+pipeline_start_ts = 1765316531
+pipeline_end_ts = 1767735736
+fork_block_number = 23977955

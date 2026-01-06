@@ -64,7 +64,6 @@ const findBlockBefore = async (secondsAgo) => {
   let lo = 0;
   let hi = latest.number;
 
-  // lo guess too new => fall back to 0
   const loBlock = await blockMeta(lo);
   if (loBlock.timestamp > targetTime) lo = 0;
 

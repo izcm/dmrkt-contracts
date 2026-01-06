@@ -26,9 +26,6 @@ import {IERC721} from "periphery/interfaces/DNFT.sol";
 // logging
 import {console} from "forge-std/console.sol";
 
-// TODO: freexe timestamps in bootstrap scripts
-// warp time properly
-
 contract BuildHistory is
     OrderSampling,
     SettlementSigner,
@@ -41,6 +38,7 @@ contract BuildHistory is
     uint256 private epochSize;
 
     mapping(address => uint256) private actorNonceIdx;
+    mapping(address => uint256[]) private selected; // selected tokenIds per collection
 
     // === ENTRYPOINTS ===
 
@@ -54,10 +52,11 @@ contract BuildHistory is
             .DOMAIN_SEPARATOR();
 
         _loadParticipants();
+        _createDefaultDirs(_epoch);
 
         // track userNonces if epoch != 0
         if (_epoch != 0) {
-            // read prev epoch userNonces
+            // read prev epoch actors' last order nonce
             ActorNonce[] memory startNonces = noncesFromJson(
                 epochNoncesPath(_epoch - 1)
             );
@@ -105,8 +104,17 @@ contract BuildHistory is
 
         // === EXPORT AS JSON ===
 
-        ordersToJson(signed, epochOrdersPath(_epoch));
-        noncesToJson(_exportNonces(), epochNoncesPath(_epoch));
+        for (uint256 i = 0; i < collections.length; i++) {
+            address c = collections[i];
+            selectionToJson(
+                Selection({collection: c, tokenIds: selected[c]}),
+                string.concat(epochSelectionsDir(_epoch), vm.toString(c))
+            );
+        }
+
+        ordersToJson(signed, epochOrdersDir(_epoch));
+
+        noncesToJson(_exportNonces(), epochNoncesPath(_epoch)); // saved in epoch root as singular nonces.json file
 
         logSeparator();
         console.log(
@@ -121,19 +129,19 @@ contract BuildHistory is
         address weth,
         address[] memory collections
     ) internal returns (OrderModel.Order[] memory orders) {
-        Selection[] memory selectionAsks = collect(
+        Selection[] memory selectionsAsk = collect(
             OrderModel.Side.Ask,
             false,
             collections,
             epoch
         );
-        Selection[] memory selectionBids = collect(
+        Selection[] memory selectionsBid = collect(
             OrderModel.Side.Bid,
             false,
             collections,
             epoch
         );
-        Selection[] memory selectionCbs = collect(
+        Selection[] memory selectionsCb = collect(
             OrderModel.Side.Bid,
             true,
             collections,
@@ -141,14 +149,17 @@ contract BuildHistory is
         );
 
         uint256 count;
-        for (uint256 i; i < selectionAsks.length; i++) {
-            count += selectionAsks[i].tokenIds.length;
-        }
-        for (uint256 i; i < selectionBids.length; i++) {
-            count += selectionBids[i].tokenIds.length;
-        }
-        for (uint256 i; i < selectionCbs.length; i++) {
-            count += selectionCbs[i].tokenIds.length;
+
+        // count asks & bids + push tokenids to storage for later json write
+        count += _mergeSelections(selectionsAsk);
+        count += _mergeSelections(selectionsBid);
+
+        // collectionbids don't have tokenIds like ask / regular bid => only get count
+        for (uint256 i = 0; i < selectionsCb.length; i++) {
+            Selection memory s = selectionsCb[i];
+            for (uint256 j = 0; j < s.tokenIds.length; j++) {
+                count++;
+            }
         }
 
         orders = new OrderModel.Order[](count);
@@ -159,7 +170,7 @@ contract BuildHistory is
             idx,
             OrderModel.Side.Ask,
             false,
-            selectionAsks,
+            selectionsAsk,
             weth
         );
 
@@ -168,7 +179,7 @@ contract BuildHistory is
             idx,
             OrderModel.Side.Bid,
             false,
-            selectionBids,
+            selectionsBid,
             weth
         );
 
@@ -177,7 +188,7 @@ contract BuildHistory is
             idx,
             OrderModel.Side.Bid,
             true,
-            selectionCbs,
+            selectionsCb,
             weth
         );
     }
@@ -288,6 +299,7 @@ contract BuildHistory is
         }
     }
 
+    // preps data for json write
     function _exportNonces()
         internal
         view
@@ -303,7 +315,12 @@ contract BuildHistory is
         }
     }
 
-    function _importNonces(ActorNonce[] memory nonces) internal {
+    // === PRIVATE FUNCTIONS ===
+
+    // --- storage mutators ---
+
+    // preps data read from json for use in script
+    function _importNonces(ActorNonce[] memory nonces) private {
         for (uint256 i = 0; i < nonces.length; i++) {
             address actor = nonces[i].actor;
             uint256 nonce = nonces[i].nonce;
@@ -312,15 +329,30 @@ contract BuildHistory is
         }
     }
 
-    // === PRIVATE FUNCTIONS ===
+    function _mergeSelections(
+        Selection[] memory sels
+    ) private returns (uint256 added) {
+        for (uint256 i = 0; i < sels.length; i++) {
+            Selection memory s = sels[i];
+            address c = s.collection;
+
+            for (uint256 j = 0; j < s.tokenIds.length; j++) {
+                selected[c].push(s.tokenIds[j]);
+                added++;
+            }
+        }
+    }
+
+    // --- resolvers ---
+
+    function _epochAnchor() private view returns (uint64) {
+        // forge-lint: disable-next-line(unsafe-typecast)
+        return uint64(readStartTs() + (epoch * epochSize)); // safe because date
+    }
 
     function _resolveTimeOffset(uint256 seed) private view returns (uint64) {
         // forge-lint: disable-next-line(unsafe-typecast)
         return uint64((seed % epochSize) + epochSize); // safe because date
-    }
-    function _epochAnchor() private view returns (uint64) {
-        // forge-lint: disable-next-line(unsafe-typecast)
-        return uint64(readStartTs() + (epoch * epochSize)); // safe because date
     }
 
     function _resolveDate(

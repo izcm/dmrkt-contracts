@@ -22,7 +22,7 @@ import {IERC20, SafeERC20} from "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import {ISettlementEngine} from "periphery/interfaces/ISettlementEngine.sol";
 
 // types
-import {SignedOrder} from "dev/state/Types.sol";
+import {SignedOrder, Selection} from "dev/state/Types.sol";
 
 // TODO: have a seperate bash script that sets nowts() after all scripts finish
 contract ExecuteHistory is
@@ -36,12 +36,6 @@ contract ExecuteHistory is
     using OrderModel for OrderModel.Order;
 
     function run(uint256 _epoch, uint256 _epochSize) external {
-        logBlockTimestamp();
-
-        // === TIME WARP ===
-
-        _jumpToEpoch(_epoch, _epochSize);
-
         // === LOAD CONFIG & SETUP ===
 
         address orderSettler = readSettlementContract();
@@ -70,10 +64,6 @@ contract ExecuteHistory is
         for (uint256 i; i < count; i++) {
             OrderModel.Order memory order = signed[i].order;
             SigOps.Signature memory sig = signed[i].sig;
-
-            console.log("Order %s | nonce: %s", i, order.nonce);
-            console.log("  actor: %s", order.actor);
-            console.log("  START: %s | END: %s", order.start, order.end);
 
             OrderModel.Fill memory fill = _produceFill(order);
 
@@ -139,14 +129,8 @@ contract ExecuteHistory is
             });
     }
 
-    // === TIME HELPERS ===
+    // === PRIVATE FUNCTIONS ===
 
-    function _jumpToEpoch(uint256 epoch, uint256 eSize) private {
-        uint256 startTs = readStartTs();
-        vm.warp(startTs + (epoch * eSize));
-    }
-
-    function _jumpToEnd() private {
-        vm.warp(readEndTs());
-    }
+    // to exclude selected tokens to be sold beforehand by `_fillCollectionBid`
+    // function _importExcluded() private returns (uint256[] memory) {}
 }

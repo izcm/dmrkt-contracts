@@ -12,6 +12,8 @@ Core protocol implementations:
 
 ### script/
 
+Motivation
+
 Deployment and development scripts:
 
 - `DeployOrderEngine.s.sol` - Main deployment script

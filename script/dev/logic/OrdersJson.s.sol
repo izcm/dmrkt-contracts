@@ -8,7 +8,7 @@ import {OrderModel} from "orderbook/libs/OrderModel.sol";
 import {SignatureOps as SigOps} from "orderbook/libs/SignatureOps.sol";
 
 // types
-import {SignedOrder, ActorNonce} from "dev/state/Types.sol";
+import {SignedOrder, ActorNonce, Selection} from "dev/state/Types.sol";
 
 abstract contract OrdersJson is Script {
     // === JSON SPECIFIC SCHEMAS ===
@@ -43,19 +43,41 @@ abstract contract OrdersJson is Script {
         uint8 v;
     }
 
-    function epochOrdersPath(
+    struct IdsJson {
+        uint256[] ids;
+    }
+
+    // === INITIALIZERS ===
+
+    function _createDefaultDirs(uint256 epoch) internal {
+        vm.createDir(_stateDir(), true);
+        vm.createDir(epochDir(epoch), true);
+        vm.createDir(epochOrdersDir(epoch), true);
+        vm.createDir(epochSelectionsDir(epoch), true);
+    }
+
+    // === OUT DIR / FILE ===
+
+    function epochDir(uint256 epoch) internal view returns (string memory) {
+        return string.concat(_stateDir(), "epoch_", vm.toString(epoch), "/");
+    }
+
+    function epochOrdersDir(
         uint256 epoch
     ) internal view returns (string memory) {
-        string memory dir = string.concat(_stateDir(), _epochDir(epoch));
-        string memory out = "/orders.json";
+        return string.concat(epochDir(epoch), "orders/");
+    }
 
-        return string.concat(dir, out);
+    function epochSelectionsDir(
+        uint256 epoch
+    ) internal view returns (string memory) {
+        return string.concat(epochDir(epoch), "selections/");
     }
 
     function epochNoncesPath(
         uint256 epoch
     ) internal view returns (string memory) {
-        string memory dir = string.concat(_stateDir(), _epochDir(epoch));
+        string memory dir = epochDir(epoch);
         string memory out = "/nonces.json";
 
         return string.concat(dir, out);
@@ -97,7 +119,7 @@ abstract contract OrdersJson is Script {
 
         string memory finalJson = vm.serializeString(root, "signed", entries);
 
-        vm.writeJson(finalJson, path);
+        vm.writeJson(finalJson, string.concat(path, "orders.json"));
     }
 
     // Enables BuildHistory.s.sol keeping track of nonces between epochs
@@ -119,15 +141,54 @@ abstract contract OrdersJson is Script {
         }
 
         string memory finalJson = vm.serializeString(root, "nonces", entries);
+
         vm.writeJson(finalJson, path);
+    }
+
+    // tracks selected tokens to avoid when executing collecitonbid
+    function selectionToJson(
+        Selection memory sel,
+        string memory path
+    ) internal {
+        string memory colStr = vm.toString(sel.collection);
+        string memory root = string.concat("selected_", colStr);
+
+        vm.serializeUint(root, "tokenIds", sel.tokenIds);
+
+        string memory finalJson = vm.serializeAddress(
+            root,
+            "col",
+            sel.collection
+        );
+
+        vm.writeJson(
+            finalJson,
+            string.concat(path, string.concat(colStr, ".json"))
+        );
     }
 
     // == FROM JSON ===
 
-    function ordersFromJson(
-        string memory path
+    // NOTE: orders are parsed in full each run (Foundry limitation).
+    // Acceptable for dev tooling / demo scale.
+    // TODO: when time split per-order JSON eg.
+    // epoch_3/orders/order_0.json
+    // epoch_3/orders/order_1.json
+    // epoch_3/orders/order_2.json
+    function orderFromJson(
+        string memory filePath,
+        uint256 orderIdx
     ) internal view returns (SignedOrder[] memory signed) {
-        string memory json = vm.readFile(path);
+        return ordersFromJson(filePath);
+        // validate
+        // produce fill
+        // settle
+    }
+
+    function ordersFromJson(
+        string memory filePath
+    ) internal view returns (SignedOrder[] memory signed) {
+        string memory json = vm.readFile(filePath);
         bytes memory data = vm.parseJson(json);
 
         PersistedOrdersJson memory parsed = abi.decode(
@@ -163,16 +224,21 @@ abstract contract OrdersJson is Script {
         }
     }
 
+    function selectionFromJson(
+        string memory path
+    ) internal view returns (Selection memory) {
+        string memory json = vm.readFile(path);
+        bytes memory data = vm.parseJson(json);
+
+        return abi.decode(data, (Selection));
+    }
+
     // === PRIVATE FUNCTIONS ===
 
-    // --- path builders ---
+    // --- filePath builders ---
 
     function _stateDir() private view returns (string memory) {
         return string.concat("./data/", vm.toString(block.chainid), "/state/");
-    }
-
-    function _epochDir(uint256 epoch) private pure returns (string memory) {
-        return string.concat("epoch_", vm.toString(epoch));
     }
 
     // --- serializers ---
@@ -200,7 +266,7 @@ abstract contract OrdersJson is Script {
 
     function _fromSignedOrdersJson(
         SignedOrdersJson memory jso
-    ) internal pure returns (SignedOrder memory signed) {
+    ) private pure returns (SignedOrder memory signed) {
         signed.order = OrderModel.Order({
             side: jso.side,
             isCollectionBid: jso.isCollectionBid,
