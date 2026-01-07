@@ -11,6 +11,6 @@ nft_c_1 = "0xc5B86EcB7Cf82213B392D668614429A0d0763745"
 [1337.uint]
 nft_c_count = 2
 final_week_Idx = 4
-pipeline_start_ts = 1765335275
-pipeline_end_ts = 1767754481
-fork_block_number = 23979486
+pipeline_start_ts = 1765339811
+pipeline_end_ts = 1767759019
+fork_block_number = 23979859
