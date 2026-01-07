@@ -57,9 +57,7 @@ contract BuildHistory is
         // track userNonces if epoch != 0
         if (_epoch != 0) {
             // read prev epoch actors' last order nonce
-            ActorNonce[] memory startNonces = noncesFromJson(
-                epochNoncesPath(_epoch - 1)
-            );
+            ActorNonce[] memory startNonces = noncesFromJson(_epoch - 1);
             _importNonces(startNonces);
         }
 
@@ -98,7 +96,7 @@ contract BuildHistory is
 
         // === ORDER BY NONCE ===
 
-        _sortByEndDate(signed); // TODO: change this when nonces become incremental
+        _sortByEndDate(signed);
 
         console.log("Sorting by nonce completed");
 
@@ -108,13 +106,23 @@ contract BuildHistory is
             address c = collections[i];
             selectionToJson(
                 Selection({collection: c, tokenIds: selected[c]}),
-                string.concat(epochSelectionsDir(_epoch), vm.toString(c))
+                _epoch
             );
         }
 
-        ordersToJson(signed, epochOrdersDir(_epoch));
+        for (uint256 i = 0; i < signed.length; i++) {
+            SignedOrder memory s = signed[i];
+            orderToJson(s, i, _epoch);
+        }
 
-        noncesToJson(_exportNonces(), epochNoncesPath(_epoch)); // saved in epoch root as singular nonces.json file
+        noncesToJson(_exportNonces(), _epoch); // saved in epoch root as singular nonces.json file
+
+        // === WRITE EPOCH METADATA ===
+
+        vm.writeFile(
+            string.concat(_epochDir(_epoch), "order-count.txt"),
+            vm.toString(signed.length)
+        );
 
         logSeparator();
         console.log(

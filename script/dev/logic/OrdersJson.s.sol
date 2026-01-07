@@ -8,21 +8,31 @@ import {OrderModel} from "orderbook/libs/OrderModel.sol";
 import {SignatureOps as SigOps} from "orderbook/libs/SignatureOps.sol";
 
 // types
-import {SignedOrder, ActorNonce, Selection} from "dev/state/Types.sol";
+import {
+    SignedOrder,
+    ActorNonce,
+    Selection,
+    EpochMeta
+} from "dev/state/Types.sol";
 
 abstract contract OrdersJson is Script {
     // === JSON SPECIFIC SCHEMAS ===
 
+    struct Path {
+        string dir;
+        string filename;
+    }
+
     struct PersistedOrdersJson {
         uint256 chainId;
-        SignedOrdersJson[] signed;
+        SignedOrderJson[] signed;
     }
 
     struct PersistedNoncesJson {
         ActorNonce[] nonces;
     }
 
-    struct SignedOrdersJson {
+    struct SignedOrderJson {
         address actor;
         address collection;
         address currency;
@@ -51,43 +61,140 @@ abstract contract OrdersJson is Script {
 
     function _createDefaultDirs(uint256 epoch) internal {
         vm.createDir(_stateDir(), true);
-        vm.createDir(epochDir(epoch), true);
-        vm.createDir(epochOrdersDir(epoch), true);
-        vm.createDir(epochSelectionsDir(epoch), true);
+        vm.createDir(_epochDir(epoch), true);
+        vm.createDir(_epochOrdersDir(epoch), true);
+        vm.createDir(_epochSelectionsDir(epoch), true);
     }
 
-    // === OUT DIR / FILE ===
+    // === DEFAULT DIRS ===
 
-    function epochDir(uint256 epoch) internal view returns (string memory) {
+    function _stateDir() internal view returns (string memory) {
+        return string.concat("./data/", vm.toString(block.chainid), "/state/");
+    }
+
+    function _epochDir(uint256 epoch) internal view returns (string memory) {
         return string.concat(_stateDir(), "epoch_", vm.toString(epoch), "/");
     }
 
-    function epochOrdersDir(
+    function _epochOrdersDir(
         uint256 epoch
     ) internal view returns (string memory) {
-        return string.concat(epochDir(epoch), "orders/");
+        return string.concat(_epochDir(epoch), "orders/");
     }
 
-    function epochSelectionsDir(
+    function _epochSelectionsDir(
         uint256 epoch
     ) internal view returns (string memory) {
-        return string.concat(epochDir(epoch), "selections/");
+        return string.concat(_epochDir(epoch), "selections/");
     }
+
+    // === DEFAULT PATHS ===
 
     function epochNoncesPath(
         uint256 epoch
-    ) internal view returns (string memory) {
-        string memory dir = epochDir(epoch);
-        string memory out = "/nonces.json";
+    ) internal view returns (Path memory path) {
+        path.dir = _epochDir(epoch);
+        path.filename = "nonces.json";
+    }
 
-        return string.concat(dir, out);
+    function epochOrderPath(
+        uint256 idx,
+        uint256 epoch
+    ) internal view returns (Path memory path) {
+        path.dir = _epochOrdersDir(epoch);
+        path.filename = string.concat("order_", vm.toString(idx), ".json");
+    }
+
+    function epochOrdersPath(
+        uint256 epoch
+    ) internal view returns (Path memory path) {
+        path.dir = _epochOrdersDir(epoch);
+        path.filename = "orders.json";
+    }
+
+    function epochSelectionPath(
+        address collection,
+        uint256 epoch
+    ) internal view returns (Path memory path) {
+        path.dir = _epochSelectionsDir(epoch);
+        path.filename = string.concat(vm.toString(collection), ".json");
+    }
+
+    // === DEFAULT TO JSON PATHS ===
+
+    function noncesToJson(ActorNonce[] memory nonces, uint256 epoch) internal {
+        Path memory p = epochNoncesPath(epoch);
+        noncesToJson(nonces, p.dir, p.filename);
+    }
+
+    function orderToJson(
+        SignedOrder memory signed,
+        uint256 idx,
+        uint256 epoch
+    ) internal {
+        Path memory p = epochOrderPath(idx, epoch);
+        orderToJson(signed, p.dir, p.filename, idx);
+    }
+
+    function selectionToJson(Selection memory sel, uint256 epoch) internal {
+        Path memory p = epochSelectionPath(sel.collection, epoch);
+        selectionToJson(sel, p.dir, p.filename);
+    }
+
+    // === DEFAULT FROM JSON PATHS ===
+
+    function noncesFromJson(
+        uint256 epoch
+    ) internal view returns (ActorNonce[] memory) {
+        Path memory p = epochNoncesPath(epoch);
+        return noncesFromJson(string.concat(p.dir, p.filename));
+    }
+
+    function ordersFromJson(
+        uint256 epoch
+    ) internal view returns (SignedOrder[] memory) {
+        Path memory p = epochOrdersPath(epoch);
+        return ordersFromJson(string.concat(p.dir, p.filename));
+    }
+
+    function selectionFromJson(
+        address collection,
+        uint256 epoch
+    ) internal view returns (Selection memory) {
+        Path memory p = epochSelectionPath(collection, epoch);
+        return selectionFromJson(string.concat(p.dir, p.filename));
     }
 
     // === TO JSON ===
 
+    function orderToJson(
+        SignedOrder memory signed,
+        string memory dir,
+        string memory filename,
+        uint256 idx
+    ) internal {
+        string memory idxStr = string.concat("order_", vm.toString(idx));
+        string memory root = idxStr;
+
+        _serializeOrderJson(signed.order, root);
+
+        // ---- signature ----
+        SigOps.Signature memory sig = signed.sig;
+
+        string memory sKey = string.concat(root, "_sig");
+
+        vm.serializeUint(sKey, "v", sig.v);
+        vm.serializeBytes32(sKey, "r", sig.r);
+        string memory sigOut = vm.serializeBytes32(sKey, "s", sig.s);
+
+        string memory finalJson = vm.serializeString(root, "sig", sigOut);
+
+        vm.writeJson(finalJson, string.concat(dir, filename));
+    }
+
     function ordersToJson(
         SignedOrder[] memory signed,
-        string memory path
+        string memory dir
     ) internal {
         string memory root = "orders";
 
@@ -101,7 +208,7 @@ abstract contract OrdersJson is Script {
 
             string memory oKey = string.concat("order_", vm.toString(i));
 
-            entries[i] = _serializeOrdersJson(item.order, oKey);
+            entries[i] = _serializeOrderJson(item.order, oKey);
 
             // ---- signature ----
             SigOps.Signature memory sig = item.sig;
@@ -119,13 +226,14 @@ abstract contract OrdersJson is Script {
 
         string memory finalJson = vm.serializeString(root, "signed", entries);
 
-        vm.writeJson(finalJson, string.concat(path, "orders.json"));
+        vm.writeJson(finalJson, string.concat(dir, "orders.json"));
     }
 
     // Enables BuildHistory.s.sol keeping track of nonces between epochs
     function noncesToJson(
         ActorNonce[] memory nonces,
-        string memory path
+        string memory dir,
+        string memory filename
     ) internal {
         string memory root = "nonces";
 
@@ -142,13 +250,14 @@ abstract contract OrdersJson is Script {
 
         string memory finalJson = vm.serializeString(root, "nonces", entries);
 
-        vm.writeJson(finalJson, path);
+        vm.writeJson(finalJson, string.concat(dir, filename));
     }
 
     // tracks selected tokens to avoid when executing collecitonbid
     function selectionToJson(
         Selection memory sel,
-        string memory path
+        string memory dir,
+        string memory filename
     ) internal {
         string memory colStr = vm.toString(sel.collection);
         string memory root = string.concat("selected_", colStr);
@@ -161,35 +270,25 @@ abstract contract OrdersJson is Script {
             sel.collection
         );
 
-        vm.writeJson(
-            finalJson,
-            string.concat(path, string.concat(colStr, ".json"))
-        );
+        vm.writeJson(finalJson, string.concat(dir, filename));
     }
 
     // == FROM JSON ===
 
-    // NOTE: orders are parsed in full each run (Foundry limitation).
-    // Acceptable for dev tooling / demo scale.
-    // TODO: when time split per-order JSON eg.
-    // epoch_3/orders/order_0.json
-    // epoch_3/orders/order_1.json
-    // epoch_3/orders/order_2.json
     function orderFromJson(
-        string memory filePath,
-        uint256 orderIdx
-    ) internal view returns (SignedOrder[] memory signed) {
-        return ordersFromJson(filePath);
-        // validate
-        // produce fill
-        // settle
+        string memory path
+    ) internal view returns (SignedOrder memory signed) {
+        bytes memory data = vm.parseJson(vm.readFile(path));
+
+        SignedOrderJson memory parsed = abi.decode(data, (SignedOrderJson));
+
+        signed = _fromSignedOrderJson(parsed);
     }
 
     function ordersFromJson(
-        string memory filePath
+        string memory path
     ) internal view returns (SignedOrder[] memory signed) {
-        string memory json = vm.readFile(filePath);
-        bytes memory data = vm.parseJson(json);
+        bytes memory data = vm.parseJson(vm.readFile(path));
 
         PersistedOrdersJson memory parsed = abi.decode(
             data,
@@ -200,15 +299,14 @@ abstract contract OrdersJson is Script {
         signed = new SignedOrder[](count);
 
         for (uint256 i = 0; i < count; i++) {
-            signed[i] = _fromSignedOrdersJson(parsed.signed[i]);
+            signed[i] = _fromSignedOrderJson(parsed.signed[i]);
         }
     }
 
     function noncesFromJson(
         string memory path
     ) internal view returns (ActorNonce[] memory nonces) {
-        string memory json = vm.readFile(path);
-        bytes memory data = vm.parseJson(json);
+        bytes memory data = vm.parseJson(vm.readFile(path));
 
         PersistedNoncesJson memory parsed = abi.decode(
             data,
@@ -227,23 +325,15 @@ abstract contract OrdersJson is Script {
     function selectionFromJson(
         string memory path
     ) internal view returns (Selection memory) {
-        string memory json = vm.readFile(path);
-        bytes memory data = vm.parseJson(json);
-
+        bytes memory data = vm.parseJson(vm.readFile(path));
         return abi.decode(data, (Selection));
     }
 
     // === PRIVATE FUNCTIONS ===
 
-    // --- filePath builders ---
-
-    function _stateDir() private view returns (string memory) {
-        return string.concat("./data/", vm.toString(block.chainid), "/state/");
-    }
-
     // --- serializers ---
 
-    function _serializeOrdersJson(
+    function _serializeOrderJson(
         OrderModel.Order memory o,
         string memory objKey
     ) private returns (string memory) {
@@ -264,8 +354,8 @@ abstract contract OrdersJson is Script {
         return key;
     }
 
-    function _fromSignedOrdersJson(
-        SignedOrdersJson memory jso
+    function _fromSignedOrderJson(
+        SignedOrderJson memory jso
     ) private pure returns (SignedOrder memory signed) {
         signed.order = OrderModel.Order({
             side: jso.side,
