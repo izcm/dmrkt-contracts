@@ -20,7 +20,7 @@ contract DeployCore is BaseDevScript, DevConfig {
         // PHASE 0: LOAD CONFIG
         // --------------------------------
         address weth = readWeth();
-        uint256 funderPk = uint256(uint256(vm.envUint("PRIVATE_KEY")));
+        uint256 funderPk = uint256(uint256(vm.envUint("FUNDER_PK")));
 
         // --------------------------------
         // PHASE 1: DEPLOY MARKETPLCE & NFTS

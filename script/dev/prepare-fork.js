@@ -2,6 +2,9 @@ import fs from "node:fs/promises";
 
 // === config ===
 
+// TODO: maybe have a temporary anvil fork => query this for correct blocknumber => stop fork => restart at blocknumber
+// then API_KEY can be removed as a dev dependency
+
 const DAY = 24 * 60 * 60;
 const API_KEY = process.env.ALCHEMY_KEY;
 

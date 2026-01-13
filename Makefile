@@ -54,8 +54,8 @@ endif
 FORGE_COMMON_FLAGS = \
 	--rpc-url $(RPC_URL) \
 	--broadcast \
-	--sender $(SENDER) \
-	--private-key $(PRIVATE_KEY) \
+	--sender $(FUNDER) \
+	--private-key $(FUNDER_PK) \
 	$(FORGE_SILENT)
 
 # ───────────────────────────────────────────────
@@ -75,7 +75,7 @@ pipeline-setup: \
 	dev-approve
 	@echo "🧱 Setup pipeline complete"
 
-pipeline-state: dev-open dev-history
+pipeline-state: dev-build-epochs
 	@echo "🎭 State pipelines complete"
 
 # ───────────────────────────────────────────────

@@ -13,7 +13,7 @@ contract DMrktSeal is DNFT, ERC721 {
     uint256 public constant MAX_SUPPLY = 100;
     uint256 private _nextTokenId;
 
-    constructor() ERC721("DMrktSeal", "DSEAL") {}
+    constructor() ERC721("dmrktSeal", "DSEAL") {}
 
     function mint(address to) external {
         require(_nextTokenId < MAX_SUPPLY, "Sold out");

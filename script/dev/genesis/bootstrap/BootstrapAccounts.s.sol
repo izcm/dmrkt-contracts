@@ -19,11 +19,11 @@ contract BootstrapAccounts is BaseDevScript, DevConfig {
         // --------------------------------
 
         // read deployments.toml
-        address funder = readFunder();
         address weth = readWeth();
 
-        // read .env
-        uint256 funderPk = uint256(vm.envUint("PRIVATE_KEY"));
+        // read .env (for anvil choose a pre-funded default account)
+        uint256 funderPk = uint256(vm.envUint("FUNDER_PK"));
+        address funder = addrOf(funderPk);
 
         // --------------------------------
         // PHASE 1: FUND ETH

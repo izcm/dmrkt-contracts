@@ -23,10 +23,6 @@ contract DevConfig is Config {
         return config.get("weth").toAddress();
     }
 
-    function readFunder() internal view returns (address) {
-        return config.get("funder").toAddress();
-    }
-
     // contract implementing methods `settle` `DOMAIN_SEPARATOR()` and `isUserNonceInvalid()`
     function readSettlementContract() internal view returns (address) {
         return _orderEngine();
@@ -38,10 +34,12 @@ contract DevConfig is Config {
     }
 
     // contract working as the nft transferer
+    // if multiple strategies: readNftTransferAuth(strategyId)
     function readNftTransferAuth() internal view returns (address) {
         return _orderEngine();
     }
 
+    // if multiple strategies: readAllowanceSpender(strategyId)
     function readAllowanceSpender() internal view returns (address) {
         return _orderEngine();
     }
