@@ -29,16 +29,13 @@ DEPLOY_ORDER_ENGINE := $(SCRIPT_ROOT)/DeployOrderEngine.s.sol
 # chain
 WETH    := 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2
 
-# TODO: read from .toml / .env
-# args
-EPOCH_COUNT = 4
-
 # ───────────────────────────────────────────────
 #   LOGGING / VERBOSITY
 # ───────────────────────────────────────────────
 
 # set SILENT=0 to enable forge output
 SILENT ?= 1
+EPOCH_COUNT ?= 4
 
 ifeq ($(SILENT),1)
 FORGE_SILENT = --silent
@@ -62,19 +59,20 @@ FORGE_COMMON_FLAGS = \
 # ───────────────────────────────────────────────
 
 # assumes pipeline.toml contains:
-# 	1. fork-start-block 
+#	1. weth address
 # 	2. pipeline end + start timestamps
-dev-start: dev-fork pipeline-setup
+dev-bootstrap: pipeline-setup
 	@echo "🚀 Dev environment ready"
 
-# assumes .env specifies EPOCH_COUNT
+# assumes pipeline.toml contains:
+#	1. EPOCH_COUNT
 dev-history: dev-run-epochs
 
 # ───────────────────────────────────────────────
 #   DEV — HIGH-LEVEL PIPELINES
 # ───────────────────────────────────────────────
 
-dev-start-local: dev-prepare dev-fork pipeline-setup
+dev-start: dev-prepare dev-fork pipeline-setup
 	@echo "🚀 Dev environment ready"
 
 dev-reset: kill-anvil dev-start

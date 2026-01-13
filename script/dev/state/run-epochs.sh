@@ -59,7 +59,9 @@ do
         offset=$(((i % 5) - 2))
         time_jump=$((base_step + offset))
 
-        cast rpc evm_increaseTime $time_jump --quiet
+        cast rpc evm_increaseTime $time_jump \
+            --rpc-url "$RPC_URL" \
+            --quiet
 
         if forge script "$DEV_STATE"/ExecuteOrder.s.sol \
             --rpc-url "$RPC_URL" \
@@ -70,7 +72,10 @@ do
             --silent \
             $epoch $i
         then
-            mined_at=$(cast block latest -f timestamp)
+            mined_at=$(cast block latest \
+                --rpc-url "$RPC_URL" \
+                -f timestamp)
+
             ts=$(date -d @"$mined_at" "+%Y-%m-%d %H:%M:%S")
 
             echo -e "[${ts}] [epoch:${epoch}] [order:${i}] ${GREEN}EXECUTED${RESET}"
@@ -90,7 +95,8 @@ do
 done
 
 # final block
-cast rpc evm_mine "$(date +%s)"
+cast rpc evm_mine "$(date +%s)" \
+    --rpc-url "$RPC_URL"
 
 echo "✔ All epochs completed!"
 
@@ -98,4 +104,4 @@ OUT_FILE="data/1337/latest-block.txt"
 
 echo "Latest block saved to ${OUT_FILE}"
 
-cast block latest > ${OUT_FILE}
+cast block latest --rpc-url "$RPC_URL" > ${OUT_FILE}
