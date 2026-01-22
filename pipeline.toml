@@ -3,9 +3,9 @@ endpoint_url = "http://localhost:8545"
 
 [1337.address]
 weth = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
-order_engine = "0xCEdbf9aED751D3c3e4115Dd3CbB933Ee1BBCb2a6"
-nft_c_0 = "0x685009Edc4Df588555d7e7Ed4854c450b423DD97"
-nft_c_1 = "0x87a97BC3a0EC7952F4F2C8d22eD5c0A56811fd10"
+order_engine = "0xa40E009b306B3b4f27374f6e833291DaAeC88cc6"
+nft_c_0 = "0x6FE69253967982531bDe0C06476e7fe427f3F56c"
+nft_c_1 = "0xC0Bd89573eDD265D3d9E0073f6D1e21e9Df5E1DA"
 
 [1337.uint]
 nft_c_count = 2

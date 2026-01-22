@@ -6,6 +6,7 @@ RUN apt-get update && apt-get install -y make
 WORKDIR /app 
 COPY . .
 
+RUN mkdir -p data/1337/state
 RUN chown -R foundry:foundry /app
 
 USER foundry

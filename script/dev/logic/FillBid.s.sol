@@ -42,11 +42,13 @@ abstract contract FillBid {
         uint256 seed,
         uint256[] memory excluded
     ) internal view returns (OrderModel.Fill memory) {
-        uint256 tokenId = seed % DNFT(collection).totalSupply();
+        uint256 supply = DNFT(collection).totalSupply();
+
+        uint256 tokenId = seed % supply;
         address nftHolder = DNFT(collection).ownerOf(tokenId);
 
         while (nftHolder == orderActor || _isExcluded(tokenId, excluded)) {
-            tokenId++;
+            tokenId = (tokenId + 1) % supply;
             nftHolder = DNFT(collection).ownerOf(tokenId);
         }
 

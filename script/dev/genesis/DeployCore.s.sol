@@ -25,6 +25,10 @@ contract DeployCore is BaseDevScript, DevConfig {
         // --------------------------------
         // PHASE 1: DEPLOY MARKETPLCE & NFTS
         // --------------------------------
+
+        // TODO: make someone else than funder deploy these contracts
+        // if we have our own random adress (not default anvil user) nonce stays same
+        // => deterministic addresses
         logSection("DEPLOY CORE CONTRACTS");
 
         // since the script uses the same private key its not necessary but I like to be explicit

@@ -96,7 +96,7 @@ contract BuildEpoch is
 
         // === ORDER BY NONCE ===
 
-        console.log("Sorting orders by 'end' timestamp...");
+        console.log("Sorting by 'end' timestamp...");
 
         _sortByEndDate(signed);
 

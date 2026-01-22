@@ -61,8 +61,23 @@ FORGE_COMMON_FLAGS = \
 # assumes pipeline.toml contains:
 #	1. weth address
 # 	2. pipeline end + start timestamps
-dev-execute-pipeline: pipeline-setup dev-run-epochs
+dev-execute-pipeline: dev-wait pipeline-setup pipeline-separator dev-run-epochs
 	@echo "🚀 Dev environment ready"
+
+# temporarily to wait for anvil
+dev-wait:
+	@echo "----------------"
+	@echo " GETTING READY "
+	@echo "----------------"
+	@forge clean
+	@sleep 4
+
+pipeline-separator:
+	@echo ""
+	@echo "================="
+	@echo " PHASE COMPLETE "
+	@echo "================="
+	@echo ""
 
 # ───────────────────────────────────────────────
 #   DEV — HIGH-LEVEL PIPELINES
@@ -75,8 +90,8 @@ dev-reset: kill-anvil dev-start
 	@echo "🔄 Dev reset complete"
 
 pipeline-setup: \
-	dev-bootstrap-accounts \
 	dev-deploy-core \
+	dev-bootstrap-accounts \
 	dev-bootstrap-nfts \
 	dev-approve
 	@echo "🧱 Setup pipeline complete"
