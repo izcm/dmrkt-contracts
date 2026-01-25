@@ -10,7 +10,7 @@ abstract contract BaseDevScript is Script {
 
     // Call this if the script needs easy access to pk => addr
     function _loadParticipants() internal {
-        uint256[] memory pks = readKeys();
+        uint256[] memory pks = generateKeys();
 
         for (uint256 i = 0; i < pks.length; i++) {
             uint256 pk = pks[i];
@@ -22,15 +22,27 @@ abstract contract BaseDevScript is Script {
     }
 
     // If a script only needs private keys use this, no need to call loadParticipants
-    function readKeys() internal view returns (uint256[] memory) {
+    function generateKeys() internal view returns (uint256[] memory) {
+        return generateKeys(7);
+    }
+
+    function generateKeys(
+        uint32 keyCount
+    ) private view returns (uint256[] memory) {
         string memory path = string.concat(
             "./data/",
             vm.toString(block.chainid),
-            "/keys.json"
+            "/mnemonic.json"
         );
 
         string memory json = vm.readFile(path);
-        uint256[] memory keys = vm.parseJsonUintArray(json, ".privateKeys");
+        string memory mnemonic = vm.parseJsonString(json, ".mnemonic");
+
+        uint256[] memory keys = new uint256[](keyCount);
+
+        for (uint32 i = 0; i < keyCount; i++) {
+            keys[i] = vm.deriveKey(mnemonic, i);
+        }
 
         return keys;
     }

@@ -46,7 +46,7 @@ contract BootstrapAccounts is BaseDevScript, DevConfig {
         // 2. write output of `anvil` as json (probably contains the dev account pks(?))
         // 3. read these instead of keys.json
         // would be nice for overall realistic dev env
-        uint256[] memory participantPks = readKeys();
+        uint256[] memory participantPks = generateKeys();
         uint256 participantCount = participantPks.length;
 
         // amount to fund each account

@@ -18,7 +18,7 @@ contract BootstrapNFTs is BaseDevScript, DevConfig {
         address[] memory collections = readCollections();
 
         // --- PKs for broadcasting ---
-        uint256[] memory participantPks = readKeys();
+        uint256[] memory participantPks = generateKeys();
         uint256 participantCount = participantPks.length;
 
         // --------------------------------
