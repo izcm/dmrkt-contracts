@@ -27,7 +27,7 @@ EPOCH_SIZE=$(( DELTA / EPOCH_COUNT ))
 
 SLEEP_SECONDS=2
 
-STATE_DIR="$PROJECT_ROOT/data/1337/state"
+STATE_DIR="$PROJECT_ROOT/data/31337/state"
 
 for ((epoch=0; epoch<EPOCH_COUNT; epoch++));
 do
@@ -100,7 +100,7 @@ cast rpc evm_mine "$(date +%s)" \
 
 echo "✔ All epochs completed!"
 
-OUT_FILE="data/1337/latest-block.txt"
+OUT_FILE="data/31337/latest-block.txt"
 
 echo "Latest block saved to ${OUT_FILE}"
 

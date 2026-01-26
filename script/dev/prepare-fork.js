@@ -89,13 +89,13 @@ const writePipelineWindowToml = async ({
 }) => {
   let toml = await fs.readFile(path, "utf8");
 
-  const sectionHeader = "[1337.uint]";
-  const sectionRegex = /\[1337\.uint\][\s\S]*?(?=\n\[|$)/;
+  const sectionHeader = "[31337.uint]";
+  const sectionRegex = /\[31337\.uint\][\s\S]*?(?=\n\[|$)/;
 
   let section;
 
   if (sectionRegex.test(toml)) {
-    // [1337].uint exists
+    // [31337].uint exists
     section = toml.match(sectionRegex)[0];
   } else {
     // section doesn't exist => append it

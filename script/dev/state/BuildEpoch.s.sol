@@ -71,6 +71,8 @@ contract BuildEpoch is
 
         address[] memory collections = readCollections();
         console.log("Collections: %s", collections.length);
+        console.log("Collections: %s", collections[0]);
+        console.log("Collections: %s", collections[1]);
 
         // === BUILD ORDERS ===
 

@@ -87,7 +87,7 @@ dev-start: dev-prepare dev-fork pipeline-setup
 	@echo "🚀 Dev environment ready"
 
 dev-reset: kill-anvil dev-start
-	@echo "🔄 Dev reset complete"
+	@echo "🔄 Dev reset complete"---------
 
 pipeline-setup: \
 	dev-deploy-core \
