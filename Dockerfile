@@ -1,7 +1,7 @@
 FROM ghcr.io/foundry-rs/foundry:v1.5.1
 
 USER root
-RUN apt-get update && apt-get install -y make
+RUN apt-get update && apt-get install -y make curl
 
 WORKDIR /app 
 COPY . .

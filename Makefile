@@ -12,6 +12,8 @@ export
 PROJECT_ROOT := $(shell pwd)
 export PROJECT_ROOT
 
+# paths - scripts
+
 SCRIPT_ROOT := script
 DEV_ROOT    := $(SCRIPT_ROOT)/dev
 
@@ -23,8 +25,9 @@ DEV_LOGIC       := $(DEV_ROOT)/logic
 
 export DEV_STATE       := $(DEV_ROOT)/state
 
-# entrypoints
-DEPLOY_ORDER_ENGINE := $(SCRIPT_ROOT)/DeployOrderEngine.s.sol
+# paths - artifacts
+
+export EPOCHS_STATE_DIR := "$(PROJECT_ROOT)/data/31337/state"
 
 # chain
 WETH    := 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2

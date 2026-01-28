@@ -3,15 +3,25 @@
 RED="\033[0;31m"
 GREEN="\033[0;32m"
 RESET="\033[0m"
+YELLOW="\033[0;33m" # todo: change reverts to yellow
 
-EPOCH_COUNT=$1
-
-if [ -z "$1" ]; then
-    echo "Missing Argument - Usage: execute-epoch.sh EPOCH_COUNT"
+if [ -z "$EPOCHS_STATE_DIR" ]; then
+    echo "${RED}EPOCHS_STATE_DIR not set (expected from Makefile)${RESET}"
     exit 1
 fi
 
+if [ -z "$1" ]; then
+    echo "${RED}Missing Argument - Usage: execute-epoch.sh EPOCH_COUNT${RESET}"
+    exit 1
+fi
+
+EPOCH_COUNT=$1
+
 TOML="./pipeline.toml"
+
+# -------------------------
+# PHASE 0: CONFIG / CTX
+#--------------------------
 
 START_TS=$(awk -F ' ' '$1=="pipeline_start_ts" { print $3 }' $TOML)
 END_TS=$(awk -F ' ' '$1=="pipeline_end_ts" { print $3 }' $TOML)
@@ -23,18 +33,23 @@ if ((DELTA < EPOCH_COUNT )); then
     exit 1
 fi
 
-EPOCH_SIZE=$(( DELTA / EPOCH_COUNT ))
+EPOCH_SLICE=$(( DELTA / EPOCH_COUNT ))
 
 SLEEP_SECONDS=2
-
-STATE_DIR="$PROJECT_ROOT/data/31337/state"
-
-# temporary using END_TS - START_TS because it makes expor
-TIME_WINDOW=$((END_TS - START_TS))
 
 for ((epoch=0; epoch<EPOCH_COUNT; epoch++));
 do
     echo "🧱 Building orders for epoch $epoch"
+
+    # TMP: use full DELTA as order validity window
+    # - all orders valid for entire simulation
+    # - execution logic does not reason about time
+    # - failures reflect logic/economics, not scheduling
+    # - orders always valid for Date.now()
+
+    #--------------------------
+    # PHASE 1: BUILD ORDERS
+    #--------------------------
 
     forge script "$DEV_STATE"/BuildEpoch.s.sol \
         --rpc-url "$RPC_URL" \
@@ -42,22 +57,31 @@ do
         --sender "$FUNDER" \
         --private-key "$FUNDER_PK" \
         --sig "run(uint256,uint256)" \
-        $epoch "$TIME_WINDOW"  \
+        $epoch "$DELTA"  \
 
     sleep $SLEEP_SECONDS
     
-    order_count=$(cat "$STATE_DIR"/epoch_$epoch/order-count.txt)
+    order_count=$(cat "$EPOCHS_STATE_DIR"/epoch_$epoch/order-count.txt)
+
+    #--------------------------
+    # PHASE 2: EXPORT ORDERS
+    #--------------------------
+    
 
     # TODO: EXPORT ORDERS TO INDEXER
     
+    #--------------------------
+    # PHASE 3: EXECUTE ORDERS
+    #--------------------------
+
     echo "🎬 Executing $order_count orders in epoch $epoch..."
 
     success=0
     fail=0
 
-    base_step=$((EPOCH_SIZE / order_count))
+    base_step=$((EPOCH_SLICE / order_count))
 
-    #cast rpc evm_increaseTime $EPOCH_SIZE
+    #cast rpc evm_increaseTime $EPOCH_SLICE
     #cast rpc evm_mine
 
     for((i=0; i < order_count; i++)); do
@@ -86,7 +110,7 @@ do
             echo -e "[${ts}] [epoch:${epoch}] [order:${i}] ${GREEN}EXECUTED${RESET}"
             ((success++))
         else
-            echo -e "[${ts}] [epoch:${epoch}] [order:${i}] ${RED}REVERTED${RESET}"
+            echo -e "[${ts}] [epoch:${epoch}] [order:${i}] ${YELLOW}REVERTED${RESET}"
 
             ((fail++))
         fi
