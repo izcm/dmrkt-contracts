@@ -35,14 +35,14 @@ contract BuildEpoch is
 {
     // ctx
     uint256 private epoch;
-    uint256 private epochSize;
+    uint256 private epochSpan;
 
     mapping(address => uint256) private actorNonceIdx;
     mapping(address => uint256[]) private selected; // selected tokenIds per collection
 
     // === ENTRYPOINTS ===
 
-    function run(uint256 _epoch, uint256 _epochSize) external {
+    function run(uint256 _epoch, uint256 _epochSpan) external {
         // === LOAD CONFIG & SETUP ===
 
         address settlementContract = readSettlementContract();
@@ -51,10 +51,19 @@ contract BuildEpoch is
         bytes32 domainSeparator = ISettlementEngine(settlementContract)
             .DOMAIN_SEPARATOR();
 
+        console.log(block.timestamp);
+
+        try vm.envString("STATE_NAMESPACE") returns (string memory ns) {
+            _setStateNamespace(ns);
+        } catch {
+            console.log("STATE_NAMESPACE not set => using default namespace");
+        }
         _loadParticipants();
         _createDefaultDirs(_epoch);
 
         // track userNonces if epoch != 0
+        // TODO: change this to read nonces everytime (needed for export)
+        // just make some epoch:0 all nonce = 0
         if (_epoch != 0) {
             // read prev epoch actors' last order nonce
             ActorNonce[] memory startNonces = noncesFromJson(_epoch - 1);
@@ -62,7 +71,7 @@ contract BuildEpoch is
         }
 
         epoch = _epoch;
-        epochSize = _epochSize;
+        epochSpan = _epochSpan;
 
         logSection("BUILD ORDERS");
         console.log("Block timestamp: %s", block.timestamp);
@@ -71,8 +80,6 @@ contract BuildEpoch is
 
         address[] memory collections = readCollections();
         console.log("Collections: %s", collections.length);
-        console.log("Collections: %s", collections[0]);
-        console.log("Collections: %s", collections[1]);
 
         // === BUILD ORDERS ===
 
@@ -355,21 +362,23 @@ contract BuildEpoch is
 
     // --- resolvers ---
 
+    // Not in use per now
     function _epochAnchor() private view returns (uint64) {
         // forge-lint: disable-next-line(unsafe-typecast)
-        return uint64(readStartTs() + (epoch * epochSize)); // safe because date
+        return uint64(readStartTs() + (epoch * epochSpan)); // safe because date
     }
 
     function _resolveTimeOffset(uint256 seed) private view returns (uint64) {
         // forge-lint: disable-next-line(unsafe-typecast)
-        return uint64((seed % epochSize) + epochSize); // safe because date
+        return uint64((seed % epochSpan) + epochSpan); // safe because date
     }
 
     function _resolveDate(
         uint256 seed,
         bool isStart
     ) private view returns (uint64) {
-        uint64 anchor = _epochAnchor();
+        // uint64 anchor = _epochAnchor();
+        uint64 anchor = uint64(readStartTs());
         uint64 offset = _resolveTimeOffset(seed);
 
         return isStart ? anchor - offset : anchor + offset;

@@ -29,6 +29,9 @@ SLEEP_SECONDS=2
 
 STATE_DIR="$PROJECT_ROOT/data/31337/state"
 
+# temporary using END_TS - START_TS because it makes expor
+TIME_WINDOW=$((END_TS - START_TS))
+
 for ((epoch=0; epoch<EPOCH_COUNT; epoch++));
 do
     echo "🧱 Building orders for epoch $epoch"
@@ -39,11 +42,13 @@ do
         --sender "$FUNDER" \
         --private-key "$FUNDER_PK" \
         --sig "run(uint256,uint256)" \
-        $epoch "$EPOCH_SIZE"  \
+        $epoch "$TIME_WINDOW"  \
 
     sleep $SLEEP_SECONDS
     
     order_count=$(cat "$STATE_DIR"/epoch_$epoch/order-count.txt)
+
+    # TODO: EXPORT ORDERS TO INDEXER
     
     echo "🎬 Executing $order_count orders in epoch $epoch..."
 

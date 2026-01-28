@@ -10,6 +10,11 @@ import {DevConfig} from "dev/DevConfig.s.sol";
 // interfaces
 import {IWETH} from "periphery/interfaces/IWETH.sol";
 
+// TODO:
+// for ANVIL there are simpler ways to do to initial ETH
+// set --accounts and --memonic to generate and configure on fork startup
+// https://getfoundry.sh/anvil/reference/anvil
+
 contract BootstrapAccounts is BaseDevScript, DevConfig {
     function run() external {
         logBlockTimestamp();
@@ -39,13 +44,6 @@ contract BootstrapAccounts is BaseDevScript, DevConfig {
 
         // --- PKs for broadcasting ---
 
-        // TODO: replace dev PKs with mnemonic-derived keys
-        // https://getfoundry.sh/reference/cheatcodes/derive-key
-        // here it could also be nice to instead of reading from json instead:
-        // 1. set --mnemonic flag in start.sh
-        // 2. write output of `anvil` as json (probably contains the dev account pks(?))
-        // 3. read these instead of keys.json
-        // would be nice for overall realistic dev env
         uint256[] memory participantPks = generateKeys();
         uint256 participantCount = participantPks.length;
 
