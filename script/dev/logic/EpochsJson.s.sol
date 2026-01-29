@@ -11,7 +11,7 @@ import {SignatureOps as SigOps} from "orderbook/libs/SignatureOps.sol";
 import {SignedOrder, ActorNonce, Selection} from "dev/state/Types.sol";
 
 abstract contract EpochsJson is Script {
-    string private _stateNamespace = "state";
+    string private _dataDirRaw = "data";
 
     // === JSON SPECIFIC SCHEMAS ===
 
@@ -56,8 +56,8 @@ abstract contract EpochsJson is Script {
 
     // === STORAGE SETTERS ===
 
-    function _setStateNamespace(string memory ns) internal {
-        _stateNamespace = ns;
+    function _setDataDir(string memory dir) internal {
+        _dataDirRaw = dir;
     }
 
     // === INITIALIZERS ===
@@ -71,15 +71,12 @@ abstract contract EpochsJson is Script {
 
     // === DEFAULT DIRS ===
 
+    function _dataDir() internal view returns (string memory) {
+        return string.concat("./", _dataDirRaw, "/");
+    }
+
     function _stateDir() internal view returns (string memory) {
-        return
-            string.concat(
-                "./data/",
-                vm.toString(block.chainid),
-                "/",
-                _stateNamespace,
-                "/"
-            );
+        return string.concat(_dataDir(), vm.toString(block.chainid), "/state/");
     }
 
     function _epochDir(uint256 epoch) internal view returns (string memory) {

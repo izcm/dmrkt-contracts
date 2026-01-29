@@ -64,6 +64,9 @@ FORGE_COMMON_FLAGS = \
 # assumes pipeline.toml contains:
 #	1. weth address
 # 	2. pipeline end + start timestamps
+dev-test:  
+	./${DEV_STATE}/export-order.sh
+
 dev-execute-pipeline: dev-wait pipeline-setup pipeline-separator dev-run-epochs
 	@echo "🚀 Dev environment ready"
 
@@ -183,6 +186,9 @@ token-owner:
 #   MISC
 # ───────────────────────────────────────────────
 
+chmod-scripts:
+	@find script -type f -name "*.sh" -exec chmod +x {} +
+	
 tree:
 	@if [ -z "$(DEPTH)" ]; then DEPTH=3; fi; \
 	tree -L $$DEPTH -I "out|lib|broadcast|cache|notes"

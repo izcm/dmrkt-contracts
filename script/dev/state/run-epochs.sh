@@ -40,11 +40,9 @@ export_sleep_time=0.2
 
 for ((epoch=0; epoch<epoch_count; epoch++));
 do
-    # TMP: use full delta as order validity window
-    # - all orders valid for entire simulation
-    # - execution logic does not reason about time
-    # - failures reflect logic/economics, not scheduling
-    # - orders always valid for Date.now()
+    # TMP: use full delta instead of epoch_slice as build_script.TIME_WINDOW
+    # - all orders across epochs will have start/end timestamps valid at pipeline_end_ts
+    # - any unsettled order will be valid for demo user to settle themselves in the dmrkt frontend
 
     #--------------------------
     # PHASE 1: BUILD ORDERS

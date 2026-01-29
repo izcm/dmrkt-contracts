@@ -51,10 +51,14 @@ contract BuildEpoch is
         bytes32 domainSeparator = ISettlementEngine(settlementContract)
             .DOMAIN_SEPARATOR();
 
-        try vm.envString("STATE_NAMESPACE") returns (string memory ns) {
-            _setStateNamespace(ns);
+        try vm.envString("DATA_DIR") returns (string memory dir) {
+            _setDataDir(dir);
+            console.log(
+                "DATA_DIR config exists => out dir set to %s",
+                _dataDir()
+            );
         } catch {
-            console.log("STATE_NAMESPACE not set => using default namespace");
+            console.log("DATA_DIR not set => default out dir %s", _dataDir());
         }
         _loadParticipants();
         _createDefaultDirs(_epoch);
@@ -244,14 +248,21 @@ contract BuildEpoch is
         address currency,
         uint256 orderIdx
     ) internal returns (OrderModel.Order memory order) {
-        uint256 seed = (orderIdx << 160) | epoch;
+        uint256 actorSeed = (epoch << 160) | orderIdx;
 
         address actor = _resolveActor(
             side,
             isCollectionBid,
             collection,
             tokenId,
-            seed
+            actorSeed
+        );
+
+        uint256 orderSeed = selectionSalt(
+            side,
+            isCollectionBid,
+            collection,
+            actorSeed
         );
 
         order = OrderBuilder.build(
@@ -260,10 +271,10 @@ contract BuildEpoch is
             collection,
             tokenId,
             currency,
-            orderPrice(collection, tokenId, seed),
+            orderPrice(collection, tokenId, orderSeed),
             actor,
-            _resolveStartDate(seed),
-            _resolveEndDate(seed),
+            _resolveStartDate(orderSeed),
+            _resolveEndDate(orderSeed),
             actorNonceIdx[actor]++
         );
 
