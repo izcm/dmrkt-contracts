@@ -7,7 +7,7 @@ import {SignatureOps as SigOps} from "orderbook/libs/SignatureOps.sol";
 
 struct SignedOrder {
     OrderModel.Order order;
-    SigOps.Signature sig;
+    SigOps.Signature signature;
 }
 
 struct ActorNonce {

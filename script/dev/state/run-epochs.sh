@@ -5,17 +5,17 @@ GREEN="\033[0;32m"
 RESET="\033[0m"
 YELLOW="\033[0;33m" # todo: change reverts to yellow
 
-if [ -z "$EPOCHS_STATE_DIR" ]; then
-    echo "${RED}EPOCHS_STATE_DIR not set (expected from Makefile)${RESET}"
+if [ -z "$PIPELINE_STATE_DIR" ]; then
+    echo "${RED}PIPELINE_STATE_DIR not set (expected from Makefile)${RESET}"
     exit 1
 fi
 
 if [ -z "$1" ]; then
-    echo "${RED}Missing Argument - Usage: execute-epoch.sh EPOCH_COUNT${RESET}"
+    echo "${RED}Missing Argument - Usage: execute-epoch.sh epoch_count${RESET}"
     exit 1
 fi
 
-EPOCH_COUNT=$1
+epoch_count=$1
 
 TOML="./pipeline.toml"
 
@@ -26,22 +26,21 @@ TOML="./pipeline.toml"
 START_TS=$(awk -F ' ' '$1=="pipeline_start_ts" { print $3 }' $TOML)
 END_TS=$(awk -F ' ' '$1=="pipeline_end_ts" { print $3 }' $TOML)
 
-DELTA=$(( END_TS - START_TS ))
+delta=$(( END_TS - START_TS ))
 
-if ((DELTA < EPOCH_COUNT )); then
+if ((delta < epoch_count )); then
     echo "epoch size would be 0 - invalid config"
     exit 1
 fi
 
-EPOCH_SLICE=$(( DELTA / EPOCH_COUNT ))
+epoch_slice=$(( delta / epoch_count ))
 
-SLEEP_SECONDS=2
+epoch_sleep_time=2
+export_sleep_time=0.2
 
-for ((epoch=0; epoch<EPOCH_COUNT; epoch++));
+for ((epoch=0; epoch<epoch_count; epoch++));
 do
-    echo "🧱 Building orders for epoch $epoch"
-
-    # TMP: use full DELTA as order validity window
+    # TMP: use full delta as order validity window
     # - all orders valid for entire simulation
     # - execution logic does not reason about time
     # - failures reflect logic/economics, not scheduling
@@ -50,41 +49,58 @@ do
     #--------------------------
     # PHASE 1: BUILD ORDERS
     #--------------------------
-
+    
+    echo
+    echo "=== PHASE 1: BUILD ORDERS (epoch $epoch) ==="
+    
     forge script "$DEV_STATE"/BuildEpoch.s.sol \
         --rpc-url "$RPC_URL" \
         --broadcast \
         --sender "$FUNDER" \
         --private-key "$FUNDER_PK" \
         --sig "run(uint256,uint256)" \
-        $epoch "$DELTA"  \
+        $epoch "$delta"  \
 
-    sleep $SLEEP_SECONDS
+    sleep $epoch_sleep_time
     
-    order_count=$(cat "$EPOCHS_STATE_DIR"/epoch_$epoch/order-count.txt)
+    order_count=$(cat "$PIPELINE_STATE_DIR/epoch_$epoch/order-count.txt")
 
     #--------------------------
     # PHASE 2: EXPORT ORDERS
     #--------------------------
     
+    echo
+    echo "=== PHASE 2: EXPORT ORDERS (epoch $epoch) ==="
+    echo "orders: $order_count"
+    
+    for((i = 0; i < order_count; i++)); do
+        if curl -X POST \
+            -H "Content-Type: application/json" \
+            --data-binary @"$PIPELINE_STATE_DIR/epoch_$epoch/orders/order_$i.json" \
+            "$INDEXER_URL/api/orders"
+        then 
+            echo -e "[epoch:$epoch] [order:$i] ${GREEN}EXPORTED${RESET}"
+        else 
+            echo -e "[epoch:$epoch] [order:$i] ${RED}EXPORT_ERR${RESET}"
+        fi
 
-    # TODO: EXPORT ORDERS TO INDEXER
+        sleep $export_sleep_time
+    done
     
     #--------------------------
     # PHASE 3: EXECUTE ORDERS
     #--------------------------
 
-    echo "🎬 Executing $order_count orders in epoch $epoch..."
+    echo
+    echo "=== PHASE 3: EXECUTE ORDERS (epoch $epoch) ==="
+    echo "orders: $order_count"
 
     success=0
     fail=0
 
-    base_step=$((EPOCH_SLICE / order_count))
+    base_step=$((epoch_slice / order_count))
 
-    #cast rpc evm_increaseTime $EPOCH_SLICE
-    #cast rpc evm_mine
-
-    for((i=0; i < order_count; i++)); do
+    for((i = 0; i < order_count; i++)); do
         offset=$(((i % 5) - 2))
         time_jump=$((base_step + offset))
 
@@ -107,10 +123,10 @@ do
 
             ts=$(date -d @"$mined_at" "+%Y-%m-%d %H:%M:%S")
 
-            echo -e "[${ts}] [epoch:${epoch}] [order:${i}] ${GREEN}EXECUTED${RESET}"
+            echo -e "[$ts] [epoch:$epoch] [order:$i] ${GREEN}EXECUTED${RESET}"
             ((success++))
         else
-            echo -e "[${ts}] [epoch:${epoch}] [order:${i}] ${YELLOW}REVERTED${RESET}"
+            echo -e "[$ts] [epoch:$epoch] [order:$i] ${YELLOW}REVERTED${RESET}"
 
             ((fail++))
         fi
@@ -120,7 +136,7 @@ do
     echo -e "   Executed: $success"
     echo -e "   Reverted: $fail"
 
-    sleep $SLEEP_SECONDS
+    sleep $epoch_sleep_time
 done
 
 # final block

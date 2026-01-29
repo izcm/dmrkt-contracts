@@ -27,7 +27,7 @@ export DEV_STATE       := $(DEV_ROOT)/state
 
 # paths - artifacts
 
-export EPOCHS_STATE_DIR := "$(PROJECT_ROOT)/data/31337/state"
+export PIPELINE_STATE_DIR := $(PROJECT_ROOT)/data/31337/state
 
 # chain
 WETH    := 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2

@@ -28,7 +28,7 @@ forge script "$DEV_STATE"/BuildEpoch.s.sol \
     --sig "run(uint256,uint256)" \
     0 "$EPOCH_SIZE"  \
 
-order_count=$(cat "$STATE_DIR"/epoch_$epoch/order-count.txt)
+order_count=$(cat "$PIPELINE_STATE_DIR"/epoch_$epoch/order-count.txt)
 
 echo "✔ Order build completed!"
 echo "📤 $order_count orders ready for export"

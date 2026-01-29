@@ -51,8 +51,6 @@ contract BuildEpoch is
         bytes32 domainSeparator = ISettlementEngine(settlementContract)
             .DOMAIN_SEPARATOR();
 
-        console.log(block.timestamp);
-
         try vm.envString("STATE_NAMESPACE") returns (string memory ns) {
             _setStateNamespace(ns);
         } catch {
@@ -98,7 +96,7 @@ contract BuildEpoch is
                 pkOf(orders[i].actor)
             );
 
-            signed[i] = SignedOrder({order: orders[i], sig: sig});
+            signed[i] = SignedOrder({order: orders[i], signature: sig});
         }
 
         console.log("Orders signed: %s", signed.length);

@@ -24,7 +24,13 @@ import {ISettlementEngine} from "periphery/interfaces/ISettlementEngine.sol";
 // types
 import {SignedOrder, Selection} from "dev/state/Types.sol";
 
-contract ExecuteOrder is EpochsJson, FillBid, SettlementValidation, BaseDevScript, DevConfig {
+contract ExecuteOrder is
+    EpochsJson,
+    FillBid,
+    SettlementValidation,
+    BaseDevScript,
+    DevConfig
+{
     using SafeERC20 for IERC20;
     using OrderModel for OrderModel.Order;
 
@@ -49,7 +55,10 @@ contract ExecuteOrder is EpochsJson, FillBid, SettlementValidation, BaseDevScrip
         if (signed.order.isCollectionBid) {
             // selection.tokenIds are excluded when producing fill for collectionBids
             // this is because they are linked to some other order in this epoch
-            Selection memory selection = selectionFromJson(epoch, signed.order.collection);
+            Selection memory selection = selectionFromJson(
+                epoch,
+                signed.order.collection
+            );
 
             uint256[] memory exclude = selection.tokenIds;
 
@@ -61,7 +70,7 @@ contract ExecuteOrder is EpochsJson, FillBid, SettlementValidation, BaseDevScrip
         // === VALIDATE AND EXECUTE ===
 
         OrderModel.Order memory order = signed.order;
-        SigOps.Signature memory sig = signed.sig;
+        SigOps.Signature memory sig = signed.signature;
 
         if (!validTimestamps(order)) {
             revert("INVALID_TIMESTAMPS");
@@ -73,7 +82,12 @@ contract ExecuteOrder is EpochsJson, FillBid, SettlementValidation, BaseDevScrip
             revert("INVALID_NFT_OWNERSHIP");
         }
 
-        if (ISettlementEngine(orderSettler).isUserOrderNonceInvalid(order.actor, order.nonce)) {
+        if (
+            ISettlementEngine(orderSettler).isUserOrderNonceInvalid(
+                order.actor,
+                order.nonce
+            )
+        ) {
             revert("INVALID_NONCE");
         }
 
@@ -85,9 +99,12 @@ contract ExecuteOrder is EpochsJson, FillBid, SettlementValidation, BaseDevScrip
         logSeparator();
     }
 
-    function _produceFill(OrderModel.Order memory o) internal view returns (OrderModel.Fill memory) {
+    function _produceFill(
+        OrderModel.Order memory o
+    ) internal view returns (OrderModel.Fill memory) {
         if (o.isAsk()) {
-            return _fillAsk(o.actor, uint256((uint160(o.actor) << 160) | o.nonce));
+            return
+                _fillAsk(o.actor, uint256((uint160(o.actor) << 160) | o.nonce));
         } else if (o.isBid()) {
             return fillBid(o, excludedFromCb);
         } else {
@@ -95,7 +112,14 @@ contract ExecuteOrder is EpochsJson, FillBid, SettlementValidation, BaseDevScrip
         }
     }
 
-    function _fillAsk(address orderActor, uint256 seed) internal view returns (OrderModel.Fill memory) {
-        return OrderModel.Fill({tokenId: 0, actor: otherParticipant(orderActor, seed)});
+    function _fillAsk(
+        address orderActor,
+        uint256 seed
+    ) internal view returns (OrderModel.Fill memory) {
+        return
+            OrderModel.Fill({
+                tokenId: 0,
+                actor: otherParticipant(orderActor, seed)
+            });
     }
 }

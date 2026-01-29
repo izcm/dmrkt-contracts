@@ -38,7 +38,7 @@ abstract contract EpochsJson is Script {
         uint256 nonce;
         uint256 price;
         OrderModel.Side side;
-        SignatureJson sig;
+        SignatureJson signature;
         uint64 start;
         uint256 tokenId;
     }
@@ -190,15 +190,15 @@ abstract contract EpochsJson is Script {
         _serializeOrderJson(signed.order, root);
 
         // ---- signature ----
-        SigOps.Signature memory sig = signed.sig;
+        SigOps.Signature memory signature = signed.signature;
 
         string memory sKey = string.concat(root, "_sig");
 
-        vm.serializeUint(sKey, "v", sig.v);
-        vm.serializeBytes32(sKey, "r", sig.r);
-        string memory sigOut = vm.serializeBytes32(sKey, "s", sig.s);
+        vm.serializeUint(sKey, "v", signature.v);
+        vm.serializeBytes32(sKey, "r", signature.r);
+        string memory sigOut = vm.serializeBytes32(sKey, "s", signature.s);
 
-        string memory finalJson = vm.serializeString(root, "sig", sigOut);
+        string memory finalJson = vm.serializeString(root, "signature", sigOut);
 
         vm.writeJson(finalJson, string.concat(dir, filename));
     }
@@ -326,10 +326,10 @@ abstract contract EpochsJson is Script {
             nonce: jso.nonce
         });
 
-        signed.sig = SigOps.Signature({
-            v: jso.sig.v,
-            r: jso.sig.r,
-            s: jso.sig.s
+        signed.signature = SigOps.Signature({
+            v: jso.signature.v,
+            r: jso.signature.r,
+            s: jso.signature.s
         });
     }
 }
