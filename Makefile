@@ -65,7 +65,7 @@ FORGE_COMMON_FLAGS = \
 #	1. weth address
 # 	2. pipeline end + start timestamps
 dev-test:  
-	./${DEV_STATE}/export-order.sh
+	@./${DEV_STATE}/export-order.sh ./data/31337/state/epoch_0/orders/order_0.json
 
 dev-execute-pipeline: dev-wait pipeline-setup pipeline-separator dev-run-epochs
 	@echo "🚀 Dev environment ready"
@@ -188,7 +188,7 @@ token-owner:
 
 chmod-scripts:
 	@find script -type f -name "*.sh" -exec chmod +x {} +
-	
+
 tree:
 	@if [ -z "$(DEPTH)" ]; then DEPTH=3; fi; \
 	tree -L $$DEPTH -I "out|lib|broadcast|cache|notes"

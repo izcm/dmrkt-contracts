@@ -6,7 +6,7 @@ RESET="\033[0m"
 YELLOW="\033[0;33m" # todo: change reverts to yellow
 
 if [ -z "$PIPELINE_STATE_DIR" ]; then
-    echo "${RED}PIPELINE_STATE_DIR not set (expected from Makefile)${RESET}"
+        echo "${RED}PIPELINE_STATE_DIR not set (expected from Makefile)${RESET}"
     exit 1
 fi
 
@@ -57,7 +57,7 @@ do
         --sender "$FUNDER" \
         --private-key "$FUNDER_PK" \
         --sig "run(uint256,uint256)" \
-        $epoch "$delta"  \
+        $epoch $delta  \
 
     sleep $epoch_sleep_time
     
@@ -72,17 +72,7 @@ do
     echo "orders: $order_count"
     
     for((i = 0; i < order_count; i++)); do
-        if curl -X POST \
-            -H "Content-Type: application/json" \
-            --data-binary @"$PIPELINE_STATE_DIR/epoch_$epoch/orders/order_$i.json" \
-            "$INDEXER_URL/api/orders"
-        then 
-            echo -e "[epoch:$epoch] [order:$i] ${GREEN}EXPORTED${RESET}"
-        else 
-            echo -e "[epoch:$epoch] [order:$i] ${RED}EXPORT_ERR${RESET}"
-        fi
-
-        sleep $export_sleep_time
+        "$DEV_STATE/export-order.sh" "$PIPELINE_STATE_DIR/epoch_$epoch/orders/order_$i.json"
     done
     
     #--------------------------
