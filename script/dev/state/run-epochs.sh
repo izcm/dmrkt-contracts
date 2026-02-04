@@ -72,7 +72,13 @@ do
     echo "orders: $order_count"
     
     for((i = 0; i < order_count; i++)); do
-        "$DEV_STATE/export-order.sh" "$PIPELINE_STATE_DIR/epoch_$epoch/orders/order_$i.json"
+        if "$DEV_STATE/export-order.sh" \
+            "$PIPELINE_STATE_DIR/epoch_$epoch/orders/order_$i.json"
+        then
+            echo -e "[epoch:$epoch] [order:$i] ${GREEN}EXPORTED${RESET}"
+        else
+            echo -e "[epoch:$epoch] [order:$i] ${RED}EXPORT_ERR${RESET}"
+        fi
     done
     
     #--------------------------

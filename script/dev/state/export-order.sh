@@ -1,10 +1,7 @@
 #!/bin/bash
 
-
 RED="\033[0;31m"
-GREEN="\033[0;32m"
 RESET="\033[0m"
-YELLOW="\033[0;33m" 
 
 in_file_path="${1:?Usage: export-order.sh <input-path>}"
 
@@ -38,18 +35,16 @@ attempt=1
 while true; do
     if curl -X POST -f -s -S -o /dev/null \
         -H "Content-Type: application/json" \
+        -H "X-Chain-Id: $CHAIN_ID" \
         --data-binary @"$in_file_path" \
         "$INDEXER_URL/api/orders"
     then
-        echo -e "[order:$order_idx] ${GREEN}EXPORTED${RESET}"
-        break
+        exit 0 # SUCCESS
     fi
     if ((attempt >= MAX_RETRIES)); then
-        echo -e "[order:$order_idx] ${RED}FAILED after $attempt attempts${RESET}"
-        break
+        exit 1 # FAILURE
     fi
 
-    echo -e "[order:$order_idx] ${YELLOW}retry $attempt/$MAX_RETRIES...${RESET}"
     ((attempt++))
     sleep "$RETRY_DELAY"
 done
