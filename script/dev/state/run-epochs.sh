@@ -23,6 +23,8 @@ TOML="./pipeline.toml"
 # PHASE 0: CONFIG / CTX
 #--------------------------
 
+# --- timestamps and epochs ---
+
 START_TS=$(awk -F ' ' '$1=="pipeline_start_ts" { print $3 }' $TOML)
 END_TS=$(awk -F ' ' '$1=="pipeline_end_ts" { print $3 }' $TOML)
 
@@ -34,9 +36,13 @@ if ((delta < epoch_count )); then
 fi
 
 epoch_slice=$(( delta / epoch_count ))
-
 epoch_sleep_time=2
-export_sleep_time=0.2
+
+# --- logic for counting orders to execute ---
+
+p0=0.9      # probability of execution epoch 0
+pMin=0.5    # max probability
+k=0.2       # rate constant
 
 for ((epoch=0; epoch<epoch_count; epoch++));
 do
@@ -84,17 +90,35 @@ do
     #--------------------------
     # PHASE 3: EXECUTE ORDERS
     #--------------------------
-
+    
     echo
     echo "=== PHASE 3: EXECUTE ORDERS (epoch $epoch) ==="
-    echo "orders: $order_count"
+    
+     # --- compute orders to execute ---
+    
+    p=$(awk -v p0="$p0" -v pMin="$pMin" -v k=$k -v epoch="$epoch" \
+        'BEGIN { print pMin - (pMin - p0) * exp( -k * epoch )}')
+
+    exec_limit=$(awk -v p="$p" -v order_count="$order_count" \
+        'BEGIN { printf "%d", p * order_count}')
+
+    if (( exec_limit == 0)); then
+        echo "No executions this epoch"
+        continue
+    fi
+
+    echo
+    echo "orders to skip:  : $((order_count - exec_limit))"
+    echo "orders to execute: $exec_limit"
+    echo 
 
     success=0
     fail=0
 
-    base_step=$((epoch_slice / order_count))
+    # base_step=$((epoch_slice / order_count))
+    base_step=$((epoch_slice / exec_limit))
 
-    for((i = 0; i < order_count; i++)); do
+    for((i = 0; i < exec_limit; i++)); do
         offset=$(((i % 5) - 2))
         time_jump=$((base_step + offset))
 
