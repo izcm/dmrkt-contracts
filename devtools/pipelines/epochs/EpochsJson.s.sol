@@ -79,6 +79,10 @@ abstract contract EpochsJson is Script {
         return string.concat(_dataDir(), vm.toString(block.chainid), "/state/");
     }
 
+    function _ensureLingerDir() internal view returns (string memory) {
+        return string.concat(_stateDir(), "ensure-Linger/");
+    }
+
     function _epochDir(uint256 epoch) internal view returns (string memory) {
         return string.concat(_stateDir(), "epoch_", vm.toString(epoch), "/");
     }
@@ -165,12 +169,28 @@ abstract contract EpochsJson is Script {
         return orderFromJson(string.concat(p.dir, p.filename));
     }
 
+    // the selected tokens of a specific epoch
+    // - not to be used for filling collection bids
+
     function selectionFromJson(
         uint256 epoch,
         address collection
     ) internal view returns (Selection memory) {
         Path memory p = epochSelectionPath(epoch, collection);
         return selectionFromJson(string.concat(p.dir, p.filename));
+    }
+
+    // selection of tokens across epochs to **not** be executed
+    // - build script ensures no new orders are made on these tokens
+    // - not to be used for filling collection bids
+
+    function ensureLingerFromJson(
+        address collection
+    ) internal view returns (Selection memory) {
+        return
+            selectionFromJson(
+                string.concat(_ensureLingerDir(), collection, ".json")
+            );
     }
 
     // === TO JSON ===

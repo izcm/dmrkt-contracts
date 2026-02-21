@@ -40,6 +40,9 @@ contract BuildEpoch is
     mapping(address => uint256) private actorNonceIdx;
     mapping(address => uint256[]) private selected; // selected tokenIds per collection
 
+    // selection of tokens decided by run-epochs bash script to not be executed
+    // build script ensures no new orders are made on these tokens
+
     // === ENTRYPOINTS ===
 
     function run(uint256 _epoch, uint256 _epochSpan) external {

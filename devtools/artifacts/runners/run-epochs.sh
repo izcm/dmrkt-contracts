@@ -23,6 +23,11 @@ TOML="./pipeline.toml"
 # PHASE 0: CONFIG / CTX
 #--------------------------
 
+# --- ensure directories ---
+
+linger_dir="$PIPELINE_STATE_DIR/ensure-linger"
+mkdir -p "$linger_dir"
+
 # --- timestamps and epochs ---
 
 START_TS=$(awk -F ' ' '$1=="pipeline_start_ts" { print $3 }' $TOML)
@@ -62,10 +67,15 @@ add_token() {
 
     ensure_json "$file" "$col"
 
-    jq --argjson tid "$tid" ' if (.tokenIds | index($tid)) == null then .tokenIds += [$tid] else . end ' "$file"
+    tmpfile=$(mktemp)
+
+    jq --argjson tid "$tid" ' 
+        if (.tokenIds | index($tid)) == null then
+            .tokenIds += [$tid] else . end ' \
+            "$file" > "$tmpfile" && mv "$tmpfile" "$file"
 }
 
-for ((epoch=0; epoch<epoch_count; epoch++));
+for ((epoch=0; epoch < epoch_count; epoch++));
 do
     # TMP: use full delta instead of epoch_slice as build_script.TIME_WINDOW
     # - all orders across epochs will have start/end timestamps valid at pipeline_end_ts
@@ -137,19 +147,20 @@ do
     
     for((i = exec_limit; i < order_count; i++)); do
         to_linger="$order_out/order_$i.json"
+        is_cb=$(jq -r ".isCollectionBid" "$to_linger")
+
+        # collectionBids => no particular token to ensure lingers 
+        if [[ "$is_cb" = "true" ]]; then
+            echo "collection bid"
+            continue
+        fi
 
         token_id=$(jq -r ".tokenId" "$to_linger")
         collection=$(jq -r ".collection" "$to_linger")
         
+        linger_file="$linger_dir/$collection.json"
 
-        tokenIds=$(jq -r ".tokenIds[]" data/31337/state/epoch_0/selections/0x2BF866DA3A8eEb90b288e6D434d319624263a24b.json)
-
-        # create file if not exist .../ensure_linger/$collection.json
-        # append to '.tokenIds' $tokenId
-        # continue 
-
-        echo "SKIPPING $token_id IN $collection"
-        echo "EXISTING $tokenIds"
+        add_token "$linger_file" "$collection" "$token_id" 
     done
 
     echo
