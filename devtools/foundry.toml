@@ -4,6 +4,7 @@ out = "../out"
 libs = ["../lib"]
 remappings = [
     "orderbook/=../contracts/orderbook",
+    "periphery/=../periphery",
     "nfts/=./local-nfts",
     "dev/=./seed",
     "@openzeppelin/=../lib/openzeppelin-contracts/contracts/"
@@ -11,7 +12,9 @@ remappings = [
 
 fs_permissions = [
     { access = "read-write", path = "../data/" },
-    { access = "read-write", path = "../pipeline.toml" }
+    { access = "read-write", path = "../pipeline.toml" },
+    { access = "read", path = "../contracts/" },
+    { access = "read", path = "../periphery/" }
 ]
 
 [lint]
