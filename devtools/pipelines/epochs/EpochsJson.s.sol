@@ -180,7 +180,7 @@ abstract contract EpochsJson is Script {
         return selectionFromJson(string.concat(p.dir, p.filename));
     }
 
-    // selection of tokens across epochs to **not** be executed
+    // selection of tokens across epochs that are **not** to be executed
     // - build script ensures no new orders are made on these tokens
     // - not to be used for filling collection bids
 
@@ -189,7 +189,11 @@ abstract contract EpochsJson is Script {
     ) internal view returns (Selection memory) {
         return
             selectionFromJson(
-                string.concat(_ensureLingerDir(), collection, ".json")
+                string.concat(
+                    _ensureLingerDir(),
+                    vm.toString(collection),
+                    ".json"
+                )
             );
     }
 

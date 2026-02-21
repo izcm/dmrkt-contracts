@@ -7,19 +7,10 @@ remappings = [
     "orderbook/=contracts/orderbook",
     "test-helpers/=test/helpers",
     "mocks/=test/mocks",
-    "nfts/=devtools/local-nfts",
-    "dev/=devtools/seed",
+    "nfts/=periphery/nfts",
+    "dev/=script/dev",
     "@openzeppelin/=lib/openzeppelin-contracts/contracts"
 ]
 
-fs_permissions = [
-    { access = "read-write", path = "./data/" },
-    { access = "read-write", path = "pipeline.toml" }
-]
-
-ignored_error_codes = [2424, 5574, 4591, 3860]
-
-[lint]
-exclude_lints = ["unaliased-plain-import", "mixed-case-function", "asm-keccak256", "unsafe-cheatcode"]
 
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options

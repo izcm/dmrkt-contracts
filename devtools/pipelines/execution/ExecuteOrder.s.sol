@@ -60,6 +60,8 @@ contract ExecuteOrder is
                 signed.order.collection
             );
 
+            // selection across epochs that are **not** to be executed in any epoch!
+
             uint256[] memory exclude = selection.tokenIds;
 
             for (uint256 i = 0; i < exclude.length; i++) {

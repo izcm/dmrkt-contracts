@@ -1,0 +1,21 @@
+[profile.default]
+src = "."
+out = "../out"
+libs = ["../lib"]
+remappings = [
+    "orderbook/=../contracts/orderbook",
+    "periphery/=../periphery",
+    "nfts/=./local-nfts",
+    "dev/=./seed",
+    "@openzeppelin/=../lib/openzeppelin-contracts/contracts"
+]
+
+fs_permissions = [
+    { access = "read-write", path = "../data/" },
+    { access = "read-write", path = "pipeline.toml" }
+]
+
+[lint]
+exclude_lints = ["unaliased-plain-import", "mixed-case-function", "asm-keccak256", "unsafe-cheatcode"]
+
+ignored_error_codes = [2424, 5574, 4591, 3860]

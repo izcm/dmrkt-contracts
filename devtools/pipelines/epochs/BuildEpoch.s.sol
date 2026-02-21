@@ -42,6 +42,7 @@ contract BuildEpoch is
 
     // selection of tokens decided by run-epochs bash script to not be executed
     // build script ensures no new orders are made on these tokens
+    mapping(address => uint256[]) private exclude;
 
     // === ENTRYPOINTS ===
 
@@ -66,9 +67,6 @@ contract BuildEpoch is
         _loadParticipants();
         _createDefaultDirs(_epoch);
 
-        // track userNonces if epoch != 0
-        // TODO: change this to read nonces everytime (needed for export)
-        // just make some epoch:0 all nonce = 0
         if (_epoch != 0) {
             // read prev epoch actors' last order nonce
             ActorNonce[] memory startNonces = noncesFromJson(_epoch - 1);
@@ -85,6 +83,15 @@ contract BuildEpoch is
 
         address[] memory collections = readCollections();
         console.log("Collections: %s", collections.length);
+
+        if (_epoch != 0) {
+            for (uint256 i; i < collections.length; i++) {
+                address collection = collections[i];
+
+                Selection memory selection = ensureLingerFromJson(collection);
+                exclude[collection] = selection.tokenIds;
+            }
+        }
 
         // === BUILD ORDERS ===
 
@@ -394,5 +401,17 @@ contract BuildEpoch is
         uint64 offset = _resolveTimeOffset(seed);
 
         return isStart ? anchor - offset : anchor + offset;
+    }
+
+    // --- helpers ---
+
+    function _isExcluded(
+        uint256 tokenId,
+        uint256[] memory excluded
+    ) private pure returns (bool) {
+        for (uint256 i = 0; i < excluded.length; i++) {
+            if (tokenId == excluded[i]) return true;
+        }
+        return false;
     }
 }
