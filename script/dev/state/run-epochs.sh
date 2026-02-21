@@ -107,8 +107,18 @@ do
         continue
     fi
 
+    # store the skipped orders in json file to ensure ownership stays valid
+    # we need to store all the skipped orders tokenIds in one file
+
+    # buildOrders should skip building any new orders on that same token
+    # + execute order needs to check before using that token for collection-bids
+    
+    for((i = exec_limit; i < order_count; i++)); do
+        echo "$i"
+    done
+
     echo
-    echo "orders to skip:  : $((order_count - exec_limit))"
+    echo "orders to skip:    $((order_count - exec_limit))"
     echo "orders to execute: $exec_limit"
     echo 
 
