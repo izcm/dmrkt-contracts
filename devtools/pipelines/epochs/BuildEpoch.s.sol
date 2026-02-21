@@ -12,12 +12,12 @@ import {OrderBuilder} from "periphery/builders/OrderBuilder.sol";
 import {BaseDevScript} from "dev/BaseDevScript.s.sol";
 import {DevConfig} from "dev/DevConfig.s.sol";
 
-import {OrderSampling} from "dev/logic/OrderSampling.s.sol";
-import {EpochsJson} from "dev/logic/EpochsJson.s.sol";
-import {SettlementSigner} from "dev/logic/SettlementSigner.s.sol";
+import {OrderSampling} from "../sampling/OrderSampling.s.sol";
+import {EpochsJson} from "./EpochsJson.s.sol";
+import {SettlementSigner} from "../execution/SettlementSigner.s.sol";
 
 // types
-import {SignedOrder, Selection, ActorNonce} from "dev/state/Types.sol";
+import {SignedOrder, Selection, ActorNonce} from "./Types.sol";
 
 // interfaces
 import {ISettlementEngine} from "periphery/interfaces/ISettlementEngine.sol";

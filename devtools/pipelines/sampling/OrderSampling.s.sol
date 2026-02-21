@@ -13,7 +13,7 @@ import {MarketSim} from "periphery/MarketSim.sol";
 import {DNFT} from "periphery/interfaces/DNFT.sol";
 
 // types
-import {Selection} from "dev/state/Types.sol";
+import {Selection} from "../epochs/Types.sol";
 
 abstract contract OrderSampling is Script {
     function collect(

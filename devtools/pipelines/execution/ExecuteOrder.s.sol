@@ -13,16 +13,16 @@ import {BaseDevScript} from "dev/BaseDevScript.s.sol";
 import {DevConfig} from "dev/DevConfig.s.sol";
 
 // scripts order logic
-import {EpochsJson} from "dev/logic/EpochsJson.s.sol";
-import {FillBid} from "dev/logic/FillBid.s.sol";
-import {SettlementValidation} from "dev/logic/SettlementValidation.s.sol";
+import {EpochsJson} from "../epochs/EpochsJson.s.sol";
+import {FillBid} from "./FillBid.s.sol";
+import {SettlementValidation} from "./SettlementValidation.s.sol";
 
 // interfaces
 import {IERC20, SafeERC20} from "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import {ISettlementEngine} from "periphery/interfaces/ISettlementEngine.sol";
 
 // types
-import {SignedOrder, Selection} from "dev/state/Types.sol";
+import {SignedOrder, Selection} from "../epochs/Types.sol";
 
 contract ExecuteOrder is
     EpochsJson,

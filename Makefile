@@ -12,18 +12,19 @@ export
 PROJECT_ROOT := $(shell pwd)
 export PROJECT_ROOT
 
-# paths - scripts
+# paths - devtools (market simulator)
 
-SCRIPT_ROOT := script
-DEV_ROOT    := $(SCRIPT_ROOT)/dev
+DEVTOOLS_ROOT   := devtools
+SEED            := $(DEVTOOLS_ROOT)/seed
+SEED_BOOTSTRAP  := $(SEED)/bootstrap
+PIPELINES       := $(DEVTOOLS_ROOT)/pipelines
+ARTIFACTS       := $(DEVTOOLS_ROOT)/artifacts
 
-# dev subtrees
-DEV_BASE        := $(DEV_ROOT)
-DEV_SETUP       := $(DEV_ROOT)/genesis
-DEV_BOOTSTRAP   := $(DEV_SETUP)/bootstrap
-DEV_LOGIC       := $(DEV_ROOT)/logic
-
-export DEV_STATE       := $(DEV_ROOT)/state
+export ARTIFACTS_FORK := $(ARTIFACTS)/fork
+export ARTIFACTS_RUNNERS := $(ARTIFACTS)/runners
+export ARTIFACTS_EXPORTERS := $(ARTIFACTS)/exporters
+export PIPELINES_EPOCHS := $(PIPELINES)/epochs
+export PIPELINES_EXECUTION := $(PIPELINES)/execution
 
 # paths - artifacts
 
@@ -105,12 +106,12 @@ pipeline-setup: \
 
 dev-fork:
 	@echo "🧬 Starting anvil fork..."
-	@./$(DEV_ROOT)/start-fork.sh
+	@./$(ARTIFACTS_FORK)/start-fork.sh
 
 # local just defaults to 4 weeks = 2419200
 dev-prepare: 
 	@echo "🔢 Finding block number and timestamps..."
-	@node ./$(DEV_ROOT)/prepare-fork.js 2419200
+	@node ./$(ARTIFACTS_FORK)/prepare-fork.js 2419200
 
 # ───────────────────────────────────────────────
 #   DEV — SETUP / GENESIS
@@ -118,22 +119,22 @@ dev-prepare:
 
 dev-bootstrap-accounts:
 	@echo "💻 Bootstrapping dev accounts..."
-	@forge script $(DEV_BOOTSTRAP)/BootstrapAccounts.s.sol \
+	@forge script $(SEED_BOOTSTRAP)/BootstrapAccounts.s.sol \
 		$(FORGE_COMMON_FLAGS)
 
 dev-deploy-core:
 	@echo "🧾 Deploying core contracts..."
-	@forge script $(DEV_SETUP)/DeployCore.s.sol \
+	@forge script $(SEED)/DeployCore.s.sol \
 		$(FORGE_COMMON_FLAGS)
 
 dev-bootstrap-nfts:
 	@echo "👾 Bootstrapping NFTs..."
-	@forge script $(DEV_BOOTSTRAP)/BootstrapNFTs.s.sol \
+	@forge script $(SEED_BOOTSTRAP)/BootstrapNFTs.s.sol \
 		$(FORGE_COMMON_FLAGS)
 
 dev-approve:
 	@echo "✔ Executing approvals..."
-	@forge script $(DEV_BOOTSTRAP)/Approve.s.sol \
+	@forge script $(SEED_BOOTSTRAP)/Approve.s.sol \
 		$(FORGE_COMMON_FLAGS)
 
 # ───────────────────────────────────────────────
@@ -142,7 +143,7 @@ dev-approve:
 
 dev-run-epochs: 
 	@echo "📊 Building historical orders..."
-	@./$(DEV_STATE)/run-epochs.sh $(EPOCH_COUNT)
+	@./$(ARTIFACTS_RUNNERS)/run-epochs.sh $(EPOCH_COUNT)
 
 # ───────────────────────────────────────────────
 #   RESET / PROCESS CONTROL

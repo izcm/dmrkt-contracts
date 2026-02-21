@@ -44,6 +44,27 @@ p0=0.9      # probability of execution epoch 0
 pMin=0.5    # max probability
 k=0.2       # rate constant
 
+# --- helpers ---
+
+ensure_json() {
+    local file=$1
+    local c_addr=$2
+
+    if [ ! -f "$file" ]; then
+        jq -n --arg "c_addr" "$c_addr" '{collection:$c_addr, tokenIds:[]}' > "$file"
+    fi
+}
+
+add_token() {
+    local file="$1"
+    local col="$2"
+    local tid="$3"
+
+    ensure_json "$file" "$col"
+
+    jq --argjson tid "$tid" ' if (.tokenIds | index($tid)) == null then .tokenIds += [$tid] else . end ' "$file"
+}
+
 for ((epoch=0; epoch<epoch_count; epoch++));
 do
     # TMP: use full delta instead of epoch_slice as build_script.TIME_WINDOW
@@ -57,7 +78,7 @@ do
     echo
     echo "=== PHASE 1: BUILD ORDERS (epoch $epoch) ==="
     
-    forge script "$DEV_STATE"/BuildEpoch.s.sol \
+    forge script "$PIPELINES_EPOCHS"/BuildEpoch.s.sol \
         --rpc-url "$RPC_URL" \
         --broadcast \
         --sender "$FUNDER" \
@@ -68,6 +89,7 @@ do
     sleep $epoch_sleep_time
     
     order_count=$(cat "$PIPELINE_STATE_DIR/epoch_$epoch/order-count.txt")
+    order_out="$PIPELINE_STATE_DIR/epoch_$epoch/orders"
 
     #--------------------------
     # PHASE 2: EXPORT ORDERS
@@ -78,8 +100,8 @@ do
     echo "orders: $order_count"
     
     for((i = 0; i < order_count; i++)); do
-        if "$DEV_STATE/export-order.sh" \
-            "$PIPELINE_STATE_DIR/epoch_$epoch/orders/order_$i.json"
+        if "$ARTIFACTS_EXPORTERS/export-order.sh" \
+            "$order_out/order_$i.json"
         then
             echo -e "[epoch:$epoch] [order:$i] ${GREEN}EXPORTED${RESET}"
         else
@@ -88,7 +110,7 @@ do
     done
     
     #--------------------------
-    # PHASE 3: EXECUTE ORDERS
+    # PHASE 3: CHOOSE LINGER
     #--------------------------
     
     echo
@@ -110,17 +132,34 @@ do
     # store the skipped orders in json file to ensure ownership stays valid
     # we need to store all the skipped orders tokenIds in one file
 
-    # buildOrders should skip building any new orders on that same token
-    # + execute order needs to check before using that token for collection-bids
+    # - buildOrders should skip building any new orders on the tokens in /ensure-linger/**
+    # - execute order needs to check before using that token for collection-bids
     
     for((i = exec_limit; i < order_count; i++)); do
-        echo "$i"
+        to_linger="$order_out/order_$i.json"
+
+        token_id=$(jq -r ".tokenId" "$to_linger")
+        collection=$(jq -r ".collection" "$to_linger")
+        
+
+        tokenIds=$(jq -r ".tokenIds[]" data/31337/state/epoch_0/selections/0x2BF866DA3A8eEb90b288e6D434d319624263a24b.json)
+
+        # create file if not exist .../ensure_linger/$collection.json
+        # append to '.tokenIds' $tokenId
+        # continue 
+
+        echo "SKIPPING $token_id IN $collection"
+        echo "EXISTING $tokenIds"
     done
 
     echo
     echo "orders to skip:    $((order_count - exec_limit))"
     echo "orders to execute: $exec_limit"
     echo 
+
+    #--------------------------
+    # PHASE 4: EXECUTE ORDERS
+    #--------------------------
 
     success=0
     fail=0
@@ -136,7 +175,7 @@ do
             --rpc-url "$RPC_URL" \
             --quiet
 
-        if forge script "$DEV_STATE"/ExecuteOrder.s.sol \
+        if forge script "$PIPELINES_EXECUTION"/ExecuteOrder.s.sol \
             --rpc-url "$RPC_URL" \
             --broadcast \
             --sender "$FUNDER" \

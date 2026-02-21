@@ -8,7 +8,7 @@ import {OrderModel} from "orderbook/libs/OrderModel.sol";
 import {SignatureOps as SigOps} from "orderbook/libs/SignatureOps.sol";
 
 // types
-import {SignedOrder, ActorNonce, Selection} from "dev/state/Types.sol";
+import {SignedOrder, ActorNonce, Selection} from "./Types.sol";
 
 abstract contract EpochsJson is Script {
     string private _dataDirRaw = "data";
@@ -237,7 +237,7 @@ abstract contract EpochsJson is Script {
 
         string memory finalJson = vm.serializeAddress(
             root,
-            "col",
+            "collection",
             sel.collection
         );
 

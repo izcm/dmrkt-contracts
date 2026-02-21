@@ -7,8 +7,8 @@ remappings = [
     "orderbook/=contracts/orderbook",
     "test-helpers/=test/helpers",
     "mocks/=test/mocks",
-    "nfts/=periphery/nfts",
-    "dev/=script/dev",
+    "nfts/=devtools/local-nfts",
+    "dev/=devtools/seed",
     "@openzeppelin/=lib/openzeppelin-contracts/contracts"
 ]
 
