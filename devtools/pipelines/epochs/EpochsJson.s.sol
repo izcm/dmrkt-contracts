@@ -80,7 +80,7 @@ abstract contract EpochsJson is Script {
     }
 
     function _ensureLingerDir() internal view returns (string memory) {
-        return string.concat(_stateDir(), "ensure-Linger/");
+        return string.concat(_stateDir(), "ensure-linger/");
     }
 
     function _epochDir(uint256 epoch) internal view returns (string memory) {

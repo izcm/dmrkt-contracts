@@ -1,0 +1,14 @@
+[31337]
+endpoint_url = "http://localhost:8545"
+
+[31337.address]
+weth = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
+order_engine = "0x5e73679B61D14516ce7C30c7daC6F1da3C51D626"
+nft_c_0 = "0xA2C07E4c38eAc63d3335958a58d1Fb2E4A70BA21"
+nft_c_1 = "0xCBe50Ec327dCefC93d4E0c74103DD3b8851c8758"
+
+[31337.uint]
+nft_c_count = 2
+pipeline_start_ts = 1769263523
+pipeline_end_ts = 1771682738
+fork_start_block = 24305138

@@ -7,10 +7,14 @@ remappings = [
     "orderbook/=contracts/orderbook",
     "test-helpers/=test/helpers",
     "mocks/=test/mocks",
-    "nfts/=periphery/nfts",
-    "dev/=script/dev",
-    "@openzeppelin/=lib/openzeppelin-contracts/contracts"
+    "nfts/=devtools/local-nfts",
+    "dev/=devtools/seed",
+    "@openzeppelin/=lib/openzeppelin-contracts/contracts/"
 ]
 
+fs_permissions = [
+    { access = "read-write", path = "data/" },
+    { access = "read-write", path = "pipeline.toml" }
+]
 
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options

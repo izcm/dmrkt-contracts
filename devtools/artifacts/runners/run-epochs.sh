@@ -139,29 +139,31 @@ do
         continue
     fi
 
-    # store the skipped orders in json file to ensure ownership stays valid
-    # we need to store all the skipped orders tokenIds in one file
-
-    # - buildOrders should skip building any new orders on the tokens in /ensure-linger/**
-    # - execute order needs to check before using that token for collection-bids
+    # skipped for now (indexer will just mark as filled)
     
-    for((i = exec_limit; i < order_count; i++)); do
-        to_linger="$order_out/order_$i.json"
-        is_cb=$(jq -r ".isCollectionBid" "$to_linger")
+    # # store the skipped orders in json file to ensure ownership stays valid
+    # # we need to store all the skipped orders tokenIds in one file
 
-        # collectionBids => no particular token to ensure lingers 
-        if [[ "$is_cb" = "true" ]]; then
-            echo "collection bid"
-            continue
-        fi
+    # # - buildOrders should skip building any new orders on the tokens in /ensure-linger/**
+    # # - execute order needs to check before using that token for collection-bids
+    
+    # for((i = exec_limit; i < order_count; i++)); do
+    #     to_linger="$order_out/order_$i.json"
+    #     is_cb=$(jq -r ".isCollectionBid" "$to_linger")
 
-        token_id=$(jq -r ".tokenId" "$to_linger")
-        collection=$(jq -r ".collection" "$to_linger")
+    #     # collectionBids => no particular token to ensure lingers 
+    #     if [[ "$is_cb" = "true" ]]; then
+    #         echo "collection bid"
+    #         continue
+    #     fi
+
+    #     token_id=$(jq -r ".tokenId" "$to_linger")
+    #     collection=$(jq -r ".collection" "$to_linger")
         
-        linger_file="$linger_dir/$collection.json"
+    #     linger_file="$linger_dir/$collection.json"
 
-        add_token "$linger_file" "$collection" "$token_id" 
-    done
+    #     add_token "$linger_file" "$collection" "$token_id" 
+    # done
 
     echo
     echo "orders to skip:    $((order_count - exec_limit))"
