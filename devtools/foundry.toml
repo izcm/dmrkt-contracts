@@ -15,11 +15,9 @@ remappings = [
 fs_permissions = [
     { access = "read-write", path = "../data/" },
     { access = "read-write", path = "../pipeline.toml" },
-    { access = "read", path = "../contracts/" },
-    { access = "read", path = "../periphery/" }
 ]
 
 [lint]
-exclude_lints = ["unaliased-plain-import", "mixed-case-function", "asm-keccak256", "unsafe-cheatcode"]
+exclude_lints = ["unaliased-plain-import", "mixed-case-function", "mixed-case-variable", "asm-keccak256", "unsafe-cheatcode"]
 
 ignored_error_codes = [2424, 5574, 4591, 3860]

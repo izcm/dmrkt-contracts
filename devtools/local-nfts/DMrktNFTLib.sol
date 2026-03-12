@@ -164,7 +164,7 @@ library DMrktNFTLib {
             );
     }
 
-    function buildAttributes(
+    function buildInventoryAttributes(
         uint256 tokenId,
         uint256 itemType
     ) internal pure returns (string memory) {
@@ -258,7 +258,7 @@ library DMrktNFTLib {
         return "";
     }
 
-    function buildMetadata(
+    function buildInventoryMetadata(
         string memory name,
         string memory description,
         uint256 tokenId,
@@ -275,12 +275,57 @@ library DMrktNFTLib {
                             '","description":"',
                             description,
                             '",',
-                            buildAttributes(tokenId, itemType),
+                            buildInventoryAttributes(tokenId, itemType),
                             ',"image":"data:image/svg+xml;base64,',
                             svgBase64,
                             '"}'
                         )
                     )
+                )
+            );
+    }
+
+    function buildEggMetadata(
+        uint256 tokenId,
+        string memory svgBase64
+    ) internal pure returns (string memory) {
+        string memory name = buildItemName("Ancient Dragon Egg", tokenId);
+
+        string memory desc = "Ancient dragon egg waiting to hatch";
+
+        return
+            Base64.encode(
+                bytes(
+                    string(
+                        abi.encodePacked(
+                            '{"name":"',
+                            name,
+                            '","description":"',
+                            desc,
+                            '",',
+                            buildEggAttributes(tokenId),
+                            ',"image":"data:image/svg+xml;base64,',
+                            svgBase64,
+                            '"}'
+                        )
+                    )
+                )
+            );
+    }
+
+    function buildEggAttributes(
+        uint256 tokenId
+    ) internal pure returns (string memory) {
+        return
+            string(
+                abi.encodePacked(
+                    '"attributes":[',
+                    buildTrait("Rarity", getRarity(tokenId)),
+                    ",",
+                    buildTrait("Color", getColorName(tokenId)),
+                    ",",
+                    buildTrait("Element", getElementName(tokenId)),
+                    "]"
                 )
             );
     }

@@ -3,7 +3,7 @@ pragma solidity ^0.8.28;
 
 import "@openzeppelin/utils/Base64.sol";
 
-import {DMrktMathConfig} from "./DMrktMathConfig.sol";
+import {DMrktMathConfig} from "../DMrktMathConfig.sol";
 
 /**
  * @title DMrktSimpleNFTLib

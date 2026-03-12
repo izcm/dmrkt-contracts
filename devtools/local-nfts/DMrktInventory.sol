@@ -22,7 +22,7 @@ contract DMrktInventory is DNFT, ERC721 {
 
     mapping(uint256 => ItemType) private _tokenType;
 
-    constructor() ERC721("dmrktInventory", "DGAME") {}
+    constructor() ERC721("dInventory", "STUFF") {}
 
     function MAX_SUPPLY() public pure override returns (uint256) {
         return DMrktMathConfig.inventoryMaxSupply();
@@ -72,7 +72,7 @@ contract DMrktInventory is DNFT, ERC721 {
         string memory svgBase64 = Base64.encode(bytes(_svg(tokenId, itemType)));
         (string memory name, string memory desc) = _itemMeta(tokenId, itemType);
         return
-            DMrktNFTLib.buildMetadata(
+            DMrktNFTLib.buildInventoryMetadata(
                 name,
                 desc,
                 tokenId,
@@ -163,7 +163,6 @@ contract DMrktInventory is DNFT, ERC721 {
                     '<svg width="600" height="600" viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg">',
                     '<rect width="600" height="600" rx="64" fill="#0b0b10"/>',
                     glow,
-                    overlay,
                     '<rect x="280" y="150" width="40" height="60" fill="#9ca3af"/>',
                     '<rect x="270" y="120" width="60" height="30" fill="#a16207"/>',
                     '<rect x="220" y="210" width="160" height="180" fill="#111827"/>',
@@ -174,6 +173,7 @@ contract DMrktInventory is DNFT, ERC721 {
                     '<text x="300" y="505" text-anchor="middle" fill="',
                     color,
                     '" font-family="monospace" font-size="34" letter-spacing="2">dmrkt</text>',
+                    overlay,
                     "</svg>"
                 )
             );
@@ -189,7 +189,6 @@ contract DMrktInventory is DNFT, ERC721 {
                 abi.encodePacked(
                     '<svg width="600" height="600" viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg">',
                     '<rect width="600" height="600" rx="64" fill="#0b0b10"/>',
-                    overlay,
                     glow,
                     '<rect x="240" y="180" width="120" height="160" fill="#111827"/>',
                     '<polygon points="240,340 360,340 300,420" fill="#111827"/>',
@@ -202,6 +201,7 @@ contract DMrktInventory is DNFT, ERC721 {
                     '<text x="300" y="505" text-anchor="middle" fill="',
                     color,
                     '" font-family="monospace" font-size="34" letter-spacing="2">dmrkt</text>',
+                    overlay,
                     "</svg>"
                 )
             );
