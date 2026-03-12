@@ -2,11 +2,11 @@
 pragma solidity ^0.8.28;
 
 library DMrktMathConfig {
-    function inventoryMaxSupply() internal pure returns (uint256) {
+    function lootMaxSupply() public pure returns (uint256) {
         return 500;
     }
 
-    function itemTypeCount() internal pure returns (uint256) {
+    function itemTypeCount() public pure returns (uint256) {
         return 3;
     }
 
@@ -20,10 +20,6 @@ library DMrktMathConfig {
 
     function itemTypeShield() internal pure returns (uint256) {
         return 2;
-    }
-
-    function inventorySupplyPerType() internal pure returns (uint256) {
-        return inventoryMaxSupply() / itemTypeCount();
     }
 
     function rarityLegendaryMod() internal pure returns (uint256) {

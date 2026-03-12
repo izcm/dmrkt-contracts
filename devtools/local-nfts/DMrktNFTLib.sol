@@ -258,7 +258,7 @@ library DMrktNFTLib {
         return "";
     }
 
-    function buildInventoryMetadata(
+    function buildLootMetadata(
         string memory name,
         string memory description,
         uint256 tokenId,

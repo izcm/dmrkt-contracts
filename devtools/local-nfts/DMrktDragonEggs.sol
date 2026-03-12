@@ -57,7 +57,6 @@ contract DMrktDragonEggs is DNFT, ERC721 {
                     '<svg width="600" height="600" viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg">',
                     '<rect width="600" height="600" rx="64" fill="#0b0b10"/>',
                     glow,
-                    overlay,
                     // egg shell
                     '<ellipse cx="300" cy="310" rx="110" ry="140" fill="#111827"/>',
                     // glowing crack
@@ -69,6 +68,8 @@ contract DMrktDragonEggs is DNFT, ERC721 {
                     '"/>',
                     // highlight
                     '<ellipse cx="260" cy="260" rx="30" ry="40" fill="#ffffff" opacity="0.15"/>',
+                    // thunder / fire
+                    overlay,
                     '<text x="300" y="505" text-anchor="middle" fill="',
                     color,
                     '" font-family="monospace" font-size="34" letter-spacing="2">dmrkt</text>',

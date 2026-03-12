@@ -5,7 +5,7 @@ pragma solidity ^0.8.30;
 import {OrderEngine} from "orderbook/OrderEngine.sol";
 
 // periphery contracts
-import {DMrktInventory} from "nfts/DMrktInventory.sol";
+import {DMrktLoot} from "nfts/DMrktLoot.sol";
 import {DMrktDragonEggs} from "nfts/DMrktDragonEggs.sol";
 
 // scripts
@@ -38,7 +38,7 @@ contract DeployCore is BaseDevScript, DevConfig {
         OrderEngine orderEngine = new OrderEngine(weth, msg.sender);
 
         // deploy nfts
-        DMrktInventory inventory = new DMrktInventory();
+        DMrktLoot inventory = new DMrktLoot();
         DMrktDragonEggs eggs = new DMrktDragonEggs();
 
         vm.stopBroadcast();
@@ -46,7 +46,7 @@ contract DeployCore is BaseDevScript, DevConfig {
         // log deployments
         logDeployment("OrderEngine", address(orderEngine));
 
-        logDeployment("DMrktInventory", address(inventory));
+        logDeployment("DMrktLoot", address(inventory));
         logDeployment("DMrktDragonEggs", address(eggs));
 
         // --------------------------------

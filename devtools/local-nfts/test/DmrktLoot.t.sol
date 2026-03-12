@@ -3,21 +3,21 @@ pragma solidity ^0.8.30;
 
 import "forge-std/Test.sol";
 
-import {DMrktInventory} from "../DMrktInventory.sol";
+import {DMrktLoot} from "../DMrktLoot.sol";
 import {DMrktMathConfig} from "../DMrktMathConfig.sol";
 
 /**
  * nb: tests are made by AI (this is only demo-periphery stuff)
  */
 
-contract DMrktInventoryTest is Test {
-    DMrktInventory inventory;
+contract DMrktLootTest is Test {
+    DMrktLoot inventory;
 
     address alice = address(0x1);
     address bob = address(0x2);
 
     function setUp() public {
-        inventory = new DMrktInventory();
+        inventory = new DMrktLoot();
     }
 
     // ----------------------------
@@ -74,7 +74,7 @@ contract DMrktInventoryTest is Test {
         // Token 6: 6 % 3 = 0 = Sword
 
         // Should have 3 Swords (tokens 0, 3, 6)
-        assertEq(inventory.supplyOf(DMrktInventory.ItemType.Sword), 3);
+        assertEq(inventory.supplyOf(DMrktLoot.ItemType.Sword), 3);
         assertEq(inventory.totalSupply(), 7);
     }
 
@@ -84,9 +84,9 @@ contract DMrktInventoryTest is Test {
         inventory.mint(alice); // Token 1: Elixir
         inventory.mint(alice); // Token 2: Shield
 
-        assertEq(inventory.supplyOf(DMrktInventory.ItemType.Sword), 1);
-        assertEq(inventory.supplyOf(DMrktInventory.ItemType.Elixir), 1);
-        assertEq(inventory.supplyOf(DMrktInventory.ItemType.Shield), 1);
+        assertEq(inventory.supplyOf(DMrktLoot.ItemType.Sword), 1);
+        assertEq(inventory.supplyOf(DMrktLoot.ItemType.Elixir), 1);
+        assertEq(inventory.supplyOf(DMrktLoot.ItemType.Shield), 1);
     }
 
     // ----------------------------
@@ -125,7 +125,7 @@ contract DMrktInventoryTest is Test {
         inventory.mint(alice); // Token 1: Elixir
         inventory.mint(alice); // Token 2: Shield
 
-        DMrktInventory.ItemType t = inventory.itemTypeOf(2);
+        DMrktLoot.ItemType t = inventory.itemTypeOf(2);
 
         assertEq(uint256(t), DMrktMathConfig.itemTypeShield());
     }

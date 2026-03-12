@@ -11,7 +11,7 @@ import {DMrktNFTLib} from "./DMrktNFTLib.sol";
 
 // free mint, used in DEV env setup
 // see Script/dev-setup
-contract DMrktInventory is DNFT, ERC721 {
+contract DMrktLoot is DNFT, ERC721 {
     enum ItemType {
         Sword,
         Elixir,
@@ -22,10 +22,10 @@ contract DMrktInventory is DNFT, ERC721 {
 
     mapping(uint256 => ItemType) private _tokenType;
 
-    constructor() ERC721("dInventory", "STUFF") {}
+    constructor() ERC721("dLoot", "DLOOT") {}
 
     function MAX_SUPPLY() public pure override returns (uint256) {
-        return DMrktMathConfig.inventoryMaxSupply();
+        return DMrktMathConfig.lootMaxSupply();
     }
 
     // DNFT interface — auto-derives item type from tokenId
@@ -72,7 +72,7 @@ contract DMrktInventory is DNFT, ERC721 {
         string memory svgBase64 = Base64.encode(bytes(_svg(tokenId, itemType)));
         (string memory name, string memory desc) = _itemMeta(tokenId, itemType);
         return
-            DMrktNFTLib.buildInventoryMetadata(
+            DMrktNFTLib.buildLootMetadata(
                 name,
                 desc,
                 tokenId,
@@ -112,21 +112,21 @@ contract DMrktInventory is DNFT, ERC721 {
         ItemType itemType
     ) internal pure returns (string memory) {
         string memory color = DMrktNFTLib.getColorForToken(tokenId);
-        string memory overlay = DMrktNFTLib.buildElementOverlay(tokenId);
+        string memory element = DMrktNFTLib.buildElementOverlay(tokenId);
         string memory glow = DMrktNFTLib.buildRarityGlow(tokenId);
 
         if (itemType == ItemType.Sword) {
-            return _svgSword(color, overlay, glow);
+            return _svgSword(color, element, glow);
         } else if (itemType == ItemType.Elixir) {
-            return _svgElixir(color, overlay, glow);
+            return _svgElixir(color, element, glow);
         } else {
-            return _svgShield(color, overlay, glow);
+            return _svgShield(color, element, glow);
         }
     }
 
     function _svgSword(
         string memory color,
-        string memory overlay,
+        string memory element,
         string memory glow
     ) internal pure returns (string memory) {
         return
@@ -135,7 +135,7 @@ contract DMrktInventory is DNFT, ERC721 {
                     '<svg width="600" height="600" viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg">',
                     '<rect width="600" height="600" rx="64" fill="#0b0b10"/>',
                     glow,
-                    overlay,
+                    element,
                     '<rect x="290" y="120" width="20" height="260" fill="#d1d5db"/>',
                     '<rect x="240" y="300" width="120" height="20" fill="',
                     color,
@@ -154,7 +154,7 @@ contract DMrktInventory is DNFT, ERC721 {
 
     function _svgElixir(
         string memory color,
-        string memory overlay,
+        string memory element,
         string memory glow
     ) internal pure returns (string memory) {
         return
@@ -169,11 +169,11 @@ contract DMrktInventory is DNFT, ERC721 {
                     '<rect x="240" y="260" width="120" height="120" fill="',
                     color,
                     '"/>',
+                    element,
                     '<rect x="260" y="240" width="20" height="120" fill="#ffffff" opacity="0.2"/>',
                     '<text x="300" y="505" text-anchor="middle" fill="',
                     color,
                     '" font-family="monospace" font-size="34" letter-spacing="2">dmrkt</text>',
-                    overlay,
                     "</svg>"
                 )
             );
@@ -181,7 +181,7 @@ contract DMrktInventory is DNFT, ERC721 {
 
     function _svgShield(
         string memory color,
-        string memory overlay,
+        string memory element,
         string memory glow
     ) internal pure returns (string memory) {
         return
@@ -198,10 +198,10 @@ contract DMrktInventory is DNFT, ERC721 {
                     '<rect x="285" y="240" width="30" height="80" fill="',
                     color,
                     '"/>',
+                    element,
                     '<text x="300" y="505" text-anchor="middle" fill="',
                     color,
                     '" font-family="monospace" font-size="34" letter-spacing="2">dmrkt</text>',
-                    overlay,
                     "</svg>"
                 )
             );
