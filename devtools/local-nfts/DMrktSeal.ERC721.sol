@@ -6,7 +6,7 @@ import "@openzeppelin/utils/Base64.sol";
 import "@openzeppelin/utils/Strings.sol";
 
 import {DNFT} from "periphery/interfaces/DNFT.sol";
-import {DMrktNFTLib} from "./DMrktNFTLib.sol";
+import {DMrktSimpleNFTLib} from "./DMrktSimpleNFTLib.sol";
 
 contract DMrktSeal is DNFT, ERC721 {
     uint256 public constant MAX_SUPPLY = 100;
@@ -38,7 +38,7 @@ contract DMrktSeal is DNFT, ERC721 {
     function _metadata(uint256 tokenId) internal pure returns (string memory) {
         string memory svgBase64 = Base64.encode(bytes(_svg(tokenId)));
         return
-            DMrktNFTLib.buildMetadata(
+            DMrktSimpleNFTLib.buildMetadata(
                 string.concat("DmrktSeal #", Strings.toString(tokenId)),
                 "Fully on-chain dmrkt seal",
                 tokenId,
@@ -88,7 +88,7 @@ contract DMrktSeal is DNFT, ERC721 {
     function _getColorForToken(
         uint256 tokenId
     ) private pure returns (string memory) {
-        return DMrktNFTLib.getColorForToken(tokenId);
+        return DMrktSimpleNFTLib.getColorForToken(tokenId);
     }
 
     function getColor(uint256 tokenId) public pure returns (string memory) {
@@ -96,6 +96,6 @@ contract DMrktSeal is DNFT, ERC721 {
     }
 
     function getColorName(uint256 tokenId) public pure returns (string memory) {
-        return DMrktNFTLib.getColorName(tokenId);
+        return DMrktSimpleNFTLib.getColorName(tokenId);
     }
 }

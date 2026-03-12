@@ -5,15 +5,17 @@ pragma solidity ^0.8.30;
 import {OrderEngine} from "orderbook/OrderEngine.sol";
 
 // periphery contracts
-import {DMrktGremlin} from "nfts/DMrktGremlin.ERC721.sol";
-import {DMrktSeal} from "nfts/DMrktSeal.ERC721.sol";
+// import {DMrktGremlin} from "nfts/DMrktGremlin.ERC721.sol";
+// import {DMrktSeal} from "nfts/DMrktSeal.ERC721.sol";
+// import {DMrktNode} from "nfts/DMrktNode.ERC721.sol";
+import {DMrktInventory} from "nfts/DMrktInventory.sol";
 
 // scripts
 import {BaseDevScript} from "dev/BaseDevScript.s.sol";
 import {DevConfig} from "dev/DevConfig.s.sol";
 
 contract DeployCore is BaseDevScript, DevConfig {
-    uint256 constant NFT_COUNT = 2;
+    uint256 constant NFT_COUNT = 1;
 
     function run() external {
         // --------------------------------
@@ -38,16 +40,16 @@ contract DeployCore is BaseDevScript, DevConfig {
         OrderEngine orderEngine = new OrderEngine(weth, msg.sender);
 
         // deploy nfts
-        DMrktGremlin gremlin = new DMrktGremlin();
-        DMrktSeal seal = new DMrktSeal();
+        // DMrktGremlin gremlin = new DMrktGremlin();
+        // DMrktSeal seal = new DMrktSeal();
+        // DMrktNode node = new DMrktNode();
+        DMrktInventory inventory = new DMrktInventory();
 
         vm.stopBroadcast();
 
         // log deployments
         logDeployment("OrderEngine", address(orderEngine));
-
-        logDeployment("DMrktGremlin", address(gremlin));
-        logDeployment("DMrktSeal", address(seal));
+        logDeployment("DMrktInventory", address(inventory));
 
         // --------------------------------
         // PHASE 2: WRITE TO .TOML
@@ -57,8 +59,10 @@ contract DeployCore is BaseDevScript, DevConfig {
 
         // === DEPLOYED PERIPHERY NFTs ===
 
-        config.set("nft_c_0", address(gremlin));
-        config.set("nft_c_1", address(seal));
+        // config.set("nft_c_0", address(gremlin));
+        // config.set("nft_c_1", address(seal));
+        // config.set("nft_c_2", address(node));
+        config.set("nft_c_0", address(inventory));
 
         config.set("nft_c_count", NFT_COUNT);
     }
