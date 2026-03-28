@@ -164,7 +164,38 @@ library DMrktNFTLib {
             );
     }
 
-    function buildInventoryAttributes(
+    function buildItemName(
+        string memory base,
+        uint256 tokenId
+    ) internal pure returns (string memory) {
+        string memory rarity = getRarity(tokenId);
+        string memory element = getElementName(tokenId);
+        string memory color = getColorName(tokenId);
+
+        if (keccak256(bytes(element)) == keccak256(bytes("None"))) {
+            return string.concat(rarity, " ", color, " ", base);
+        }
+
+        return string.concat(rarity, " ", color, " ", element, " ", base);
+    }
+
+    function buildRarityGlow(
+        uint256 tokenId
+    ) internal pure returns (string memory) {
+        if (tokenId % DMrktMathConfig.rarityLegendaryMod() == 0) {
+            return
+                '<circle cx="300" cy="300" r="240" fill="#ffd700" opacity="0.15"/>';
+        }
+
+        if (tokenId % DMrktMathConfig.rarityEpicMod() == 0) {
+            return
+                '<circle cx="300" cy="300" r="240" fill="#a855f7" opacity="0.12"/>';
+        }
+
+        return "";
+    }
+
+    function buildLootAttributes(
         uint256 tokenId,
         uint256 itemType
     ) internal pure returns (string memory) {
@@ -227,37 +258,6 @@ library DMrktNFTLib {
             );
     }
 
-    function buildItemName(
-        string memory base,
-        uint256 tokenId
-    ) internal pure returns (string memory) {
-        string memory rarity = getRarity(tokenId);
-        string memory element = getElementName(tokenId);
-        string memory color = getColorName(tokenId);
-
-        if (keccak256(bytes(element)) == keccak256(bytes("None"))) {
-            return string.concat(rarity, " ", color, " ", base);
-        }
-
-        return string.concat(rarity, " ", color, " ", element, " ", base);
-    }
-
-    function buildRarityGlow(
-        uint256 tokenId
-    ) internal pure returns (string memory) {
-        if (tokenId % DMrktMathConfig.rarityLegendaryMod() == 0) {
-            return
-                '<circle cx="300" cy="300" r="240" fill="#ffd700" opacity="0.15"/>';
-        }
-
-        if (tokenId % DMrktMathConfig.rarityEpicMod() == 0) {
-            return
-                '<circle cx="300" cy="300" r="240" fill="#a855f7" opacity="0.12"/>';
-        }
-
-        return "";
-    }
-
     function buildLootMetadata(
         string memory name,
         string memory description,
@@ -275,35 +275,7 @@ library DMrktNFTLib {
                             '","description":"',
                             description,
                             '",',
-                            buildInventoryAttributes(tokenId, itemType),
-                            ',"image":"data:image/svg+xml;base64,',
-                            svgBase64,
-                            '"}'
-                        )
-                    )
-                )
-            );
-    }
-
-    function buildEggMetadata(
-        uint256 tokenId,
-        string memory svgBase64
-    ) internal pure returns (string memory) {
-        string memory name = buildItemName("Ancient Dragon Egg", tokenId);
-
-        string memory desc = "Ancient dragon egg waiting to hatch";
-
-        return
-            Base64.encode(
-                bytes(
-                    string(
-                        abi.encodePacked(
-                            '{"name":"',
-                            name,
-                            '","description":"',
-                            desc,
-                            '",',
-                            buildEggAttributes(tokenId),
+                            buildLootAttributes(tokenId, itemType),
                             ',"image":"data:image/svg+xml;base64,',
                             svgBase64,
                             '"}'

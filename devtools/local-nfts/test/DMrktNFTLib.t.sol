@@ -44,7 +44,7 @@ contract DMrktNFTLibTest is Test {
     }
 
     function testBuildAttributesSword() public {
-        string memory attrs = DMrktNFTLib.buildInventoryAttributes(
+        string memory attrs = DMrktNFTLib.buildLootAttributes(
             0,
             DMrktMathConfig.itemTypeSword()
         );
@@ -52,7 +52,7 @@ contract DMrktNFTLibTest is Test {
     }
 
     function testBuildAttributesShield() public {
-        string memory attrs = DMrktNFTLib.buildInventoryAttributes(
+        string memory attrs = DMrktNFTLib.buildLootAttributes(
             2,
             DMrktMathConfig.itemTypeShield()
         );
@@ -60,7 +60,7 @@ contract DMrktNFTLibTest is Test {
     }
 
     function testBuildAttributesElixir() public {
-        string memory attrs = DMrktNFTLib.buildInventoryAttributes(
+        string memory attrs = DMrktNFTLib.buildLootAttributes(
             1,
             DMrktMathConfig.itemTypeElixir()
         );

@@ -22,7 +22,7 @@ contract DMrktLoot is DNFT, ERC721 {
 
     mapping(uint256 => ItemType) private _tokenType;
 
-    constructor() ERC721("dLoot", "DLOOT") {}
+    constructor() ERC721("dmrktLoot", "dloot") {}
 
     function MAX_SUPPLY() public pure override returns (uint256) {
         return DMrktMathConfig.lootMaxSupply();

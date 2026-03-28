@@ -35,7 +35,7 @@ contract SignatureOpsTest is OrderHelper {
                                 SUCCESS
     //////////////////////////////////////////////////////////////*/
 
-    function test_Verify_ValidSignature_Succeeds() public {
+    function test_verify_valid_signature_succeeds() public {
         (OrderModel.Order memory order, SigOps.Signature memory sig) = makeSignedAsk(signer, signerPk);
 
         vm.prank(user);
@@ -46,7 +46,7 @@ contract SignatureOpsTest is OrderHelper {
                                 REVERTS
     //////////////////////////////////////////////////////////////*/
 
-    function test_Verify_MutatedOrder_Reverts() public {
+    function test_verify_mutated_order_reverts() public {
         (OrderModel.Order memory order, SigOps.Signature memory sig) = makeSignedAsk(signer, signerPk);
 
         // mutate ANY field (pick one, doesn't matter)
@@ -56,7 +56,7 @@ contract SignatureOpsTest is OrderHelper {
         verifier.verify(order, sig);
     }
 
-    function test_Verify_CorruptedS_Reverts() public {
+    function test_verify_corrupted_s_reverts() public {
         (OrderModel.Order memory order, SigOps.Signature memory sig) = makeSignedAsk(signer, signerPk);
 
         // simulate corrupt s <= n/2 https://eips.ethereum.org/EIPS/eip-2
@@ -67,7 +67,7 @@ contract SignatureOpsTest is OrderHelper {
         verifier.verify(order, sig);
     }
 
-    function test_Verify_CorruptedV_Reverts() public {
+    function test_verify_corrupted_v_reverts() public {
         (OrderModel.Order memory order, SigOps.Signature memory sig) = makeSignedAsk(signer, signerPk);
 
         assertTrue(sig.v == 27 || sig.v == 28);
@@ -79,7 +79,7 @@ contract SignatureOpsTest is OrderHelper {
         verifier.verify(order, sig);
     }
 
-    function test_Verify_WrongSigner_Reverts() public {
+    function test_verify_wrong_signer_reverts() public {
         (OrderModel.Order memory order, SigOps.Signature memory sig) = makeSignedAsk(signer, signerPk);
 
         order.actor = makeAddr("imposter");

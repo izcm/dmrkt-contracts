@@ -6,14 +6,13 @@ import {OrderEngine} from "orderbook/OrderEngine.sol";
 
 // periphery contracts
 import {DMrktLoot} from "nfts/DMrktLoot.sol";
-import {DMrktDragonEggs} from "nfts/DMrktDragonEggs.sol";
 
 // scripts
 import {BaseDevScript} from "dev/BaseDevScript.s.sol";
 import {DevConfig} from "dev/DevConfig.s.sol";
 
 contract DeployCore is BaseDevScript, DevConfig {
-    uint256 constant NFT_COUNT = 2;
+    uint256 constant NFT_COUNT = 1;
 
     function run() external {
         // --------------------------------
@@ -39,7 +38,6 @@ contract DeployCore is BaseDevScript, DevConfig {
 
         // deploy nfts
         DMrktLoot inventory = new DMrktLoot();
-        DMrktDragonEggs eggs = new DMrktDragonEggs();
 
         vm.stopBroadcast();
 
@@ -47,7 +45,7 @@ contract DeployCore is BaseDevScript, DevConfig {
         logDeployment("OrderEngine", address(orderEngine));
 
         logDeployment("DMrktLoot", address(inventory));
-        logDeployment("DMrktDragonEggs", address(eggs));
+        // logDeployment("DMrktDragonEggs", address(eggs));
 
         // --------------------------------
         // PHASE 2: WRITE TO .TOML
@@ -58,7 +56,7 @@ contract DeployCore is BaseDevScript, DevConfig {
         // === DEPLOYED PERIPHERY NFTs ===
 
         config.set("nft_c_0", address(inventory));
-        config.set("nft_c_1", address(eggs));
+        // config.set("nft_c_1", address(eggs));
 
         config.set("nft_c_count", NFT_COUNT);
     }

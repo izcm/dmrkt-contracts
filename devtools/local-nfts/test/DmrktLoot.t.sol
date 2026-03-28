@@ -11,13 +11,13 @@ import {DMrktMathConfig} from "../DMrktMathConfig.sol";
  */
 
 contract DMrktLootTest is Test {
-    DMrktLoot inventory;
+    DMrktLoot loot;
 
     address alice = address(0x1);
     address bob = address(0x2);
 
     function setUp() public {
-        inventory = new DMrktLoot();
+        loot = new DMrktLoot();
     }
 
     // ----------------------------
@@ -25,40 +25,31 @@ contract DMrktLootTest is Test {
     // ----------------------------
 
     function testMintSword() public {
-        inventory.mint(alice);
+        loot.mint(alice);
         // Token 0: 0 % 3 = 0 = Sword
-        assertEq(inventory.totalSupply(), 1);
-        assertEq(inventory.ownerOf(0), alice);
-        assertEq(
-            uint256(inventory.itemTypeOf(0)),
-            DMrktMathConfig.itemTypeSword()
-        );
+        assertEq(loot.totalSupply(), 1);
+        assertEq(loot.ownerOf(0), alice);
+        assertEq(uint256(loot.itemTypeOf(0)), DMrktMathConfig.itemTypeSword());
     }
 
     function testMintElixir() public {
-        inventory.mint(alice);
+        loot.mint(alice);
         // Token 0: 0 % 3 = 0 = Sword
-        inventory.mint(alice);
+        loot.mint(alice);
         // Token 1: 1 % 3 = 1 = Elixir
-        assertEq(inventory.totalSupply(), 2);
-        assertEq(
-            uint256(inventory.itemTypeOf(1)),
-            DMrktMathConfig.itemTypeElixir()
-        );
+        assertEq(loot.totalSupply(), 2);
+        assertEq(uint256(loot.itemTypeOf(1)), DMrktMathConfig.itemTypeElixir());
     }
 
     function testMintShield() public {
-        inventory.mint(alice);
+        loot.mint(alice);
         // Token 0
-        inventory.mint(alice);
+        loot.mint(alice);
         // Token 1
-        inventory.mint(alice);
+        loot.mint(alice);
         // Token 2: 2 % 3 = 2 = Shield
-        assertEq(inventory.totalSupply(), 3);
-        assertEq(
-            uint256(inventory.itemTypeOf(2)),
-            DMrktMathConfig.itemTypeShield()
-        );
+        assertEq(loot.totalSupply(), 3);
+        assertEq(uint256(loot.itemTypeOf(2)), DMrktMathConfig.itemTypeShield());
     }
 
     // ----------------------------
@@ -68,25 +59,25 @@ contract DMrktLootTest is Test {
     function testTypeSupply() public {
         // Mint 6 tokens: 0(Sword), 1(Elixir), 2(Shield), 3(Sword), 4(Elixir), 5(Shield)
         for (uint256 i = 0; i < 6; i++) {
-            inventory.mint(alice);
+            loot.mint(alice);
         }
-        inventory.mint(bob);
+        loot.mint(bob);
         // Token 6: 6 % 3 = 0 = Sword
 
         // Should have 3 Swords (tokens 0, 3, 6)
-        assertEq(inventory.supplyOf(DMrktLoot.ItemType.Sword), 3);
-        assertEq(inventory.totalSupply(), 7);
+        assertEq(loot.supplyOf(DMrktLoot.ItemType.Sword), 3);
+        assertEq(loot.totalSupply(), 7);
     }
 
     function testDifferentTypesSupply() public {
         // Mint 3 tokens to cover one of each type
-        inventory.mint(alice); // Token 0: Sword
-        inventory.mint(alice); // Token 1: Elixir
-        inventory.mint(alice); // Token 2: Shield
+        loot.mint(alice); // Token 0: Sword
+        loot.mint(alice); // Token 1: Elixir
+        loot.mint(alice); // Token 2: Shield
 
-        assertEq(inventory.supplyOf(DMrktLoot.ItemType.Sword), 1);
-        assertEq(inventory.supplyOf(DMrktLoot.ItemType.Elixir), 1);
-        assertEq(inventory.supplyOf(DMrktLoot.ItemType.Shield), 1);
+        assertEq(loot.supplyOf(DMrktLoot.ItemType.Sword), 1);
+        assertEq(loot.supplyOf(DMrktLoot.ItemType.Elixir), 1);
+        assertEq(loot.supplyOf(DMrktLoot.ItemType.Shield), 1);
     }
 
     // ----------------------------
@@ -95,13 +86,13 @@ contract DMrktLootTest is Test {
 
     function testMaxTotalSupply() public {
         // Fill to MAX_SUPPLY
-        for (uint256 i = 0; i < inventory.MAX_SUPPLY(); i++) {
-            inventory.mint(alice);
+        for (uint256 i = 0; i < loot.MAX_SUPPLY(); i++) {
+            loot.mint(alice);
         }
-        assertEq(inventory.totalSupply(), inventory.MAX_SUPPLY());
+        assertEq(loot.totalSupply(), loot.MAX_SUPPLY());
         // Next mint should fail
         vm.expectRevert("Max supply reached");
-        inventory.mint(alice);
+        loot.mint(alice);
     }
 
     // ----------------------------
@@ -109,9 +100,9 @@ contract DMrktLootTest is Test {
     // ----------------------------
 
     function testTokenURI() public {
-        inventory.mint(alice);
+        loot.mint(alice);
 
-        string memory uri = inventory.tokenURI(0);
+        string memory uri = loot.tokenURI(0);
 
         assertTrue(bytes(uri).length > 0);
     }
@@ -121,20 +112,20 @@ contract DMrktLootTest is Test {
     // ----------------------------
 
     function testItemType() public {
-        inventory.mint(alice); // Token 0: Sword
-        inventory.mint(alice); // Token 1: Elixir
-        inventory.mint(alice); // Token 2: Shield
+        loot.mint(alice); // Token 0: Sword
+        loot.mint(alice); // Token 1: Elixir
+        loot.mint(alice); // Token 2: Shield
 
-        DMrktLoot.ItemType t = inventory.itemTypeOf(2);
+        DMrktLoot.ItemType t = loot.itemTypeOf(2);
 
         assertEq(uint256(t), DMrktMathConfig.itemTypeShield());
     }
 
     function testTraitGetters() public {
-        inventory.mint(alice); // Token 0 (0 % 3 = 0 = Sword)
+        loot.mint(alice); // Token 0 (0 % 3 = 0 = Sword)
 
-        assertEq(inventory.getRarity(0), "Legendary");
-        assertEq(inventory.getColorName(0), "Protocol Purple");
-        assertEq(inventory.getElementName(0), "Thunder");
+        assertEq(loot.getRarity(0), "Legendary");
+        assertEq(loot.getColorName(0), "Protocol Purple");
+        assertEq(loot.getElementName(0), "Thunder");
     }
 }

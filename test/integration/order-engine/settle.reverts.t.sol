@@ -5,7 +5,7 @@ pragma solidity ^0.8.30;
 import {OrderEngine} from "orderbook/OrderEngine.sol";
 
 // base
-import {OrderEngineSettleBase} from "./OrderEngine.settle.base.t.sol";
+import {OrderEngineSettleBase} from "./settle.base.t.sol";
 
 // mocks
 import {MockUnsupported} from "mocks/MockUnsupported.sol";
@@ -27,84 +27,141 @@ contract OrderEngineSettleRevertsTest is OrderEngineSettleBase {
                     VALID SIGNATURE NOT REQUIRED
     //////////////////////////////////////////////////////////////*/
 
-    function test_Settle_InvalidSender_Reverts() public {
+    function test_settle_invalid_sender_reverts() public {
         address txSender = vm.addr(actorCount() + 1); // private keys are [1, 2, 3... n]
-        (, OrderModel.Order memory order, OrderModel.Fill memory fill, SigOps.Signature memory sig) =
-            _buildBasicRevertTest("invalid_sender");
+        (
+            ,
+            OrderModel.Order memory order,
+            OrderModel.Fill memory fill,
+            SigOps.Signature memory sig
+        ) = _buildBasicRevertTest("invalid_sender");
 
-        _expectSettleRevert(fill, order, sig, txSender, OrderEngine.UnauthorizedFillActor.selector);
+        _expectSettleRevert(
+            fill,
+            order,
+            sig,
+            txSender,
+            OrderEngine.UnauthorizedFillActor.selector
+        );
     }
 
-    function test_Settle_ZeroAsOrderActor_Reverts() public {
-        Actors memory actors = Actors({order: address(0), fill: actor("not_important")});
+    function test_settle_zero_as_order_actor_reverts() public {
+        Actors memory actors = Actors({
+            order: address(0),
+            fill: actor("not_important")
+        });
         OrderModel.Order memory order = makeAsk(actors.order);
         OrderModel.Fill memory fill = makeFill(actors.fill);
         SigOps.Signature memory sig = dummySig();
 
-        _expectSettleRevert(fill, order, sig, actors.fill, OrderEngine.ZeroActor.selector);
+        _expectSettleRevert(
+            fill,
+            order,
+            sig,
+            actors.fill,
+            OrderEngine.ZeroActor.selector
+        );
     }
 
-    function test_Settle_NonWhitelistedCurrency_Reverts() public {
+    function test_settle_non_whitelisted_currency_reverts() public {
         MockERC721 supportedCollection = new MockERC721();
         Actors memory actors = someActors("non_whitelisted_currency");
         address nonWhitelistedCurrency = makeAddr("non_whitelisted_currency");
 
-        OrderModel.Order memory order = makeAsk(address(supportedCollection), nonWhitelistedCurrency, actors.order);
+        OrderModel.Order memory order = makeAsk(
+            address(supportedCollection),
+            nonWhitelistedCurrency,
+            actors.order
+        );
         OrderModel.Fill memory fill = makeFill(actors.fill);
         SigOps.Signature memory sig = dummySig();
 
-        _expectSettleRevert(fill, order, sig, actors.fill, OrderEngine.CurrencyNotWhitelisted.selector);
+        _expectSettleRevert(
+            fill,
+            order,
+            sig,
+            actors.fill,
+            OrderEngine.CurrencyNotWhitelisted.selector
+        );
     }
 
-    function test_Settle_OrderNotStarted_Reverts() public {
-        (, OrderModel.Order memory order, OrderModel.Fill memory fill, SigOps.Signature memory sig) =
-            _buildBasicRevertTest("not_started_order");
+    function test_settle_order_not_started_reverts() public {
+        (
+            ,
+            OrderModel.Order memory order,
+            OrderModel.Fill memory fill,
+            SigOps.Signature memory sig
+        ) = _buildBasicRevertTest("not_started_order");
 
         order.start = uint64(block.timestamp + 1 days);
 
-        _expectSettleRevert(fill, order, sig, fill.actor, OrderEngine.InvalidTimestamp.selector);
+        _expectSettleRevert(
+            fill,
+            order,
+            sig,
+            fill.actor,
+            OrderEngine.InvalidTimestamp.selector
+        );
     }
 
-    function test_Settle_OrderExpired_Reverts() public {
-        (, OrderModel.Order memory order, OrderModel.Fill memory fill, SigOps.Signature memory sig) =
-            _buildBasicRevertTest("expired_order");
+    function test_settle_order_expired_reverts() public {
+        (
+            ,
+            OrderModel.Order memory order,
+            OrderModel.Fill memory fill,
+            SigOps.Signature memory sig
+        ) = _buildBasicRevertTest("expired_order");
 
         order.start = 1;
         order.end = 2;
 
         vm.warp(3);
 
-        _expectSettleRevert(fill, order, sig, fill.actor, OrderEngine.InvalidTimestamp.selector);
+        _expectSettleRevert(
+            fill,
+            order,
+            sig,
+            fill.actor,
+            OrderEngine.InvalidTimestamp.selector
+        );
     }
 
     /*//////////////////////////////////////////////////////////////
                     VALID SIGNATURE REQUIRED
     //////////////////////////////////////////////////////////////*/
 
-    function test_Settle_SignatureMismatch_Reverts() public {
+    function test_settle_signature_mismatch_reverts() public {
         (
             Actors memory actors,
             OrderModel.Order memory order,
             OrderModel.Fill memory fill,
             SigOps.Signature memory sig,
+
         ) = _buildSignedRevertTest("sig_mismatch");
 
         // tamper price
         order.price = 10;
 
-        _expectSettleRevert(fill, order, sig, actors.fill, SigOps.InvalidSignature.selector);
+        _expectSettleRevert(
+            fill,
+            order,
+            sig,
+            actors.fill,
+            SigOps.InvalidSignature.selector
+        );
     }
 
     /*//////////////////////////////////////////////////////////////
                 VALID SIGNATURE + APPROVALS REQUIRED
     //////////////////////////////////////////////////////////////*/
 
-    function test_Settle_ReusedNonce_Reverts() public {
+    function test_settle_reused_nonce_reverts() public {
         (
             Actors memory actors,
             OrderModel.Order memory order,
             OrderModel.Fill memory fill,
             SigOps.Signature memory sig,
+
         ) = _buildSignedRevertTest("reuse_nonce");
 
         legitimizeSettlement(fill, order);
@@ -114,15 +171,25 @@ contract OrderEngineSettleRevertsTest is OrderEngineSettleBase {
         orderEngine.settle(fill, order, sig);
 
         // replay nonce - should revert
-        _expectSettleRevert(fill, order, sig, actors.fill, OrderEngine.InvalidNonce.selector);
+        _expectSettleRevert(
+            fill,
+            order,
+            sig,
+            actors.fill,
+            OrderEngine.InvalidNonce.selector
+        );
     }
 
-    function test_Settle_UnsupportedCollection_Reverts() public {
+    function test_settle_unsupported_collection_reverts() public {
         MockUnsupported unsupportedCollection = new MockUnsupported();
         Actors memory actors = someActors("unsupported_collection");
         uint256 signerPk = pkOf(actors.order);
 
-        OrderModel.Order memory order = makeAsk(address(unsupportedCollection), wethAddr(), actors.order);
+        OrderModel.Order memory order = makeAsk(
+            address(unsupportedCollection),
+            wethAddr(),
+            actors.order
+        );
         (, SigOps.Signature memory sig) = signOrder(order, signerPk);
         OrderModel.Fill memory fill = makeFill(actors.fill);
 
@@ -130,7 +197,13 @@ contract OrderEngineSettleRevertsTest is OrderEngineSettleBase {
         // => explicitly do erc20 approvals
         wethDealAndApproveSpenderAllowance(actors.fill, order.price);
 
-        _expectSettleRevert(fill, order, sig, actors.fill, OrderEngine.UnsupportedCollection.selector);
+        _expectSettleRevert(
+            fill,
+            order,
+            sig,
+            actors.fill,
+            OrderEngine.UnsupportedCollection.selector
+        );
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -149,7 +222,9 @@ contract OrderEngineSettleRevertsTest is OrderEngineSettleBase {
         orderEngine.settle(fill, order, sig);
     }
 
-    function _buildBasicRevertTest(string memory seed)
+    function _buildBasicRevertTest(
+        string memory seed
+    )
         internal
         view
         returns (
@@ -165,7 +240,9 @@ contract OrderEngineSettleRevertsTest is OrderEngineSettleBase {
         sig = dummySig();
     }
 
-    function _buildSignedRevertTest(string memory seed)
+    function _buildSignedRevertTest(
+        string memory seed
+    )
         internal
         view
         returns (

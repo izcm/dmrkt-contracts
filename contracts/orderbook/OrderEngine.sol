@@ -32,6 +32,7 @@ contract OrderEngine is ReentrancyGuard {
     error UnsupportedCollection();
 
     // === IMMUTABLES ===
+
     bytes32 public immutable DOMAIN_SEPARATOR;
     address public immutable WETH;
     uint256 public immutable PROTOCOL_FEE_BPS = 100; // immutable for simplicity
@@ -40,10 +41,11 @@ contract OrderEngine is ReentrancyGuard {
 
     // TODO: mapping(address => mapping(uint256 => uint256)) nonceBitmap;
     // ====> each uint256 packs 256 nonces
+    // mapping(address => mapping(uint256 => uint256)) private _userNonceBitmap;
     mapping(address => mapping(uint256 => bool))
         private _isUserOrderNonceInvalid;
 
-    mapping(address => mapping(uint256 => uint256)) private _userNonceBitmap;
+    event OrderCancelled(address indexed user, uint256 indexed nonce);
 
     event Settlement(
         bytes32 indexed orderHash,
@@ -75,6 +77,25 @@ contract OrderEngine is ReentrancyGuard {
     }
 
     // ===== EXTERNAL FUNCTIONS =====
+
+    /**
+     * @notice Cancel single order
+     */
+    function cancelOrder(uint256 nonce) external {
+        _isUserOrderNonceInvalid[msg.sender][nonce] = true;
+
+        emit OrderCancelled(msg.sender, nonce);
+    }
+
+    /**
+     * @notice Check if user nonce is invalid
+     */
+    function isUserOrderNonceInvalid(
+        address user,
+        uint256 nonce
+    ) external view returns (bool) {
+        return _isUserOrderNonceInvalid[user][nonce];
+    }
 
     /**
      * @notice Matches a `Fill` request to an existing `Order`
@@ -114,13 +135,6 @@ contract OrderEngine is ReentrancyGuard {
             order.currency, // future proofing
             order.price
         );
-    }
-
-    function isUserOrderNonceInvalid(
-        address user,
-        uint256 nonce
-    ) external view returns (bool) {
-        return _isUserOrderNonceInvalid[user][nonce];
     }
 
     // ===== INTERNAL FUNCTIONS =====

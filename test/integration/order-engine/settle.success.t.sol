@@ -6,7 +6,7 @@ import {IERC20} from "@openzeppelin/interfaces/IERC20.sol";
 import {IERC721} from "@openzeppelin/interfaces/IERC721.sol";
 
 // local
-import {OrderEngineSettleBase} from "./OrderEngine.settle.base.t.sol";
+import {OrderEngineSettleBase} from "./settle.base.t.sol";
 
 // core libs
 import {OrderModel} from "orderbook/libs/OrderModel.sol";
@@ -34,23 +34,39 @@ contract OrderEngineSettleSuccessTest is OrderEngineSettleBase {
         uint256 price
     );
 
-    function test_Settle_Ask_Succeeds() public {
+    function test_settle_ask_succeeds() public {
         _assertSettleSucceeds(OrderModel.Side.Ask, false, someActors("ask"));
     }
 
-    function test_Settle_Bid_SpecificToken_Succeeds() public {
-        _assertSettleSucceeds(OrderModel.Side.Bid, false, someActors("bid_specific"));
+    function test_settle_bid_specific_token_succeeds() public {
+        _assertSettleSucceeds(
+            OrderModel.Side.Bid,
+            false,
+            someActors("bid_specific")
+        );
     }
 
-    function test_Settle_Bid_CollectionBid_Succeeds() public {
-        _assertSettleSucceeds(OrderModel.Side.Bid, true, someActors("bid_collection"));
+    function test_settle_collection_bid_succeeds() public {
+        _assertSettleSucceeds(
+            OrderModel.Side.Bid,
+            true,
+            someActors("bid_collection")
+        );
     }
 
-    function _assertSettleSucceeds(OrderModel.Side side, bool isCollectionBid, Actors memory actors) internal {
+    function _assertSettleSucceeds(
+        OrderModel.Side side,
+        bool isCollectionBid,
+        Actors memory actors
+    ) internal {
         uint256 signerPk = pkOf(actors.order);
 
-        // defaults to mockEERC721 + WETH
-        OrderModel.Order memory order = makeOrder(side, isCollectionBid, actors.order);
+        // defaults to mockERC721 + WETH
+        OrderModel.Order memory order = makeOrder(
+            side,
+            isCollectionBid,
+            actors.order
+        );
 
         (, SigOps.Signature memory sig) = signOrder(order, signerPk);
 
@@ -60,38 +76,58 @@ contract OrderEngineSettleSuccessTest is OrderEngineSettleBase {
 
         legitimizeSettlement(fill, order);
 
-        (address nftHolder, address spender, uint256 tokenId) = SettlementRoles.resolve(fill, order);
+        (address nftHolder, address spender, uint256 tokenId) = SettlementRoles
+            .resolve(fill, order);
 
         // check balance of parties before settlement
         IERC20 token = IERC20(order.currency);
 
-        Balances memory beforeSuccess = _balanceOfParties(token, spender, nftHolder);
+        Balances memory beforeSuccess = _balanceOfParties(
+            token,
+            spender,
+            nftHolder
+        );
 
         vm.expectEmit(true, true, true, true);
-        emit Settlement(order.hash(), order.collection, tokenId, nftHolder, spender, order.currency, order.price);
+        emit Settlement(
+            order.hash(),
+            order.collection,
+            tokenId,
+            nftHolder,
+            spender,
+            order.currency,
+            order.price
+        );
 
         vm.prank(actors.fill);
         orderEngine.settle(fill, order, sig);
 
         // check balance of parties after_ settlement
-        Balances memory afterSuccess = _balanceOfParties(token, spender, nftHolder);
+        Balances memory afterSuccess = _balanceOfParties(
+            token,
+            spender,
+            nftHolder
+        );
 
-        _assertPayoutMatchesExpectations(beforeSuccess, afterSuccess, order.price);
+        _assertPayoutMatchesExpectations(
+            beforeSuccess,
+            afterSuccess,
+            order.price
+        );
 
         // check new ownership
         assertEq(IERC721(order.collection).ownerOf(tokenId), spender);
 
-        assertTrue(orderEngine.isUserOrderNonceInvalid(order.actor, order.nonce));
+        assertTrue(
+            orderEngine.isUserOrderNonceInvalid(order.actor, order.nonce)
+        );
     }
 
     function _assertPayoutMatchesExpectations(
         Balances memory before,
         Balances memory after_, // _ suffix since `after` is a reserved keyword
         uint256 orderPrice
-    )
-        internal
-        view
-    {
+    ) internal view {
         uint256 fee = _protocolFee(orderPrice);
         uint256 payout = orderPrice - fee;
 
@@ -108,11 +144,11 @@ contract OrderEngineSettleSuccessTest is OrderEngineSettleBase {
         return (price * orderEngine.PROTOCOL_FEE_BPS()) / 10000;
     }
 
-    function _balanceOfParties(IERC20 token, address spender, address nftHolder)
-        internal
-        view
-        returns (Balances memory b)
-    {
+    function _balanceOfParties(
+        IERC20 token,
+        address spender,
+        address nftHolder
+    ) internal view returns (Balances memory b) {
         b.spender = token.balanceOf(spender);
         b.nftHolder = token.balanceOf(nftHolder);
         b.protocol = token.balanceOf(protocolFeeRecipient);

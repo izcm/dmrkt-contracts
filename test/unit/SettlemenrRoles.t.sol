@@ -30,7 +30,7 @@ contract SettlementRolesTest is OrderHelper {
                                 SUCCESS
     //////////////////////////////////////////////////////////////*/
 
-    function test_Resolve_Ask_ReturnsCorrectRoles() public view {
+    function test_resolve_ask_returns_correct_roles() public view {
         OrderModel.Order memory order = makeOrder(OrderModel.Side.Ask, false, orderActor);
 
         // ensure fill tokenId is ignored for asks
@@ -43,7 +43,7 @@ contract SettlementRolesTest is OrderHelper {
         assertEq(tokenId, order.tokenId);
     }
 
-    function test_Resolve_Bid_SpecificToken_ReturnsCorrectRoles() public view {
+    function test_resolve_bid_specific_token_returns_correct_roles() public view {
         OrderModel.Order memory order = makeOrder(OrderModel.Side.Bid, false, orderActor);
 
         OrderModel.Fill memory fill = OrderModel.Fill({tokenId: 888, actor: fillActor});
@@ -55,7 +55,7 @@ contract SettlementRolesTest is OrderHelper {
         assertEq(tokenId, order.tokenId);
     }
 
-    function test_Resolve_Bid_CollectionBid_UsesFillTokenId() public view {
+    function test_resolve_bid_collection_bid_uses_fill_token_id() public view {
         OrderModel.Order memory order = makeOrder(OrderModel.Side.Bid, true, orderActor);
 
         uint256 collectionTokenId = 777;
@@ -73,7 +73,7 @@ contract SettlementRolesTest is OrderHelper {
                                 REVERTS
     //////////////////////////////////////////////////////////////*/
 
-    function test_Resolve_Order_InvalidSideReverts() public {
+    function test_resolve_order_invalid_side_reverts() public {
         OrderModel.Order memory order = OrderModel.Order({
             side: OrderModel.Side._COUNT, // invalid on purpose
             isCollectionBid: false,
