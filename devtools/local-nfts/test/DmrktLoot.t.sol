@@ -65,19 +65,7 @@ contract DMrktLootTest is Test {
         // Token 6: 6 % 3 = 0 = Sword
 
         // Should have 3 Swords (tokens 0, 3, 6)
-        assertEq(loot.supplyOf(DMrktLoot.ItemType.Sword), 3);
         assertEq(loot.totalSupply(), 7);
-    }
-
-    function testDifferentTypesSupply() public {
-        // Mint 3 tokens to cover one of each type
-        loot.mint(alice); // Token 0: Sword
-        loot.mint(alice); // Token 1: Elixir
-        loot.mint(alice); // Token 2: Shield
-
-        assertEq(loot.supplyOf(DMrktLoot.ItemType.Sword), 1);
-        assertEq(loot.supplyOf(DMrktLoot.ItemType.Elixir), 1);
-        assertEq(loot.supplyOf(DMrktLoot.ItemType.Shield), 1);
     }
 
     // ----------------------------

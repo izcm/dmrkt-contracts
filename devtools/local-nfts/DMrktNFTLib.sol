@@ -10,6 +10,10 @@ import {DMrktMathConfig} from "./DMrktMathConfig.sol";
  * @title DMrktNFTLib
  * @dev Shared library for dmrkt NFT contracts
  */
+
+// NOTE: Demo-only contract. Generated with AI and lightly modified.
+// NB: Contract is not part of production code nor coupled to the architecture
+
 library DMrktNFTLib {
     // ----------------------------
     // ELEMENT LOGIC
@@ -63,6 +67,14 @@ library DMrktNFTLib {
         if (tokenId % DMrktMathConfig.rarityEpicMod() == 0) return "Epic";
         if (tokenId % DMrktMathConfig.rarityRareMod() == 0) return "Rare";
         return "Common";
+    }
+
+    function getItemTypeName(
+        uint256 itemType
+    ) internal pure returns (string memory) {
+        if (itemType == DMrktMathConfig.itemTypeSword()) return "Sword";
+        if (itemType == DMrktMathConfig.itemTypeElixir()) return "Elixir";
+        return "Shield";
     }
 
     function getDamage(uint256 tokenId) internal pure returns (uint256) {
@@ -199,63 +211,30 @@ library DMrktNFTLib {
         uint256 tokenId,
         uint256 itemType
     ) internal pure returns (string memory) {
+        string memory common = string(
+            abi.encodePacked(
+                buildTrait("Type", getItemTypeName(itemType)),
+                ",",
+                buildTrait("Rarity", getRarity(tokenId)),
+                ",",
+                buildTrait("Color", getColorName(tokenId)),
+                ",",
+                buildTrait("Element", getElementName(tokenId))
+            )
+        );
+
+        string memory stat;
+
         if (itemType == DMrktMathConfig.itemTypeSword()) {
-            // Sword
-            return
-                string(
-                    abi.encodePacked(
-                        '"attributes":[',
-                        buildTrait("Rarity", getRarity(tokenId)),
-                        ",",
-                        buildTrait("Color", getColorName(tokenId)),
-                        ",",
-                        buildTrait("Element", getElementName(tokenId)),
-                        ",",
-                        buildTrait(
-                            "Damage",
-                            Strings.toString(getDamage(tokenId))
-                        ),
-                        "]"
-                    )
-                );
+            stat = buildTrait("Damage", Strings.toString(getDamage(tokenId)));
+        } else if (itemType == DMrktMathConfig.itemTypeShield()) {
+            stat = buildTrait("Defense", Strings.toString(getDefense(tokenId)));
+        } else {
+            stat = buildTrait("Power", Strings.toString(getPower(tokenId)));
         }
 
-        if (itemType == DMrktMathConfig.itemTypeShield()) {
-            // Shield
-            return
-                string(
-                    abi.encodePacked(
-                        '"attributes":[',
-                        buildTrait("Rarity", getRarity(tokenId)),
-                        ",",
-                        buildTrait("Color", getColorName(tokenId)),
-                        ",",
-                        buildTrait("Element", getElementName(tokenId)),
-                        ",",
-                        buildTrait(
-                            "Defense",
-                            Strings.toString(getDefense(tokenId))
-                        ),
-                        "]"
-                    )
-                );
-        }
-
-        // Elixir
         return
-            string(
-                abi.encodePacked(
-                    '"attributes":[',
-                    buildTrait("Rarity", getRarity(tokenId)),
-                    ",",
-                    buildTrait("Color", getColorName(tokenId)),
-                    ",",
-                    buildTrait("Element", getElementName(tokenId)),
-                    ",",
-                    buildTrait("Power", Strings.toString(getPower(tokenId))),
-                    "]"
-                )
-            );
+            string(abi.encodePacked('"attributes":[', common, ",", stat, "]"));
     }
 
     function buildLootMetadata(

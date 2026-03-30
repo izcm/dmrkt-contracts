@@ -171,12 +171,13 @@ contract BuildEpoch is
             collections,
             epoch
         );
-        Selection[] memory selectionsCb = collect(
-            OrderModel.Side.Bid,
-            true,
-            collections,
-            epoch
-        );
+        // **collectionBid feature paused**
+        // Selection[] memory selectionsCb = collect(
+        //     OrderModel.Side.Bid,
+        //     true,
+        //     collections,
+        //     epoch
+        // );
 
         uint256 count;
 
@@ -185,12 +186,12 @@ contract BuildEpoch is
         count += _mergeSelections(selectionsBid);
 
         // collectionbids don't have tokenIds like ask / regular bid => only get count
-        for (uint256 i = 0; i < selectionsCb.length; i++) {
-            Selection memory s = selectionsCb[i];
-            for (uint256 j = 0; j < s.tokenIds.length; j++) {
-                count++;
-            }
-        }
+        // for (uint256 i = 0; i < selectionsCb.length; i++) {
+        //     Selection memory s = selectionsCb[i];
+        //     for (uint256 j = 0; j < s.tokenIds.length; j++) {
+        //         count++;
+        //     }
+        // }
 
         orders = new OrderModel.Order[](count);
         uint256 idx;
@@ -213,14 +214,14 @@ contract BuildEpoch is
             weth
         );
 
-        _appendOrders(
-            orders,
-            idx,
-            OrderModel.Side.Bid,
-            true,
-            selectionsCb,
-            weth
-        );
+        // _appendOrders(
+        //     orders,
+        //     idx,
+        //     OrderModel.Side.Bid,
+        //     true,
+        //     selectionsCb,
+        //     weth
+        // );
     }
 
     function _appendOrders(

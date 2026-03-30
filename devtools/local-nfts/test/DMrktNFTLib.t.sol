@@ -100,4 +100,22 @@ contract DMrktNFTLibTest is Test {
         string memory overlayNone = DMrktNFTLib.buildElementOverlay(1);
         assertEq(bytes(overlayNone).length, 0);
     }
+
+    function testGetItemTypeName() public {
+        // Sword
+        assertEq(
+            DMrktNFTLib.getItemTypeName(DMrktMathConfig.itemTypeSword()),
+            "Sword"
+        );
+        // Elixir
+        assertEq(
+            DMrktNFTLib.getItemTypeName(DMrktMathConfig.itemTypeElixir()),
+            "Elixir"
+        );
+        // Shield (fallback)
+        assertEq(
+            DMrktNFTLib.getItemTypeName(DMrktMathConfig.itemTypeShield()),
+            "Shield"
+        );
+    }
 }

@@ -9,8 +9,9 @@ import {DNFT} from "periphery/interfaces/DNFT.sol";
 import {DMrktMathConfig} from "./DMrktMathConfig.sol";
 import {DMrktNFTLib} from "./DMrktNFTLib.sol";
 
-// free mint, used in DEV env setup
-// see Script/dev-setup
+// NOTE: Demo-only contract. Generated with AI and lightly modified.
+// NB: Contract is not part of production code nor coupled to the architecture
+
 contract DMrktLoot is DNFT, ERC721 {
     enum ItemType {
         Sword,
@@ -39,15 +40,6 @@ contract DMrktLoot is DNFT, ERC721 {
 
     function totalSupply() external view returns (uint256) {
         return _nextTokenId;
-    }
-
-    function supplyOf(ItemType itemType) external view returns (uint256) {
-        // Count tokens of type during iteration
-        uint256 count = 0;
-        for (uint256 i = 0; i < _nextTokenId; i++) {
-            if (_tokenType[i] == itemType) count++;
-        }
-        return count;
     }
 
     function itemTypeOf(uint256 tokenId) external view returns (ItemType) {
@@ -237,5 +229,12 @@ contract DMrktLoot is DNFT, ERC721 {
         uint256 tokenId
     ) public pure returns (string memory) {
         return DMrktNFTLib.getElementName(tokenId);
+    }
+
+    function getItemTypeName(
+        uint256 tokenId
+    ) external view returns (string memory) {
+        require(_ownerOf(tokenId) != address(0), "Not minted");
+        return DMrktNFTLib.getItemTypeName(uint256(_tokenType[tokenId]));
     }
 }
