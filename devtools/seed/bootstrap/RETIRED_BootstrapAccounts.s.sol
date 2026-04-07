@@ -1,0 +1,106 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.30;
+
+import {console} from "forge-std/console.sol";
+
+// local
+import {BaseDevScript} from "dev/BaseDevScript.s.sol";
+import {DevConfig} from "dev/DevConfig.s.sol";
+
+// interfaces
+import {IWETH} from "periphery/interfaces/IWETH.sol";
+
+/**
+ * === SCRIPT IS RETIRED ====
+ *
+ * Made this script before reading through anvil docs properly
+ * great docs: https://www.getfoundry.sh/reference/anvil/anvil#examples
+ *
+ * --accounts + --balance flag in start-fork.bash does all the funding at fork start.
+ * simplified version of this script: BootstrapAccounts.s.sol
+ *
+ * leaving retired script up for now.
+ */
+
+// TODO:
+// for ANVIL there are simpler ways to do to initial ETH
+// set --accounts and --memonic to generate and configure on fork startup
+// https://getfoundry.sh/anvil/reference/anvil
+
+contract BootstrapAccounts is BaseDevScript, DevConfig {
+    function run() external {
+        logBlockTimestamp();
+
+        // --------------------------------
+        // PHASE 0: LOAD CONFIG
+        // --------------------------------
+
+        // read pipeline.toml
+        address weth = readWeth();
+
+        // read .env (for anvil choose a pre-funded default account)
+        uint256 funderPk = uint256(vm.envUint("FUNDER_PK"));
+        address funder = addrOf(funderPk);
+
+        // --------------------------------
+        // PHASE 1: FUND ETH
+        // --------------------------------
+        logSection("BOOTSTRAP DEV ACCOUNTS");
+        console.log("------------------------------------");
+        console.log("FUNDER");
+        console.log("ADDR  | %s", funder);
+        console.log("BAL   | %s", funder.balance);
+        console.log("------------------------------------");
+
+        uint256 distributableEth = (funder.balance * 4) / 5;
+
+        // --- PKs for broadcasting ---
+
+        uint256[] memory participantPks = generateKeys();
+        uint256 participantCount = participantPks.length;
+
+        // amount to fund each account
+        uint256 bootstrapEth = distributableEth / participantCount;
+
+        vm.startBroadcast(funderPk);
+
+        for (uint256 i = 0; i < participantCount; i++) {
+            address a = addrOf(participantPks[i]);
+
+            logBalance("PRE ", a);
+
+            (bool ok, ) = payable(a).call{value: bootstrapEth}("");
+
+            if (!ok) {
+                console.log("TRANSFER FAILED -> %s", a);
+            } else {
+                logBalance("POST", a);
+            }
+
+            logSeparator();
+        }
+
+        vm.stopBroadcast();
+
+        // --------------------------------
+        // PHASE 2: WRAP ETH
+        // --------------------------------
+        logSection("WRAP ETH => WETH");
+
+        uint256 wethWrapAmount = bootstrapEth / 2; // just chose 50% go to weth to have lots of space for gas etc.
+        IWETH wethToken = IWETH(weth);
+
+        for (uint256 i = 0; i < participantCount; i++) {
+            address a = addrOf(participantPks[i]);
+            logTokenBalance("PRE  WETH", a, wethToken.balanceOf(a));
+
+            vm.startBroadcast(participantPks[i]);
+            wethToken.deposit{value: wethWrapAmount}();
+            vm.stopBroadcast();
+
+            logTokenBalance("POST WETH", a, wethToken.balanceOf(a));
+
+            logSeparator();
+        }
+    }
+}

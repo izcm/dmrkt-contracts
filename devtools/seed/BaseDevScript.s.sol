@@ -23,11 +23,17 @@ abstract contract BaseDevScript is Script {
 
     // If a script only needs private keys use this, no need to call loadParticipants
     function generateKeys() internal view returns (uint256[] memory) {
-        return generateKeys(7);
+        return generateKeys(10);
     }
 
-    function generateKeys(uint32 keyCount) private view returns (uint256[] memory) {
-        string memory path = string.concat("./data/", vm.toString(block.chainid), "/mnemonic.json");
+    function generateKeys(
+        uint32 keyCount
+    ) private view returns (uint256[] memory) {
+        string memory path = string.concat(
+            "./data/",
+            vm.toString(block.chainid),
+            "/mnemonic.json"
+        );
 
         string memory json = vm.readFile(path);
         string memory mnemonic = vm.parseJsonString(json, ".mnemonic");
@@ -49,7 +55,10 @@ abstract contract BaseDevScript is Script {
         return _participants;
     }
 
-    function otherParticipant(address excluded, uint256 seed) internal view returns (address) {
+    function otherParticipant(
+        address excluded,
+        uint256 seed
+    ) internal view returns (address) {
         address[] memory ps = participants();
         require(ps.length > 1, "Need at least 2 participants");
 
@@ -86,8 +95,16 @@ abstract contract BaseDevScript is Script {
         logSeparator();
     }
 
-    function logDeployment(string memory label, address deployed) internal view {
-        console.log("DEPLOY | %s | %s | codeSize: %s", label, deployed, deployed.code.length);
+    function logDeployment(
+        string memory label,
+        address deployed
+    ) internal view {
+        console.log(
+            "DEPLOY | %s | %s | codeSize: %s",
+            label,
+            deployed,
+            deployed.code.length
+        );
     }
 
     function logAddress(string memory label, address a) internal pure {
@@ -98,7 +115,11 @@ abstract contract BaseDevScript is Script {
         console.log("%s | %s | balance: %s", label, a, a.balance);
     }
 
-    function logTokenBalance(string memory label, address a, uint256 balance) internal pure {
+    function logTokenBalance(
+        string memory label,
+        address a,
+        uint256 balance
+    ) internal pure {
         console.log("%s | %s | balance: %s", label, a, balance);
     }
 
@@ -106,8 +127,17 @@ abstract contract BaseDevScript is Script {
         console.log("--------------------");
     }
 
-    function logNFTMint(address collection, uint256 tokenId, address to) internal pure {
-        console.log("MINT | collection: %s | tokenId: %s | to: %s", collection, tokenId, to);
+    function logNFTMint(
+        address collection,
+        uint256 tokenId,
+        address to
+    ) internal pure {
+        console.log(
+            "MINT | collection: %s | tokenId: %s | to: %s",
+            collection,
+            tokenId,
+            to
+        );
     }
 
     function logBlockTimestamp() internal view {

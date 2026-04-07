@@ -23,10 +23,11 @@ TOML="./pipeline.toml"
 # PHASE 0: CONFIG / CTX
 #--------------------------
 
-# --- ensure directories ---
 
-linger_dir="$PIPELINE_STATE_DIR/ensure-linger"
-mkdir -p "$linger_dir"
+# # --- ensure directories --- PAUSED
+
+# linger_dir="$PIPELINE_STATE_DIR/ensure-linger"
+# mkdir -p "$linger_dir"
 
 # --- timestamps and epochs ---
 

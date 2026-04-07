@@ -2,11 +2,11 @@
 pragma solidity ^0.8.28;
 
 library DMrktMathConfig {
-    function lootMaxSupply() public pure returns (uint256) {
+    function lootMaxSupply() internal pure returns (uint256) {
         return 500;
     }
 
-    function itemTypeCount() public pure returns (uint256) {
+    function itemTypeCount() internal pure returns (uint256) {
         return 3;
     }
 

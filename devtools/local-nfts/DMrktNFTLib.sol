@@ -34,8 +34,9 @@ library DMrktNFTLib {
     function getElementName(
         uint256 tokenId
     ) internal pure returns (string memory) {
-        if (tokenId % DMrktMathConfig.elementThunderMod() == 0)
+        if (tokenId % DMrktMathConfig.elementThunderMod() == 0) {
             return "Thunder";
+        }
         if (tokenId % DMrktMathConfig.elementFireMod() == 0) return "Fire";
         return "None";
     }
@@ -62,8 +63,9 @@ library DMrktNFTLib {
     // ----------------------------
 
     function getRarity(uint256 tokenId) internal pure returns (string memory) {
-        if (tokenId % DMrktMathConfig.rarityLegendaryMod() == 0)
+        if (tokenId % DMrktMathConfig.rarityLegendaryMod() == 0) {
             return "Legendary";
+        }
         if (tokenId % DMrktMathConfig.rarityEpicMod() == 0) return "Epic";
         if (tokenId % DMrktMathConfig.rarityRareMod() == 0) return "Rare";
         return "Common";
@@ -81,12 +83,15 @@ library DMrktNFTLib {
         uint256 base = DMrktMathConfig.damageBaseMin() +
             (tokenId % DMrktMathConfig.damageBaseModulo());
 
-        if (tokenId % DMrktMathConfig.rarityLegendaryMod() == 0)
+        if (tokenId % DMrktMathConfig.rarityLegendaryMod() == 0) {
             return base + DMrktMathConfig.damageLegendaryBonus();
-        if (tokenId % DMrktMathConfig.rarityEpicMod() == 0)
+        }
+        if (tokenId % DMrktMathConfig.rarityEpicMod() == 0) {
             return base + DMrktMathConfig.damageEpicBonus();
-        if (tokenId % DMrktMathConfig.rarityRareMod() == 0)
+        }
+        if (tokenId % DMrktMathConfig.rarityRareMod() == 0) {
             return base + DMrktMathConfig.damageRareBonus();
+        }
 
         return base;
     }
@@ -95,12 +100,15 @@ library DMrktNFTLib {
         uint256 base = DMrktMathConfig.defenseBaseMin() +
             (tokenId % DMrktMathConfig.defenseBaseModulo());
 
-        if (tokenId % DMrktMathConfig.rarityLegendaryMod() == 0)
+        if (tokenId % DMrktMathConfig.rarityLegendaryMod() == 0) {
             return base + DMrktMathConfig.defenseLegendaryBonus();
-        if (tokenId % DMrktMathConfig.rarityEpicMod() == 0)
+        }
+        if (tokenId % DMrktMathConfig.rarityEpicMod() == 0) {
             return base + DMrktMathConfig.defenseEpicBonus();
-        if (tokenId % DMrktMathConfig.rarityRareMod() == 0)
+        }
+        if (tokenId % DMrktMathConfig.rarityRareMod() == 0) {
             return base + DMrktMathConfig.defenseRareBonus();
+        }
 
         return base;
     }
@@ -109,12 +117,15 @@ library DMrktNFTLib {
         uint256 base = DMrktMathConfig.powerBaseMin() +
             (tokenId % DMrktMathConfig.powerBaseModulo());
 
-        if (tokenId % DMrktMathConfig.rarityLegendaryMod() == 0)
+        if (tokenId % DMrktMathConfig.rarityLegendaryMod() == 0) {
             return base + DMrktMathConfig.powerLegendaryBonus();
-        if (tokenId % DMrktMathConfig.rarityEpicMod() == 0)
+        }
+        if (tokenId % DMrktMathConfig.rarityEpicMod() == 0) {
             return base + DMrktMathConfig.powerEpicBonus();
-        if (tokenId % DMrktMathConfig.rarityRareMod() == 0)
+        }
+        if (tokenId % DMrktMathConfig.rarityRareMod() == 0) {
             return base + DMrktMathConfig.powerRareBonus();
+        }
 
         return base;
     }

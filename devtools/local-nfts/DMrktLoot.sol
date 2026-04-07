@@ -47,12 +47,9 @@ contract DMrktLoot is DNFT, ERC721 {
         return _tokenType[tokenId];
     }
 
-    function tokenURI(
-        uint256 tokenId
-    ) public view override returns (string memory) {
+    function tokenURI(uint256 tokenId) public view override returns (string memory) {
         require(_ownerOf(tokenId) != address(0), "Not minted");
-        return
-            string.concat("data:application/json;base64,", _metadata(tokenId));
+        return string.concat("data:application/json;base64,", _metadata(tokenId));
     }
 
     // ----------------------------
@@ -63,35 +60,20 @@ contract DMrktLoot is DNFT, ERC721 {
         ItemType itemType = _tokenType[tokenId];
         string memory svgBase64 = Base64.encode(bytes(_svg(tokenId, itemType)));
         (string memory name, string memory desc) = _itemMeta(tokenId, itemType);
-        return
-            DMrktNFTLib.buildLootMetadata(
-                name,
-                desc,
-                tokenId,
-                uint256(itemType),
-                svgBase64
-            );
+        return DMrktNFTLib.buildLootMetadata(name, desc, tokenId, uint256(itemType), svgBase64);
     }
 
-    function _itemMeta(
-        uint256 tokenId,
-        ItemType itemType
-    ) internal pure returns (string memory name, string memory desc) {
+    function _itemMeta(uint256 tokenId, ItemType itemType)
+        internal
+        pure
+        returns (string memory name, string memory desc)
+    {
         if (itemType == ItemType.Sword) {
-            return (
-                DMrktNFTLib.buildItemName("Sword", tokenId),
-                "Fully on-chain dmrkt sword"
-            );
+            return (DMrktNFTLib.buildItemName("Sword", tokenId), "Fully on-chain dmrkt sword");
         } else if (itemType == ItemType.Elixir) {
-            return (
-                DMrktNFTLib.buildItemName("Elixir", tokenId),
-                "Fully on-chain dmrkt elixir"
-            );
+            return (DMrktNFTLib.buildItemName("Elixir", tokenId), "Fully on-chain dmrkt elixir");
         } else {
-            return (
-                DMrktNFTLib.buildItemName("Shield", tokenId),
-                "Fully on-chain dmrkt shield"
-            );
+            return (DMrktNFTLib.buildItemName("Shield", tokenId), "Fully on-chain dmrkt shield");
         }
     }
 
@@ -99,10 +81,7 @@ contract DMrktLoot is DNFT, ERC721 {
     // SVG GENERATION
     // ----------------------------
 
-    function _svg(
-        uint256 tokenId,
-        ItemType itemType
-    ) internal pure returns (string memory) {
+    function _svg(uint256 tokenId, ItemType itemType) internal pure returns (string memory) {
         string memory color = DMrktNFTLib.getColorForToken(tokenId);
         string memory element = DMrktNFTLib.buildElementOverlay(tokenId);
         string memory glow = DMrktNFTLib.buildRarityGlow(tokenId);
@@ -116,96 +95,91 @@ contract DMrktLoot is DNFT, ERC721 {
         }
     }
 
-    function _svgSword(
-        string memory color,
-        string memory element,
-        string memory glow
-    ) internal pure returns (string memory) {
-        return
-            string(
-                abi.encodePacked(
-                    '<svg width="600" height="600" viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg">',
-                    '<rect width="600" height="600" rx="64" fill="#0b0b10"/>',
-                    glow,
-                    element,
-                    '<rect x="290" y="120" width="20" height="260" fill="#d1d5db"/>',
-                    '<rect x="240" y="300" width="120" height="20" fill="',
-                    color,
-                    '"/>',
-                    '<rect x="295" y="320" width="10" height="100" fill="#78350f"/>',
-                    '<rect x="285" y="420" width="30" height="30" fill="',
-                    color,
-                    '"/>',
-                    '<text x="300" y="505" text-anchor="middle" fill="',
-                    color,
-                    '" font-family="monospace" font-size="34" letter-spacing="2">dmrkt</text>',
-                    "</svg>"
-                )
-            );
+    function _svgSword(string memory color, string memory element, string memory glow)
+        internal
+        pure
+        returns (string memory)
+    {
+        return string(
+            abi.encodePacked(
+                '<svg width="600" height="600" viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg">',
+                '<rect width="600" height="600" rx="64" fill="#0b0b10"/>',
+                glow,
+                element,
+                '<rect x="290" y="120" width="20" height="260" fill="#d1d5db"/>',
+                '<rect x="240" y="300" width="120" height="20" fill="',
+                color,
+                '"/>',
+                '<rect x="295" y="320" width="10" height="100" fill="#78350f"/>',
+                '<rect x="285" y="420" width="30" height="30" fill="',
+                color,
+                '"/>',
+                '<text x="300" y="505" text-anchor="middle" fill="',
+                color,
+                '" font-family="monospace" font-size="34" letter-spacing="2">dmrkt</text>',
+                "</svg>"
+            )
+        );
     }
 
-    function _svgElixir(
-        string memory color,
-        string memory element,
-        string memory glow
-    ) internal pure returns (string memory) {
-        return
-            string(
-                abi.encodePacked(
-                    '<svg width="600" height="600" viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg">',
-                    '<rect width="600" height="600" rx="64" fill="#0b0b10"/>',
-                    glow,
-                    '<rect x="280" y="150" width="40" height="60" fill="#9ca3af"/>',
-                    '<rect x="270" y="120" width="60" height="30" fill="#a16207"/>',
-                    '<rect x="220" y="210" width="160" height="180" fill="#111827"/>',
-                    '<rect x="240" y="260" width="120" height="120" fill="',
-                    color,
-                    '"/>',
-                    element,
-                    '<rect x="260" y="240" width="20" height="120" fill="#ffffff" opacity="0.2"/>',
-                    '<text x="300" y="505" text-anchor="middle" fill="',
-                    color,
-                    '" font-family="monospace" font-size="34" letter-spacing="2">dmrkt</text>',
-                    "</svg>"
-                )
-            );
+    function _svgElixir(string memory color, string memory element, string memory glow)
+        internal
+        pure
+        returns (string memory)
+    {
+        return string(
+            abi.encodePacked(
+                '<svg width="600" height="600" viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg">',
+                '<rect width="600" height="600" rx="64" fill="#0b0b10"/>',
+                glow,
+                '<rect x="280" y="150" width="40" height="60" fill="#9ca3af"/>',
+                '<rect x="270" y="120" width="60" height="30" fill="#a16207"/>',
+                '<rect x="220" y="210" width="160" height="180" fill="#111827"/>',
+                '<rect x="240" y="260" width="120" height="120" fill="',
+                color,
+                '"/>',
+                element,
+                '<rect x="260" y="240" width="20" height="120" fill="#ffffff" opacity="0.2"/>',
+                '<text x="300" y="505" text-anchor="middle" fill="',
+                color,
+                '" font-family="monospace" font-size="34" letter-spacing="2">dmrkt</text>',
+                "</svg>"
+            )
+        );
     }
 
-    function _svgShield(
-        string memory color,
-        string memory element,
-        string memory glow
-    ) internal pure returns (string memory) {
-        return
-            string(
-                abi.encodePacked(
-                    '<svg width="600" height="600" viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg">',
-                    '<rect width="600" height="600" rx="64" fill="#0b0b10"/>',
-                    glow,
-                    '<rect x="240" y="180" width="120" height="160" fill="#111827"/>',
-                    '<polygon points="240,340 360,340 300,420" fill="#111827"/>',
-                    '<rect x="230" y="170" width="140" height="180" fill="none" stroke="',
-                    color,
-                    '" stroke-width="10"/>',
-                    '<rect x="285" y="240" width="30" height="80" fill="',
-                    color,
-                    '"/>',
-                    element,
-                    '<text x="300" y="505" text-anchor="middle" fill="',
-                    color,
-                    '" font-family="monospace" font-size="34" letter-spacing="2">dmrkt</text>',
-                    "</svg>"
-                )
-            );
+    function _svgShield(string memory color, string memory element, string memory glow)
+        internal
+        pure
+        returns (string memory)
+    {
+        return string(
+            abi.encodePacked(
+                '<svg width="600" height="600" viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg">',
+                '<rect width="600" height="600" rx="64" fill="#0b0b10"/>',
+                glow,
+                '<rect x="240" y="180" width="120" height="160" fill="#111827"/>',
+                '<polygon points="240,340 360,340 300,420" fill="#111827"/>',
+                '<rect x="230" y="170" width="140" height="180" fill="none" stroke="',
+                color,
+                '" stroke-width="10"/>',
+                '<rect x="285" y="240" width="30" height="80" fill="',
+                color,
+                '"/>',
+                element,
+                '<text x="300" y="505" text-anchor="middle" fill="',
+                color,
+                '" font-family="monospace" font-size="34" letter-spacing="2">dmrkt</text>',
+                "</svg>"
+            )
+        );
     }
 
     // ----------------------------
     // TRAIT LOGIC
     // ----------------------------
 
-    function _getColorForToken(
-        uint256 tokenId
-    ) private pure returns (string memory) {
+    function _getColorForToken(uint256 tokenId) private pure returns (string memory) {
         return DMrktNFTLib.getColorForToken(tokenId);
     }
 
@@ -225,15 +199,11 @@ contract DMrktLoot is DNFT, ERC721 {
         return DMrktNFTLib.getElementForToken(tokenId);
     }
 
-    function getElementName(
-        uint256 tokenId
-    ) public pure returns (string memory) {
+    function getElementName(uint256 tokenId) public pure returns (string memory) {
         return DMrktNFTLib.getElementName(tokenId);
     }
 
-    function getItemTypeName(
-        uint256 tokenId
-    ) external view returns (string memory) {
+    function getItemTypeName(uint256 tokenId) external view returns (string memory) {
         require(_ownerOf(tokenId) != address(0), "Not minted");
         return DMrktNFTLib.getItemTypeName(uint256(_tokenType[tokenId]));
     }

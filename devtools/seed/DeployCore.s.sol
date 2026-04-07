@@ -18,16 +18,15 @@ contract DeployCore is BaseDevScript, DevConfig {
         // --------------------------------
         // PHASE 0: LOAD CONFIG
         // --------------------------------
+
         address weth = readWeth();
-        uint256 funderPk = uint256(uint256(vm.envUint("FUNDER_PK")));
+        uint256 funderPk = generateKeys()[0];
+        // uint256 funderPk = uint256(uint256(vm.envUint("FUNDER_PK")));
 
         // --------------------------------
         // PHASE 1: DEPLOY MARKETPLCE & NFTS
         // --------------------------------
 
-        // TODO: make someone else than funder deploy these contracts
-        // if we have our own random adress (not default anvil user) nonce stays same
-        // => deterministic addresses
         logSection("DEPLOY CORE CONTRACTS");
 
         // since the script uses the same private key its not necessary but I like to be explicit

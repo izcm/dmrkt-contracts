@@ -3,12 +3,12 @@ endpoint_url = "http://localhost:8545"
 
 [31337.address]
 weth = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
-order_engine = "0x79BE15e2d1248195a0fFfc8C329F403c64FfD27b"
-nft_c_0 = "0x6D6B455af03e39e1Ad57751d6056C7922Cc84105"
+order_engine = "0x8fA71914948544c60E3379064567DcF0E6564d27"
+nft_c_0 = "0xA5f104F8f78d5ba9AEC4a383c0927337Fd4E997B"
 nft_c_1 = "0xF10685a7b083BA60D1467b15Cb83E8bFc28b5961"
 
 [31337.uint]
 nft_c_count = 1
-pipeline_start_ts = 1772462879
-pipeline_end_ts = 1774882096
-fork_start_block = 24570455
+pipeline_start_ts = 1773150479
+pipeline_end_ts = 1775569694
+fork_start_block = 24627465

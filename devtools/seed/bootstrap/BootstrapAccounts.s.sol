@@ -10,11 +10,6 @@ import {DevConfig} from "dev/DevConfig.s.sol";
 // interfaces
 import {IWETH} from "periphery/interfaces/IWETH.sol";
 
-// TODO:
-// for ANVIL there are simpler ways to do to initial ETH
-// set --accounts and --memonic to generate and configure on fork startup
-// https://getfoundry.sh/anvil/reference/anvil
-
 contract BootstrapAccounts is BaseDevScript, DevConfig {
     function run() external {
         logBlockTimestamp();
@@ -26,56 +21,16 @@ contract BootstrapAccounts is BaseDevScript, DevConfig {
         // read pipeline.toml
         address weth = readWeth();
 
-        // read .env (for anvil choose a pre-funded default account)
-        uint256 funderPk = uint256(vm.envUint("FUNDER_PK"));
-        address funder = addrOf(funderPk);
-
-        // --------------------------------
-        // PHASE 1: FUND ETH
-        // --------------------------------
-        logSection("BOOTSTRAP DEV ACCOUNTS");
-        console.log("------------------------------------");
-        console.log("FUNDER");
-        console.log("ADDR  | %s", funder);
-        console.log("BAL   | %s", funder.balance);
-        console.log("------------------------------------");
-
-        uint256 distributableEth = (funder.balance * 4) / 5;
-
         // --- PKs for broadcasting ---
 
         uint256[] memory participantPks = generateKeys();
         uint256 participantCount = participantPks.length;
-
-        // amount to fund each account
-        uint256 bootstrapEth = distributableEth / participantCount;
-
-        vm.startBroadcast(funderPk);
-
-        for (uint256 i = 0; i < participantCount; i++) {
-            address a = addrOf(participantPks[i]);
-
-            logBalance("PRE ", a);
-
-            (bool ok, ) = payable(a).call{value: bootstrapEth}("");
-
-            if (!ok) {
-                console.log("TRANSFER FAILED -> %s", a);
-            } else {
-                logBalance("POST", a);
-            }
-
-            logSeparator();
-        }
-
-        vm.stopBroadcast();
 
         // --------------------------------
         // PHASE 2: WRAP ETH
         // --------------------------------
         logSection("WRAP ETH => WETH");
 
-        uint256 wethWrapAmount = bootstrapEth / 2;
         IWETH wethToken = IWETH(weth);
 
         for (uint256 i = 0; i < participantCount; i++) {
@@ -83,6 +38,7 @@ contract BootstrapAccounts is BaseDevScript, DevConfig {
             logTokenBalance("PRE  WETH", a, wethToken.balanceOf(a));
 
             vm.startBroadcast(participantPks[i]);
+            uint256 wethWrapAmount = a.balance / 2; // wraps half of eth balance to weth
             wethToken.deposit{value: wethWrapAmount}();
             vm.stopBroadcast();
 

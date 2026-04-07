@@ -58,7 +58,7 @@ abstract contract OrderSampling is Script {
         address collection,
         uint256 tokenId,
         uint256 seed
-    ) internal pure returns (uint256) {
+    ) internal pure virtual returns (uint256) {
         return MarketSim.priceOf(collection, tokenId, seed);
     }
 
@@ -71,7 +71,7 @@ abstract contract OrderSampling is Script {
     ) internal pure returns (uint256[] memory) {
         uint256 seed = selectionSalt(side, isCollectionBid, collection, mixIn);
         // forge-lint: disable-next-line(unsafe-typecast)
-        uint8 density = (uint8(seed) % 31) + 20; // 20..50
+        uint8 density = (uint8(seed) % 21) + 10; // 1 out of 10..30
 
         return MarketSim.selectTokens(collection, scanLimit, density, seed);
     }

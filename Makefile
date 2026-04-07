@@ -12,8 +12,6 @@ export
 PROJECT_ROOT := $(shell pwd)
 export PROJECT_ROOT
 
-# paths - devtools (market simulator)
-
 DEVTOOLS_ROOT   := devtools
 SEED            := $(DEVTOOLS_ROOT)/seed
 SEED_BOOTSTRAP  := $(SEED)/bootstrap
@@ -26,18 +24,15 @@ export ARTIFACTS_EXPORTERS := $(ARTIFACTS)/exporters
 export PIPELINES_EPOCHS := $(PIPELINES)/epochs
 export PIPELINES_EXECUTION := $(PIPELINES)/execution
 
-# paths - artifacts
-
 export PIPELINE_STATE_DIR := $(PROJECT_ROOT)/data/31337/state
 
 # chain
-WETH    := 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2
+WETH := 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2
 
 # ───────────────────────────────────────────────
 #   LOGGING / VERBOSITY
 # ───────────────────────────────────────────────
 
-# set SILENT=0 to enable forge output
 SILENT ?= 1
 EPOCH_COUNT ?= 4
 
@@ -48,27 +43,21 @@ FORGE_SILENT =
 endif
 
 # ───────────────────────────────────────────────
-#   FORGE COMMON FLAGS
+#   FORGE FLAGS (NO PK HERE ✅)
 # ───────────────────────────────────────────────
 
 FORGE_COMMON_FLAGS = \
 	--rpc-url $(RPC_URL) \
 	--broadcast \
-	--sender $(FUNDER) \
-	--private-key $(FUNDER_PK) \
 	$(FORGE_SILENT)
 
 # ───────────────────────────────────────────────
 #   DEV — DOCKER ENTRYPOINTS
 # ───────────────────────────────────────────────
 
-# assumes pipeline.toml contains:
-#	1. weth address
-# 	2. pipeline end + start timestamps
 dev-execute-pipeline: dev-wait pipeline-setup pipeline-separator dev-run-epochs
 	@echo "🚀 Dev environment ready"
 
-# temporarily to wait for anvil
 dev-wait:
 	@echo "----------------"
 	@echo " GETTING READY "
@@ -91,7 +80,7 @@ dev-start: dev-prepare dev-fork pipeline-setup
 	@echo "🚀 Dev environment ready"
 
 dev-reset: kill-anvil dev-start
-	@echo "🔄 Dev reset complete"---------
+	@echo "🔄 Dev reset complete"
 
 pipeline-setup: \
 	dev-deploy-core \
@@ -108,8 +97,7 @@ dev-fork:
 	@echo "🧬 Starting anvil fork..."
 	@./$(ARTIFACTS_FORK)/start-fork.sh
 
-# local just defaults to 4 weeks = 2419200
-dev-prepare: 
+dev-prepare:
 	@echo "🔢 Finding block number and timestamps..."
 	@node ./$(ARTIFACTS_FORK)/prepare-fork.js 2419200
 
@@ -141,7 +129,7 @@ dev-approve:
 #   DEV — STATE / SCENARIOS
 # ───────────────────────────────────────────────
 
-dev-run-epochs: 
+dev-run-epochs:
 	@echo "📊 Building historical orders..."
 	@./$(ARTIFACTS_RUNNERS)/run-epochs.sh $(EPOCH_COUNT)
 
@@ -171,14 +159,14 @@ weth-balance:
 
 token-owner:
 	@if [ -z "$(COL)" ] || [ -z "$(ID)" ]; then \
-		echo "❌ Missing COL or ADDR. Usage: make weth-balance COL=0xCollectionAddr ID=TokenId"; \
+		echo "❌ Missing COL or ID. Usage: make token-owner COL=0xCollectionAddr ID=TokenId"; \
 		exit 1; \
 	fi
 	@cast call \
 		$(COL) \
 		"ownerOf(uint256)" \
 		$(ID) \
-		--rpc-url $(RPC_URL) 
+		--rpc-url $(RPC_URL)
 
 # ───────────────────────────────────────────────
 #   MISC

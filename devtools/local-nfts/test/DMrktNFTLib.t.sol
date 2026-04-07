@@ -12,15 +12,9 @@ contract DMrktNFTLibTest is Test {
     // ----------------------------
 
     function testRarityLogic() public {
-        string memory r1 = DMrktNFTLib.getRarity(
-            DMrktMathConfig.rarityLegendaryMod()
-        );
-        string memory r2 = DMrktNFTLib.getRarity(
-            DMrktMathConfig.rarityEpicMod()
-        );
-        string memory r3 = DMrktNFTLib.getRarity(
-            DMrktMathConfig.rarityRareMod()
-        );
+        string memory r1 = DMrktNFTLib.getRarity(DMrktMathConfig.rarityLegendaryMod());
+        string memory r2 = DMrktNFTLib.getRarity(DMrktMathConfig.rarityEpicMod());
+        string memory r3 = DMrktNFTLib.getRarity(DMrktMathConfig.rarityRareMod());
         string memory r4 = DMrktNFTLib.getRarity(1);
 
         assertEq(r1, "Legendary");
@@ -44,26 +38,17 @@ contract DMrktNFTLibTest is Test {
     }
 
     function testBuildAttributesSword() public {
-        string memory attrs = DMrktNFTLib.buildLootAttributes(
-            0,
-            DMrktMathConfig.itemTypeSword()
-        );
+        string memory attrs = DMrktNFTLib.buildLootAttributes(0, DMrktMathConfig.itemTypeSword());
         assertTrue(bytes(attrs).length > 50);
     }
 
     function testBuildAttributesShield() public {
-        string memory attrs = DMrktNFTLib.buildLootAttributes(
-            2,
-            DMrktMathConfig.itemTypeShield()
-        );
+        string memory attrs = DMrktNFTLib.buildLootAttributes(2, DMrktMathConfig.itemTypeShield());
         assertTrue(bytes(attrs).length > 50);
     }
 
     function testBuildAttributesElixir() public {
-        string memory attrs = DMrktNFTLib.buildLootAttributes(
-            1,
-            DMrktMathConfig.itemTypeElixir()
-        );
+        string memory attrs = DMrktNFTLib.buildLootAttributes(1, DMrktMathConfig.itemTypeElixir());
         assertTrue(bytes(attrs).length > 50);
     }
 
@@ -72,14 +57,10 @@ contract DMrktNFTLibTest is Test {
     // ----------------------------
 
     function testBuildRarityGlow() public {
-        string memory glowLegend = DMrktNFTLib.buildRarityGlow(
-            DMrktMathConfig.rarityLegendaryMod()
-        );
+        string memory glowLegend = DMrktNFTLib.buildRarityGlow(DMrktMathConfig.rarityLegendaryMod());
         assertTrue(bytes(glowLegend).length > 0);
 
-        string memory glowEpic = DMrktNFTLib.buildRarityGlow(
-            DMrktMathConfig.rarityEpicMod()
-        );
+        string memory glowEpic = DMrktNFTLib.buildRarityGlow(DMrktMathConfig.rarityEpicMod());
         assertTrue(bytes(glowEpic).length > 0);
 
         string memory glowCommon = DMrktNFTLib.buildRarityGlow(1);
@@ -87,14 +68,10 @@ contract DMrktNFTLibTest is Test {
     }
 
     function testBuildElementOverlay() public {
-        string memory overlayThunder = DMrktNFTLib.buildElementOverlay(
-            DMrktMathConfig.elementThunderMod()
-        );
+        string memory overlayThunder = DMrktNFTLib.buildElementOverlay(DMrktMathConfig.elementThunderMod());
         assertTrue(bytes(overlayThunder).length > 0);
 
-        string memory overlayFire = DMrktNFTLib.buildElementOverlay(
-            DMrktMathConfig.elementFireMod()
-        );
+        string memory overlayFire = DMrktNFTLib.buildElementOverlay(DMrktMathConfig.elementFireMod());
         assertTrue(bytes(overlayFire).length > 0);
 
         string memory overlayNone = DMrktNFTLib.buildElementOverlay(1);
@@ -103,19 +80,10 @@ contract DMrktNFTLibTest is Test {
 
     function testGetItemTypeName() public {
         // Sword
-        assertEq(
-            DMrktNFTLib.getItemTypeName(DMrktMathConfig.itemTypeSword()),
-            "Sword"
-        );
+        assertEq(DMrktNFTLib.getItemTypeName(DMrktMathConfig.itemTypeSword()), "Sword");
         // Elixir
-        assertEq(
-            DMrktNFTLib.getItemTypeName(DMrktMathConfig.itemTypeElixir()),
-            "Elixir"
-        );
+        assertEq(DMrktNFTLib.getItemTypeName(DMrktMathConfig.itemTypeElixir()), "Elixir");
         // Shield (fallback)
-        assertEq(
-            DMrktNFTLib.getItemTypeName(DMrktMathConfig.itemTypeShield()),
-            "Shield"
-        );
+        assertEq(DMrktNFTLib.getItemTypeName(DMrktMathConfig.itemTypeShield()), "Shield");
     }
 }
