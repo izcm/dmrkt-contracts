@@ -28,7 +28,13 @@ import {DMrktMathConfig} from "../../local-nfts/DMrktMathConfig.sol";
 // logging
 import {console} from "forge-std/console.sol";
 
-contract BuildEpoch is OrderSampling, SettlementSigner, EpochsJson, BaseDevScript, DevConfig {
+contract BuildEpoch is
+    OrderSampling,
+    SettlementSigner,
+    EpochsJson,
+    BaseDevScript,
+    DevConfig
+{
     // ctx
     uint256 private epoch;
     uint256 private epochSpan;
@@ -48,11 +54,15 @@ contract BuildEpoch is OrderSampling, SettlementSigner, EpochsJson, BaseDevScrip
         address settlementContract = readSettlementContract();
         address weth = readWeth();
 
-        bytes32 domainSeparator = ISettlementEngine(settlementContract).DOMAIN_SEPARATOR();
+        bytes32 domainSeparator = ISettlementEngine(settlementContract)
+            .DOMAIN_SEPARATOR();
 
         try vm.envString("DATA_DIR") returns (string memory dir) {
             _setDataDir(dir);
-            console.log("DATA_DIR config exists => out dir set to %s", _dataDir());
+            console.log(
+                "DATA_DIR config exists => out dir set to %s",
+                _dataDir()
+            );
         } catch {
             console.log("DATA_DIR not set => default out dir %s", _dataDir());
         }
@@ -97,7 +107,11 @@ contract BuildEpoch is OrderSampling, SettlementSigner, EpochsJson, BaseDevScrip
         SignedOrder[] memory signed = new SignedOrder[](orders.length);
 
         for (uint256 i = 0; i < orders.length; i++) {
-            SigOps.Signature memory sig = signOrder(domainSeparator, orders[i], pkOf(orders[i].actor));
+            SigOps.Signature memory sig = signOrder(
+                domainSeparator,
+                orders[i],
+                pkOf(orders[i].actor)
+            );
 
             signed[i] = SignedOrder({order: orders[i], signature: sig});
         }
@@ -114,7 +128,10 @@ contract BuildEpoch is OrderSampling, SettlementSigner, EpochsJson, BaseDevScrip
 
         for (uint256 i = 0; i < collections.length; i++) {
             address c = collections[i];
-            selectionToJson(Selection({collection: c, tokenIds: selected[c]}), _epoch);
+            selectionToJson(
+                Selection({collection: c, tokenIds: selected[c]}),
+                _epoch
+            );
         }
 
         for (uint256 i = 0; i < signed.length; i++) {
@@ -126,19 +143,36 @@ contract BuildEpoch is OrderSampling, SettlementSigner, EpochsJson, BaseDevScrip
 
         // === WRITE EPOCH METADATA ===
 
-        vm.writeFile(string.concat(_epochDir(_epoch), "order-count.txt"), vm.toString(signed.length));
+        vm.writeFile(
+            string.concat(_epochDir(_epoch), "order-count.txt"),
+            vm.toString(signed.length)
+        );
 
         logSeparator();
-        console.log("Epoch %s ready with %s signed orders!", _epoch, signed.length);
+        console.log(
+            "Epoch %s ready with %s signed orders!",
+            _epoch,
+            signed.length
+        );
         logSeparator();
     }
 
-    function _buildOrders(address weth, address[] memory collections)
-        internal
-        returns (OrderModel.Order[] memory orders)
-    {
-        Selection[] memory selectionsAsk = collect(OrderModel.Side.Ask, false, collections, epoch);
-        Selection[] memory selectionsBid = collect(OrderModel.Side.Bid, false, collections, epoch);
+    function _buildOrders(
+        address weth,
+        address[] memory collections
+    ) internal returns (OrderModel.Order[] memory orders) {
+        Selection[] memory selectionsAsk = collect(
+            OrderModel.Side.Ask,
+            false,
+            collections,
+            epoch
+        );
+        Selection[] memory selectionsBid = collect(
+            OrderModel.Side.Bid,
+            false,
+            collections,
+            epoch
+        );
         // **collectionBid feature paused**
         // Selection[] memory selectionsCb = collect(
         //     OrderModel.Side.Bid,
@@ -164,9 +198,23 @@ contract BuildEpoch is OrderSampling, SettlementSigner, EpochsJson, BaseDevScrip
         orders = new OrderModel.Order[](count);
         uint256 idx;
 
-        idx = _appendOrders(orders, idx, OrderModel.Side.Ask, false, selectionsAsk, weth);
+        idx = _appendOrders(
+            orders,
+            idx,
+            OrderModel.Side.Ask,
+            false,
+            selectionsAsk,
+            weth
+        );
 
-        idx = _appendOrders(orders, idx, OrderModel.Side.Bid, false, selectionsBid, weth);
+        idx = _appendOrders(
+            orders,
+            idx,
+            OrderModel.Side.Bid,
+            false,
+            selectionsBid,
+            weth
+        );
 
         // _appendOrders(
         //     orders,
@@ -193,7 +241,14 @@ contract BuildEpoch is OrderSampling, SettlementSigner, EpochsJson, BaseDevScrip
                 address collection = sel.collection;
                 uint256 tokenId = !isCollectionBid ? sel.tokenIds[j] : 0;
 
-                orders[idx++] = _buildOrder(side, isCollectionBid, collection, tokenId, currency, orderIdx);
+                orders[idx++] = _buildOrder(
+                    side,
+                    isCollectionBid,
+                    collection,
+                    tokenId,
+                    currency,
+                    orderIdx
+                );
             }
         }
         return idx;
@@ -209,9 +264,20 @@ contract BuildEpoch is OrderSampling, SettlementSigner, EpochsJson, BaseDevScrip
     ) internal returns (OrderModel.Order memory order) {
         uint256 actorSeed = (epoch << 160) | orderIdx;
 
-        address actor = _resolveActor(side, isCollectionBid, collection, tokenId, actorSeed);
+        address actor = _resolveActor(
+            side,
+            isCollectionBid,
+            collection,
+            tokenId,
+            actorSeed
+        );
 
-        uint256 orderSeed = selectionSalt(side, isCollectionBid, collection, actorSeed);
+        uint256 orderSeed = selectionSalt(
+            side,
+            isCollectionBid,
+            collection,
+            actorSeed
+        );
 
         order = OrderBuilder.build(
             side,
@@ -249,7 +315,10 @@ contract BuildEpoch is OrderSampling, SettlementSigner, EpochsJson, BaseDevScrip
             return ps[seed % ps.length];
         } else {
             address nftHolder = IERC721(collection).ownerOf(tokenId);
-            return side == OrderModel.Side.Ask ? nftHolder : otherParticipant(nftHolder, seed);
+            return
+                side == OrderModel.Side.Ask
+                    ? nftHolder
+                    : otherParticipant(nftHolder, seed);
         }
     }
 
@@ -271,7 +340,11 @@ contract BuildEpoch is OrderSampling, SettlementSigner, EpochsJson, BaseDevScrip
     }
 
     // preps data for json write
-    function _exportNonces() internal view returns (ActorNonce[] memory nonces) {
+    function _exportNonces()
+        internal
+        view
+        returns (ActorNonce[] memory nonces)
+    {
         address[] memory ps = participants();
 
         nonces = new ActorNonce[](ps.length);
@@ -284,12 +357,18 @@ contract BuildEpoch is OrderSampling, SettlementSigner, EpochsJson, BaseDevScrip
 
     // === PRICING ===
 
-    function orderPrice(address collection, uint256 tokenId, uint256 seed) internal pure override returns (uint256) {
+    function orderPrice(
+        address collection,
+        uint256 tokenId,
+        uint256 seed
+    ) internal pure override returns (uint256) {
         uint256 tier = tokenId % DMrktMathConfig.rarityLegendaryMod() == 0
             ? 8
             : tokenId % DMrktMathConfig.rarityEpicMod() == 0
                 ? 4
-                : tokenId % DMrktMathConfig.rarityRareMod() == 0 ? 2 : 1;
+                : tokenId % DMrktMathConfig.rarityRareMod() == 0
+                    ? 2
+                    : 1;
 
         uint256 itemType = tokenId % DMrktMathConfig.itemTypeCount();
         uint256 stat = itemType == DMrktMathConfig.itemTypeSword()
@@ -298,14 +377,16 @@ contract BuildEpoch is OrderSampling, SettlementSigner, EpochsJson, BaseDevScrip
                 ? DMrktNFTLib.getDefense(tokenId)
                 : DMrktNFTLib.getPower(tokenId);
 
-        bool hasElement =
-            tokenId % DMrktMathConfig.elementThunderMod() == 0 || tokenId % DMrktMathConfig.elementFireMod() == 0;
+        bool hasElement = tokenId % DMrktMathConfig.elementThunderMod() == 0 ||
+            tokenId % DMrktMathConfig.elementFireMod() == 0;
 
         uint256 base = tier * stat * 0.001 ether;
         uint256 bonus = hasElement ? tier * 0.05 ether : 0;
         uint256 noise = uint256(keccak256(abi.encode(seed, tokenId))) % 20;
 
-        return base + bonus + ((base * noise) / 100);
+        uint256 raw = base + bonus + ((base * noise) / 100);
+        uint256 unit = 0.001 ether;
+        return ((raw + unit - 1) / unit) * unit;
     }
 
     // === PRIVATE FUNCTIONS ===
@@ -322,7 +403,9 @@ contract BuildEpoch is OrderSampling, SettlementSigner, EpochsJson, BaseDevScrip
         }
     }
 
-    function _mergeSelections(Selection[] memory sels) private returns (uint256 added) {
+    function _mergeSelections(
+        Selection[] memory sels
+    ) private returns (uint256 added) {
         for (uint256 i = 0; i < sels.length; i++) {
             Selection memory s = sels[i];
             address c = s.collection;
@@ -347,8 +430,11 @@ contract BuildEpoch is OrderSampling, SettlementSigner, EpochsJson, BaseDevScrip
         return uint64((seed % epochSpan) + epochSpan); // safe because date
     }
 
-    function _resolveDate(uint256 seed, bool isStart) private view returns (uint64) {
-        // uint64 anchor = _epochAnchor();
+    function _resolveDate(
+        uint256 seed,
+        bool isStart
+    ) private view returns (uint64) {
+        // uint64 anchor = _epochAnchor(); // with epoch_slice in run-epochs this will give more realistic start dates
         uint64 anchor = uint64(readStartTs());
         uint64 offset = _resolveTimeOffset(seed);
 

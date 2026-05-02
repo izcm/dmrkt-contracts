@@ -25,7 +25,7 @@ export PIPELINES_EPOCHS := $(PIPELINES)/epochs
 export PIPELINES_EXECUTION := $(PIPELINES)/execution
 
 export PIPELINE_STATE_DIR := $(PROJECT_ROOT)/data/31337/state
-
+export MNEMONIC_JSON = $(PROJECT_ROOT)/data/31337/mnemonic.json
 # chain
 WETH := 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2
 

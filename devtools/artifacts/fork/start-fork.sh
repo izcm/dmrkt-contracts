@@ -13,9 +13,9 @@ PHRASE=$(cat "$MNEMONIC_JSON" | jq -r .mnemonic)
 # Start a fresh fork
 # https://getfoundry.sh/anvil/reference/anvil/
 anvil --fork-url https://eth-mainnet.g.alchemy.com/v2/"$ALCHEMY_KEY" \
-  --port "$RPC_PORT" \
   --chain-id "$CHAIN_ID" \
   --host "$RPC_HOST" \
+  --port "$RPC_PORT" \
   --mnemonic "$PHRASE" \
   --accounts 10 \
   --fork-block-number "$FORK_START_BLOCK"  \

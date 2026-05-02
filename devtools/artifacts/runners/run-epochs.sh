@@ -23,11 +23,11 @@ TOML="./pipeline.toml"
 # PHASE 0: CONFIG / CTX
 #--------------------------
 
+# --- compute address 0 from mnemonic and use as funder ---
+PHRASE=$(jq -r .mnemonic "$MNEMONIC_JSON")
 
-# # --- ensure directories --- PAUSED
-
-# linger_dir="$PIPELINE_STATE_DIR/ensure-linger"
-# mkdir -p "$linger_dir"
+DEPLOYER_PK=$(cast wallet private-key --mnemonic "$PHRASE" --mnemonic-index 0)
+DEPLOYER_ADDR=$(cast wallet address "$DEPLOYER_PK")
 
 # --- timestamps and epochs ---
 
@@ -47,7 +47,7 @@ epoch_sleep_time=2
 # --- logic for counting orders to execute ---
 
 p0=0.9      # probability of execution epoch 0
-pMin=0.5    # max probability
+pMin=0.5    # min probability
 k=0.2       # rate constant
 
 # --- helpers ---
@@ -92,8 +92,8 @@ do
     forge script "$PIPELINES_EPOCHS"/BuildEpoch.s.sol \
         --rpc-url "$RPC_URL" \
         --broadcast \
-        --sender "$FUNDER" \
-        --private-key "$FUNDER_PK" \
+        --sender "$DEPLOYER_ADDR" \
+        --private-key "$DEPLOYER_PK" \
         --sig "run(uint256,uint256)" \
         $epoch $delta  \
 
@@ -140,32 +140,6 @@ do
         continue
     fi
 
-    # skipped for now (indexer will just mark as filled)
-    
-    # # store the skipped orders in json file to ensure ownership stays valid
-    # # we need to store all the skipped orders tokenIds in one file
-
-    # # - buildOrders should skip building any new orders on the tokens in /ensure-linger/**
-    # # - execute order needs to check before using that token for collection-bids
-    
-    # for((i = exec_limit; i < order_count; i++)); do
-    #     to_linger="$order_out/order_$i.json"
-    #     is_cb=$(jq -r ".isCollectionBid" "$to_linger")
-
-    #     # collectionBids => no particular token to ensure lingers 
-    #     if [[ "$is_cb" = "true" ]]; then
-    #         echo "collection bid"
-    #         continue
-    #     fi
-
-    #     token_id=$(jq -r ".tokenId" "$to_linger")
-    #     collection=$(jq -r ".collection" "$to_linger")
-        
-    #     linger_file="$linger_dir/$collection.json"
-
-    #     add_token "$linger_file" "$collection" "$token_id" 
-    # done
-
     echo
     echo "orders to skip:    $((order_count - exec_limit))"
     echo "orders to execute: $exec_limit"
@@ -192,8 +166,8 @@ do
         if forge script "$PIPELINES_EXECUTION"/ExecuteOrder.s.sol \
             --rpc-url "$RPC_URL" \
             --broadcast \
-            --sender "$FUNDER" \
-            --private-key "$FUNDER_PK" \
+            --sender "$DEPLOYER_ADDR" \
+            --private-key "$DEPLOYER_PK" \
             --sig "run(uint256,uint256)" \
             --silent \
             $epoch $i
