@@ -17,5 +17,7 @@ fs_permissions = [
     { access = "read-write", path = "pipeline.toml" }
 ]
 
+ignored_error_codes = [2424]
+
 [lint]
 exclude_lints = ["unaliased-plain-import", "asm-keccak256"]

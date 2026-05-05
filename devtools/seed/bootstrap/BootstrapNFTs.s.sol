@@ -4,6 +4,7 @@ pragma solidity ^0.8.30;
 // scripts
 import {BaseDevScript} from "dev/BaseDevScript.s.sol";
 import {DevConfig} from "dev/DevConfig.s.sol";
+import {console} from "forge-std/console.sol";
 
 // interfaces
 import {DNFT} from "periphery/interfaces/DNFT.sol";
@@ -51,12 +52,14 @@ contract BootstrapNFTs is BaseDevScript, DevConfig {
             uint256 pk = pks[j];
             address to = addrOf(pk);
 
-            // Broadcast as the recipient — respect for history
+            // Broadcast as the recipient
             vm.startBroadcast(pk);
 
             ct.mint(to);
 
             vm.stopBroadcast();
+
+            console.log("MINT | tokenId: %s | block: %s", i, block.number);
         }
     }
 }

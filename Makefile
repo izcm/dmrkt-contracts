@@ -115,6 +115,7 @@ dev-deploy-core:
 	@forge script $(SEED)/DeployCore.s.sol \
 		$(FORGE_COMMON_FLAGS)
 
+dev-bootstrap-nfts: FORGE_SILENT =
 dev-bootstrap-nfts:
 	@echo "👾 Bootstrapping NFTs..."
 	@forge script $(SEED_BOOTSTRAP)/BootstrapNFTs.s.sol \
