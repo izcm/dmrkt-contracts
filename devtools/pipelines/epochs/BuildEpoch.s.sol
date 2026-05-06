@@ -39,12 +39,11 @@ contract BuildEpoch is
     uint256 private epoch;
     uint256 private epochSpan;
 
+    // nonce per actor, incremented per order and persisted to JSON between epochs to ensure
+    // uniqueness across script invocations — unnecessary complexity in hindsight caused by tunnel vision.
+    // hash(epoch, actor, orderIdx) is sufficient and removes the whole JSON roundtrip for nonces.
     mapping(address => uint256) private actorNonceIdx;
     mapping(address => uint256[]) private selected; // selected tokenIds per collection
-
-    // selection of tokens decided by run-epochs bash script to not be executed
-    // build script ensures no new orders are made on these tokens
-    // mapping(address => uint256[]) private exclude; // feature paused
 
     // === ENTRYPOINTS ===
 
@@ -85,16 +84,6 @@ contract BuildEpoch is
 
         address[] memory collections = readCollections();
         console.log("Collections: %s", collections.length);
-
-        // feature paused
-        // if (_epoch != 0) {
-        //     for (uint256 i; i < collections.length; i++) {
-        //         address collection = collections[i];
-
-        //         Selection memory selection = ensureLingerFromJson(collection);
-        //         exclude[collection] = selection.tokenIds;
-        //     }
-        // }
 
         // === BUILD ORDERS ===
 
@@ -357,8 +346,11 @@ contract BuildEpoch is
 
     // === PRICING ===
 
+    // Tier multiplier (rarity):  Legendary 8x | Epic 4x | Rare 2x | Common 1x
+    // Element bonus (per tier):  Thunder +5%  | Fire +5%
+    // base = tier * stat * 0.001 eth, rounded up to nearest 0.001 eth
     function orderPrice(
-        address collection,
+        address,
         uint256 tokenId,
         uint256 seed
     ) internal pure override returns (uint256) {
@@ -386,14 +378,15 @@ contract BuildEpoch is
 
         uint256 raw = base + bonus + ((base * noise) / 100);
         uint256 unit = 0.001 ether;
-        return ((raw + unit - 1) / unit) * unit;
+        uint256 remainder = raw % unit;
+        return remainder == 0 ? raw : raw + (unit - remainder);
     }
 
     // === PRIVATE FUNCTIONS ===
 
     // --- storage mutators ---
 
-    // preps data read from json for use in script
+    // import last used nonce in previous epochs (pipeline uses sequential nonces instead of hash)
     function _importNonces(ActorNonce[] memory nonces) private {
         for (uint256 i = 0; i < nonces.length; i++) {
             address actor = nonces[i].actor;

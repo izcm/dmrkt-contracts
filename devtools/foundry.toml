@@ -8,7 +8,7 @@ remappings = [
     "orderbook/=../contracts/orderbook",
     "periphery/=../periphery",
     "nfts/=./local-nfts",
-    "dev/=./seed",
+    "dev/=./",
     "@openzeppelin/=../lib/openzeppelin-contracts/contracts/"
 ]
 

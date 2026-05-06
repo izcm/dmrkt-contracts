@@ -12,8 +12,25 @@ import {Config} from "forge-std/Config.sol";
 // - signature verifier
 // - nft transfer authority
 // - allowance spender
-// These are intentionally split into separate accessors
-// to allow role separation later without refactoring scripts.
+// These are intentionally split into separate accessors to allow role separation later.
+
+/**
+ * @title DevConfig
+ * @notice Centralizes all reads of pipeline.toml.
+ *
+ * @dev Reads from pipeline.toml via forge-std Config.
+ *
+ * Expected keys in pipeline.toml:
+ *   - `order_engine`        — address implementing `settle` entrypoint
+ *   - `weth`                — address of weth
+ *   - `pipeline_start_ts`   — timestamp of fork start block
+ *   - `pipeline_end_ts`     — end of pipeline window (start_ts + (epoch * epoch_size))
+ *   - `nft_c_count`         — the count of deployed nft-collections, needed for iteration
+ *   - `nft_c_{i}`           — address of the ith nft-collection where i < nft_c_count
+ *
+ * Extend this contract in any script that needs values from pipeline.toml.
+ */
+
 contract DevConfig is Config {
     constructor() {
         _loadConfig("pipeline.toml", true);
@@ -56,7 +73,9 @@ contract DevConfig is Config {
         uint256 count = config.get("nft_c_count").toUint256();
         address[] memory nfts = new address[](count);
         for (uint256 i; i < count; i++) {
-            nfts[i] = config.get(string.concat("nft_c_", vm.toString(i))).toAddress();
+            nfts[i] = config
+                .get(string.concat("nft_c_", vm.toString(i)))
+                .toAddress();
         }
         return nfts;
     }

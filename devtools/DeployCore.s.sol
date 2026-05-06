@@ -11,6 +11,10 @@ import {DMrktLoot} from "nfts/DMrktLoot.sol";
 import {BaseDevScript} from "dev/BaseDevScript.s.sol";
 import {DevConfig} from "dev/DevConfig.s.sol";
 
+// Writes to pipeline.toml:
+//   - `order_engine` — deployed OrderEngine address
+//   - `nft_c_0`      — deployed DMrktLoot address
+//   - `nft_c_count`  — number of deployed nft collections
 contract DeployCore is BaseDevScript, DevConfig {
     uint256 constant NFT_COUNT = 1;
 
@@ -18,15 +22,12 @@ contract DeployCore is BaseDevScript, DevConfig {
         // --------------------------------
         // PHASE 0: LOAD CONFIG
         // --------------------------------
-
         address weth = readWeth();
         uint256 funderPk = generateKeys()[0];
-        // uint256 funderPk = uint256(uint256(vm.envUint("FUNDER_PK")));
 
         // --------------------------------
         // PHASE 1: DEPLOY MARKETPLCE & NFTS
         // --------------------------------
-
         logSection("DEPLOY CORE CONTRACTS");
 
         // since the script uses the same private key its not necessary but I like to be explicit
@@ -55,7 +56,6 @@ contract DeployCore is BaseDevScript, DevConfig {
         // === DEPLOYED PERIPHERY NFTs ===
 
         config.set("nft_c_0", address(inventory));
-        // config.set("nft_c_1", address(eggs));
 
         config.set("nft_c_count", NFT_COUNT);
     }

@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
-import {console} from "forge-std/console.sol";
-
 // local
 import {BaseDevScript} from "dev/BaseDevScript.s.sol";
 import {DevConfig} from "dev/DevConfig.s.sol";
@@ -17,8 +15,6 @@ contract BootstrapAccounts is BaseDevScript, DevConfig {
         // --------------------------------
         // PHASE 0: LOAD CONFIG
         // --------------------------------
-
-        // read pipeline.toml
         address weth = readWeth();
 
         // --- PKs for broadcasting ---

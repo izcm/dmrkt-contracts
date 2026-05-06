@@ -155,6 +155,9 @@ do
     # base_step=$((epoch_slice / order_count))
     base_step=$((epoch_slice / exec_limit))
 
+    # for each order until execution limit => execute order
+    # skip the rest
+    
     for((i = 0; i < exec_limit; i++)); do
         offset=$(((i % 5) - 2))
         time_jump=$((base_step + offset))

@@ -12,7 +12,5 @@ RUN chown -R foundry:foundry /app
 USER foundry
 
 RUN forge build
-# RUN forge test
 
-# CMD ["bash"]
 CMD ["make", "dev-execute-pipeline"]

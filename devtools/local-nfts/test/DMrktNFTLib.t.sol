@@ -11,7 +11,7 @@ contract DMrktNFTLibTest is Test {
     // RARITY
     // ----------------------------
 
-    function testRarityLogic() public {
+    function testRarityLogic() public pure {
         string memory r1 = DMrktNFTLib.getRarity(DMrktMathConfig.rarityLegendaryMod());
         string memory r2 = DMrktNFTLib.getRarity(DMrktMathConfig.rarityEpicMod());
         string memory r3 = DMrktNFTLib.getRarity(DMrktMathConfig.rarityRareMod());
@@ -27,7 +27,7 @@ contract DMrktNFTLibTest is Test {
     // METADATA BUILD
     // ----------------------------
 
-    function testBuildItemName() public {
+    function testBuildItemName() public pure {
         // With element
         string memory nameWithElement = DMrktNFTLib.buildItemName("Sword", 11);
         assertTrue(bytes(nameWithElement).length > 0);
@@ -37,17 +37,17 @@ contract DMrktNFTLibTest is Test {
         assertTrue(bytes(nameNoElement).length > 0);
     }
 
-    function testBuildAttributesSword() public {
+    function testBuildAttributesSword() public pure {
         string memory attrs = DMrktNFTLib.buildLootAttributes(0, DMrktMathConfig.itemTypeSword());
         assertTrue(bytes(attrs).length > 50);
     }
 
-    function testBuildAttributesShield() public {
+    function testBuildAttributesShield() public pure {
         string memory attrs = DMrktNFTLib.buildLootAttributes(2, DMrktMathConfig.itemTypeShield());
         assertTrue(bytes(attrs).length > 50);
     }
 
-    function testBuildAttributesElixir() public {
+    function testBuildAttributesElixir() public pure {
         string memory attrs = DMrktNFTLib.buildLootAttributes(1, DMrktMathConfig.itemTypeElixir());
         assertTrue(bytes(attrs).length > 50);
     }
@@ -56,7 +56,7 @@ contract DMrktNFTLibTest is Test {
     // VISUAL DECORATORS
     // ----------------------------
 
-    function testBuildRarityGlow() public {
+    function testBuildRarityGlow() public pure {
         string memory glowLegend = DMrktNFTLib.buildRarityGlow(DMrktMathConfig.rarityLegendaryMod());
         assertTrue(bytes(glowLegend).length > 0);
 
@@ -67,7 +67,7 @@ contract DMrktNFTLibTest is Test {
         assertEq(bytes(glowCommon).length, 0);
     }
 
-    function testBuildElementOverlay() public {
+    function testBuildElementOverlay() public pure {
         string memory overlayThunder = DMrktNFTLib.buildElementOverlay(DMrktMathConfig.elementThunderMod());
         assertTrue(bytes(overlayThunder).length > 0);
 
@@ -78,7 +78,7 @@ contract DMrktNFTLibTest is Test {
         assertEq(bytes(overlayNone).length, 0);
     }
 
-    function testGetItemTypeName() public {
+    function testGetItemTypeName() public pure {
         // Sword
         assertEq(DMrktNFTLib.getItemTypeName(DMrktMathConfig.itemTypeSword()), "Sword");
         // Elixir

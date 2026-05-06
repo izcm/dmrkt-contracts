@@ -13,8 +13,7 @@ PROJECT_ROOT := $(shell pwd)
 export PROJECT_ROOT
 
 DEVTOOLS_ROOT   := devtools
-SEED            := $(DEVTOOLS_ROOT)/seed
-SEED_BOOTSTRAP  := $(SEED)/bootstrap
+BOOTSTRAP       := $(DEVTOOLS_ROOT)/bootstrap
 PIPELINES       := $(DEVTOOLS_ROOT)/pipelines
 ARTIFACTS       := $(DEVTOOLS_ROOT)/artifacts
 
@@ -26,6 +25,8 @@ export PIPELINES_EXECUTION := $(PIPELINES)/execution
 
 export PIPELINE_STATE_DIR := $(PROJECT_ROOT)/data/31337/state
 export MNEMONIC_JSON = $(PROJECT_ROOT)/data/31337/mnemonic.json
+export TOML := $(PROJECT_ROOT)/pipeline.toml
+
 # chain
 WETH := 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2
 
@@ -43,7 +44,7 @@ FORGE_SILENT =
 endif
 
 # ───────────────────────────────────────────────
-#   FORGE FLAGS (NO PK HERE ✅)
+#   FORGE FLAGS
 # ───────────────────────────────────────────────
 
 FORGE_COMMON_FLAGS = \
@@ -99,7 +100,7 @@ dev-fork:
 
 dev-prepare:
 	@echo "🔢 Finding block number and timestamps..."
-	@node ./$(ARTIFACTS_FORK)/prepare-fork.js 2419200
+	@./$(ARTIFACTS_FORK)/prepare-fork.sh 2419200
 
 # ───────────────────────────────────────────────
 #   DEV — SETUP / GENESIS
@@ -107,23 +108,23 @@ dev-prepare:
 
 dev-bootstrap-accounts:
 	@echo "💻 Bootstrapping dev accounts..."
-	@forge script $(SEED_BOOTSTRAP)/BootstrapAccounts.s.sol \
+	@forge script $(BOOTSTRAP)/BootstrapAccounts.s.sol \
 		$(FORGE_COMMON_FLAGS)
 
 dev-deploy-core:
 	@echo "🧾 Deploying core contracts..."
-	@forge script $(SEED)/DeployCore.s.sol \
+	@forge script $(DEVTOOLS_ROOT)/DeployCore.s.sol \
 		$(FORGE_COMMON_FLAGS)
 
 dev-bootstrap-nfts: FORGE_SILENT =
 dev-bootstrap-nfts:
 	@echo "👾 Bootstrapping NFTs..."
-	@forge script $(SEED_BOOTSTRAP)/BootstrapNFTs.s.sol \
+	@forge script $(BOOTSTRAP)/BootstrapNFTs.s.sol \
 		$(FORGE_COMMON_FLAGS)
 
 dev-approve:
 	@echo "✔ Executing approvals..."
-	@forge script $(SEED_BOOTSTRAP)/Approve.s.sol \
+	@forge script $(BOOTSTRAP)/Approve.s.sol \
 		$(FORGE_COMMON_FLAGS)
 
 # ───────────────────────────────────────────────

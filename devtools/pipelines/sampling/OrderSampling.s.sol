@@ -6,8 +6,7 @@ import {Script} from "forge-std/Script.sol";
 // core libs
 import {OrderModel} from "orderbook/libs/OrderModel.sol";
 
-// periphery libs
-import {MarketSim} from "periphery/MarketSim.sol";
+import {MarketSim} from "./MarketSim.sol";
 
 // interfaces
 import {DNFT} from "periphery/interfaces/DNFT.sol";

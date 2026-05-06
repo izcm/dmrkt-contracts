@@ -4,6 +4,7 @@ pragma solidity ^0.8.30;
 import {Script} from "forge-std/Script.sol";
 import {console} from "forge-std/console.sol";
 
+// Keys are derived from a mnemonic at `./data/{chainId}/mnemonic.json`.
 abstract contract BaseDevScript is Script {
     mapping(address => uint256) private _ownerPk;
     address[] private _participants;

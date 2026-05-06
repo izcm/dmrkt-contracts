@@ -45,6 +45,7 @@ contract BootstrapAccounts is BaseDevScript, DevConfig {
         // --------------------------------
         // PHASE 1: FUND ETH
         // --------------------------------
+
         logSection("BOOTSTRAP DEV ACCOUNTS");
         console.log("------------------------------------");
         console.log("FUNDER");
@@ -85,6 +86,7 @@ contract BootstrapAccounts is BaseDevScript, DevConfig {
         // --------------------------------
         // PHASE 2: WRAP ETH
         // --------------------------------
+
         logSection("WRAP ETH => WETH");
 
         uint256 wethWrapAmount = bootstrapEth / 2; // just chose 50% go to weth to have lots of space for gas etc.
