@@ -18,7 +18,6 @@ PIPELINES       := $(DEVTOOLS_ROOT)/pipelines
 ARTIFACTS       := $(DEVTOOLS_ROOT)/artifacts
 
 export ARTIFACTS_FORK := $(ARTIFACTS)/fork
-export ARTIFACTS_RUNNERS := $(ARTIFACTS)/runners
 export ARTIFACTS_EXPORTERS := $(ARTIFACTS)/exporters
 export PIPELINES_EPOCHS := $(PIPELINES)/epochs
 export PIPELINES_EXECUTION := $(PIPELINES)/execution
@@ -30,12 +29,14 @@ export TOML := $(PROJECT_ROOT)/pipeline.toml
 # chain
 WETH := 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2
 
+# epoch defs
+EPOCH_COUNT ?= 4
+
 # ───────────────────────────────────────────────
 #   LOGGING / VERBOSITY
 # ───────────────────────────────────────────────
 
 SILENT ?= 1
-EPOCH_COUNT ?= 4
 
 ifeq ($(SILENT),1)
 FORGE_SILENT = --silent
@@ -100,7 +101,7 @@ dev-fork:
 
 dev-prepare:
 	@echo "🔢 Finding block number and timestamps..."
-	@./$(ARTIFACTS_FORK)/prepare-fork.sh 2419200
+	@./$(ARTIFACTS_FORK)/pipeline-window.sh 2419200
 
 # ───────────────────────────────────────────────
 #   DEV — SETUP / GENESIS
@@ -133,7 +134,7 @@ dev-approve:
 
 dev-run-epochs:
 	@echo "📊 Building historical orders..."
-	@./$(ARTIFACTS_RUNNERS)/run-epochs.sh $(EPOCH_COUNT)
+	@./$(ARTIFACTS)/run-epochs.sh $(EPOCH_COUNT) --export
 
 # ───────────────────────────────────────────────
 #   RESET / PROCESS CONTROL

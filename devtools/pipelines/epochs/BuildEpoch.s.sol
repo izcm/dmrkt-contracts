@@ -56,6 +56,7 @@ contract BuildEpoch is
         bytes32 domainSeparator = ISettlementEngine(settlementContract)
             .DOMAIN_SEPARATOR();
 
+        // checks if another output dir is defined
         try vm.envString("DATA_DIR") returns (string memory dir) {
             _setDataDir(dir);
             console.log(
@@ -128,7 +129,7 @@ contract BuildEpoch is
             orderToJson(s, i, _epoch);
         }
 
-        noncesToJson(_exportNonces(), _epoch); // saved in epoch root as singular nonces.json file
+        noncesToJson(_exportNonces(), _epoch); // save to epoch's output dir nonces.json
 
         // === WRITE EPOCH METADATA ===
 
@@ -145,6 +146,8 @@ contract BuildEpoch is
         );
         logSeparator();
     }
+
+    // === BUILD ===
 
     function _buildOrders(
         address weth,
@@ -284,67 +287,20 @@ contract BuildEpoch is
         OrderBuilder.validate(order);
     }
 
-    function _resolveStartDate(uint256 seed) internal view returns (uint64) {
-        return _resolveDate(seed, true);
-    }
-
-    function _resolveEndDate(uint256 seed) internal view returns (uint64) {
-        return _resolveDate(seed, false);
-    }
-
-    function _resolveActor(
-        OrderModel.Side side,
-        bool isCollectionBid,
-        address collection,
-        uint256 tokenId,
-        uint256 seed
-    ) internal view returns (address) {
-        if (isCollectionBid) {
-            address[] memory ps = participants();
-            return ps[seed % ps.length];
-        } else {
-            address nftHolder = IERC721(collection).ownerOf(tokenId);
-            return
-                side == OrderModel.Side.Ask
-                    ? nftHolder
-                    : otherParticipant(nftHolder, seed);
-        }
-    }
-
-    function _sortByEndDate(SignedOrder[] memory arr) internal pure {
-        uint256 n = arr.length;
-
-        for (uint256 i = 1; i < n; i++) {
-            SignedOrder memory key = arr[i];
-            uint256 keyEnd = key.order.end;
-
-            uint256 j = i;
-            while (j > 0 && arr[j - 1].order.end > keyEnd) {
-                arr[j] = arr[j - 1];
-                j--;
-            }
-
-            arr[j] = key;
-        }
-    }
-
-    // preps data for json write
-    function _exportNonces()
-        internal
-        view
-        returns (ActorNonce[] memory nonces)
-    {
-        address[] memory ps = participants();
-
-        nonces = new ActorNonce[](ps.length);
-
-        for (uint256 i = 0; i < ps.length; i++) {
-            address a = ps[i];
-            nonces[i] = ActorNonce({actor: a, nonce: actorNonceIdx[a]});
-        }
-    }
-
     // === PRICING ===
+
+    // todo: add input that decides whether to use priceOf dmrktlib style (rarity etc.)
+    // or just default MarketSim.priceOf / another price engine
+    //
+    // interface IPriceEngine {
+    //     function priceOf(
+    //         address collection,
+    //         uint256 tokenId,
+    //         uint256 seed
+    //     ) external view returns (uint256);
+    // }
+    //
+    // maybe: DI by deploying price engine + injecting address
 
     // Tier multiplier (rarity):  Legendary 8x | Epic 4x | Rare 2x | Common 1x
     // Element bonus (per tier):  Thunder +5%  | Fire +5%
@@ -384,15 +340,99 @@ contract BuildEpoch is
 
     // === PRIVATE FUNCTIONS ===
 
-    // --- storage mutators ---
+    // --- resolvers ---
 
-    // import last used nonce in previous epochs (pipeline uses sequential nonces instead of hash)
+    function _resolveActor(
+        OrderModel.Side side,
+        bool isCollectionBid,
+        address collection,
+        uint256 tokenId,
+        uint256 seed
+    ) internal view returns (address) {
+        if (isCollectionBid) {
+            address[] memory ps = participants();
+            return ps[seed % ps.length];
+        } else {
+            address nftHolder = IERC721(collection).ownerOf(tokenId);
+            return
+                side == OrderModel.Side.Ask
+                    ? nftHolder
+                    : otherParticipant(nftHolder, seed);
+        }
+    }
+
+    function _resolveStartDate(uint256 seed) internal view returns (uint64) {
+        return _resolveDate(seed, true);
+    }
+
+    function _resolveEndDate(uint256 seed) internal view returns (uint64) {
+        return _resolveDate(seed, false);
+    }
+
+    function _resolveDate(
+        uint256 seed,
+        bool isStart
+    ) private view returns (uint64) {
+        // uint64 anchor = _epochAnchor(); // with epoch_slice in run-epochs this will give more realistic start dates
+        uint64 anchor = uint64(readStartTs());
+        uint64 offset = _resolveTimeOffset(seed);
+
+        return isStart ? anchor - offset : anchor + offset;
+    }
+
+    function _resolveTimeOffset(uint256 seed) private view returns (uint64) {
+        // forge-lint: disable-next-line(unsafe-typecast)
+        return uint64((seed % epochSpan) + epochSpan); // safe because date
+    }
+
+    // Not in use per now
+    function _epochAnchor() private view returns (uint64) {
+        // forge-lint: disable-next-line(unsafe-typecast)
+        return uint64(readStartTs() + (epoch * epochSpan)); // safe because date
+    }
+
+    // --- nonces ---
+
+    function _exportNonces()
+        internal
+        view
+        returns (ActorNonce[] memory nonces)
+    {
+        address[] memory ps = participants();
+
+        nonces = new ActorNonce[](ps.length);
+
+        for (uint256 i = 0; i < ps.length; i++) {
+            address a = ps[i];
+            nonces[i] = ActorNonce({actor: a, nonce: actorNonceIdx[a]});
+        }
+    }
+
     function _importNonces(ActorNonce[] memory nonces) private {
         for (uint256 i = 0; i < nonces.length; i++) {
             address actor = nonces[i].actor;
             uint256 nonce = nonces[i].nonce;
 
             actorNonceIdx[actor] = nonce;
+        }
+    }
+
+    // --- helpers ---
+
+    function _sortByEndDate(SignedOrder[] memory arr) internal pure {
+        uint256 n = arr.length;
+
+        for (uint256 i = 1; i < n; i++) {
+            SignedOrder memory key = arr[i];
+            uint256 keyEnd = key.order.end;
+
+            uint256 j = i;
+            while (j > 0 && arr[j - 1].order.end > keyEnd) {
+                arr[j] = arr[j - 1];
+                j--;
+            }
+
+            arr[j] = key;
         }
     }
 
@@ -408,29 +448,5 @@ contract BuildEpoch is
                 added++;
             }
         }
-    }
-
-    // --- resolvers ---
-
-    // Not in use per now
-    function _epochAnchor() private view returns (uint64) {
-        // forge-lint: disable-next-line(unsafe-typecast)
-        return uint64(readStartTs() + (epoch * epochSpan)); // safe because date
-    }
-
-    function _resolveTimeOffset(uint256 seed) private view returns (uint64) {
-        // forge-lint: disable-next-line(unsafe-typecast)
-        return uint64((seed % epochSpan) + epochSpan); // safe because date
-    }
-
-    function _resolveDate(
-        uint256 seed,
-        bool isStart
-    ) private view returns (uint64) {
-        // uint64 anchor = _epochAnchor(); // with epoch_slice in run-epochs this will give more realistic start dates
-        uint64 anchor = uint64(readStartTs());
-        uint64 offset = _resolveTimeOffset(seed);
-
-        return isStart ? anchor - offset : anchor + offset;
     }
 }

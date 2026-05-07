@@ -11,11 +11,13 @@ if [ -z "$PIPELINE_STATE_DIR" ]; then
 fi
 
 if [ -z "$1" ]; then
-    echo "${RED}Missing Argument - Usage: execute-epoch.sh epoch_count${RESET}"
+    echo "${RED}Missing Argument - Usage: run-epochs.sh epoch_count [--export]${RESET}"
     exit 1
 fi
 
 epoch_count=$1
+export_to_indexer=false
+[ "$2" = "--export" ] && export_to_indexer=true
 
 TOML="./pipeline.toml"
 
@@ -105,20 +107,22 @@ do
     #--------------------------
     # PHASE 2: EXPORT ORDERS
     #--------------------------
-    
-    echo
-    echo "=== PHASE 2: EXPORT ORDERS (epoch $epoch) ==="
-    echo "orders: $order_count"
-    
-    for((i = 0; i < order_count; i++)); do
-        if "$ARTIFACTS_EXPORTERS/export-order.sh" \
-            "$order_out/order_$i.json"
-        then
-            echo -e "[epoch:$epoch] [order:$i] ${GREEN}EXPORTED${RESET}"
-        else
-            echo -e "[epoch:$epoch] [order:$i] ${RED}EXPORT_ERR${RESET}"
-        fi
-    done
+
+    if [ "$export_to_indexer" = "true" ]; then
+        echo
+        echo "=== PHASE 2: EXPORT ORDERS (epoch $epoch) ==="
+        echo "orders: $order_count"
+
+        for((i = 0; i < order_count; i++)); do
+            if "$ARTIFACTS_EXPORTERS/export-order.sh" \
+                "$order_out/order_$i.json"
+            then
+                echo -e "[epoch:$epoch] [order:$i] ${GREEN}EXPORTED${RESET}"
+            else
+                echo -e "[epoch:$epoch] [order:$i] ${RED}EXPORT_ERR${RESET}"
+            fi
+        done
+    fi
     
     #--------------------------
     # PHASE 3: CHOOSE LINGER
