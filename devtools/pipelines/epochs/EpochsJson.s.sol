@@ -10,6 +10,13 @@ import {SignatureOps as SigOps} from "orderbook/libs/SignatureOps.sol";
 // types
 import {SignedOrder, ActorNonce, Selection} from "./Types.sol";
 
+/**
+ * @notice JSON serialization and deserialization layer for epoch pipeline data.
+ *         Handles reading and writing signed orders, nonces, and token selections
+ *         to the `data/{chainId}/state/epoch_N/` directory structure.
+ * @dev    Forge's vm.serializeX functions require fields to be serialized in alphabetical order
+ *         to match the JSON output — structs like SignatureJson reflect this constraint.
+ */
 abstract contract EpochsJson is Script {
     string private _dataDirRaw = "data";
 
@@ -43,7 +50,7 @@ abstract contract EpochsJson is Script {
         uint256 tokenId;
     }
 
-    // struct has to match json alphabetical order => cannot use SigOps.Signature
+    // Fields ordered alphabetically to match Forge's JSON serialization output.
     struct SignatureJson {
         bytes32 r;
         bytes32 s;
@@ -165,9 +172,11 @@ abstract contract EpochsJson is Script {
         return orderFromJson(string.concat(p.dir, p.filename));
     }
 
-    // the selected tokens of a specific epoch
-    // - not to be used for filling collection bids
-
+    /**
+     * @dev Returns the token selection for a collection in a given epoch.
+     *      Used by ExecuteOrder to know which token IDs are already committed,
+     *      so they can be excluded when filling collection bids.
+     */
     function selectionFromJson(
         uint256 epoch,
         address collection
@@ -203,7 +212,10 @@ abstract contract EpochsJson is Script {
         vm.writeJson(finalJson, string.concat(dir, filename));
     }
 
-    // Enables BuildEpoch.s.sol keeping track of nonces between epochs
+    /**
+     * @notice Serializes actor nonces to JSON. Read back at the start of the next epoch
+     *         to continue nonce sequences without gaps or collisions.
+     */
     function noncesToJson(
         ActorNonce[] memory nonces,
         string memory dir,
@@ -227,7 +239,10 @@ abstract contract EpochsJson is Script {
         vm.writeJson(finalJson, string.concat(dir, filename));
     }
 
-    // tracks selected tokens to avoid when executing collecitonbid
+    /**
+     * @notice Serializes the sampled token IDs for a collection to JSON.
+     *         Used by ExecuteOrder to exclude these tokens when filling collection bids.
+     */
     function selectionToJson(
         Selection memory sel,
         string memory dir,
@@ -247,7 +262,7 @@ abstract contract EpochsJson is Script {
         vm.writeJson(finalJson, string.concat(dir, filename));
     }
 
-    // == FROM JSON ===
+    // === FROM JSON ===
 
     function orderFromJson(
         string memory path
@@ -286,8 +301,6 @@ abstract contract EpochsJson is Script {
     }
 
     // === PRIVATE FUNCTIONS ===
-
-    // --- serializers ---
 
     function _serializeOrderJson(
         OrderModel.Order memory o,

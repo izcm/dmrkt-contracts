@@ -12,25 +12,31 @@ import {OrderBuilder} from "periphery/builders/OrderBuilder.sol";
 import {BaseDevScript} from "dev/BaseDevScript.s.sol";
 import {DevConfig} from "dev/DevConfig.s.sol";
 
-import {OrderSampling} from "../sampling/OrderSampling.s.sol";
 import {EpochsJson} from "./EpochsJson.s.sol";
-import {SettlementSigner} from "../execution/SettlementSigner.s.sol";
+import {MarketSim} from "../sampling/MarketSim.sol";
+import {SignOrder} from "../sampling/SignOrder.s.sol";
 
 // types
 import {SignedOrder, Selection, ActorNonce} from "./Types.sol";
 
 // interfaces
-import {ISettlementEngine} from "periphery/interfaces/ISettlementEngine.sol";
-import {IERC721} from "periphery/interfaces/DNFT.sol";
+import {ISettlementEngine} from "dev/interfaces/ISettlementEngine.sol";
+import {IERC721} from "@openzeppelin/interfaces/IERC721.sol";
 import {DMrktNFTLib} from "../../local-nfts/DMrktNFTLib.sol";
 import {DMrktMathConfig} from "../../local-nfts/DMrktMathConfig.sol";
 
 // logging
 import {console} from "forge-std/console.sol";
 
+/**
+ * @notice Generates and signs all orders for a single epoch. Called once per epoch by run-epochs.sh.
+ *         Samples ask and bid token selections across all collections, builds orders with
+ *         deterministic actors and timestamps, signs them EIP-712, sorts by end date, and
+ *         writes everything to the epoch's JSON output directory.
+ */
 contract BuildEpoch is
-    OrderSampling,
-    SettlementSigner,
+    MarketSim,
+    SignOrder,
     EpochsJson,
     BaseDevScript,
     DevConfig
@@ -39,16 +45,22 @@ contract BuildEpoch is
     uint256 private epoch;
     uint256 private epochSpan;
 
-    // nonce per actor, incremented per order and persisted to JSON between epochs to ensure
-    // uniqueness across script invocations — unnecessary complexity in hindsight caused by tunnel vision.
-    // hash(epoch, actor, orderIdx) is sufficient and removes the whole JSON roundtrip for nonces.
-    mapping(address => uint256) private actorNonceIdx;
+    // note: could have used hash(epoch, actor, orderIdx) like an UUID instead of sequential nonces
+    mapping(address => uint256) private actorNonceIdx; // per-actor nonce counter, carried over between epochs via nonces.json
     mapping(address => uint256[]) private selected; // selected tokenIds per collection
 
     // === ENTRYPOINTS ===
 
+    /**
+     * @notice Entry point. Loads config, imports the previous epoch's nonces, builds and signs
+     *         all orders, sorts them by end date, and exports them to JSON.
+     * @param _epoch      Current epoch index.
+     * @param _epochSpan  Full pipeline delta in seconds — used to derive order timestamp offsets.
+     */
     function run(uint256 _epoch, uint256 _epochSpan) external {
-        // === LOAD CONFIG & SETUP ===
+        // --------------------------------
+        // LOAD CONFIG & SETUP
+        // --------------------------------
 
         address settlementContract = readSettlementContract();
         address weth = readWeth();
@@ -78,19 +90,22 @@ contract BuildEpoch is
         epoch = _epoch;
         epochSpan = _epochSpan;
 
+        address[] memory collections = readCollections();
+
+        // --------------------------------
+        // BUILD ORDERS
+        // --------------------------------
+
         logSection("BUILD ORDERS");
         console.log("Block timestamp: %s", block.timestamp);
-        console.log("Epoch: %s", epoch);
+        console.log("Epoch: %s | Collections: %s", epoch, collections.length);
         logSeparator();
-
-        address[] memory collections = readCollections();
-        console.log("Collections: %s", collections.length);
-
-        // === BUILD ORDERS ===
 
         OrderModel.Order[] memory orders = _buildOrders(weth, collections);
 
-        // === SIGN ORDERS ===
+        // --------------------------------
+        // SIGN ORDERS
+        // --------------------------------
 
         logSection("SIGNING");
 
@@ -108,13 +123,22 @@ contract BuildEpoch is
 
         console.log("Orders signed: %s", signed.length);
 
-        // === ORDER BY NONCE ===
+        // --------------------------------
+        // SORT ORDERS
+        // --------------------------------
 
         console.log("Sorting by 'end' timestamp...");
-
         _sortByEndDate(signed);
 
-        // === EXPORT AS JSON ===
+        // --------------------------------
+        // WRITE OUTPUTS
+        // --------------------------------
+
+        // order-count.txt is read by run-epochs.sh to know how many orders to loop over
+        vm.writeFile(
+            string.concat(_epochDir(_epoch), "order-count.txt"),
+            vm.toString(signed.length)
+        );
 
         for (uint256 i = 0; i < collections.length; i++) {
             address c = collections[i];
@@ -125,18 +149,10 @@ contract BuildEpoch is
         }
 
         for (uint256 i = 0; i < signed.length; i++) {
-            SignedOrder memory s = signed[i];
-            orderToJson(s, i, _epoch);
+            orderToJson(signed[i], i, _epoch);
         }
 
-        noncesToJson(_exportNonces(), _epoch); // save to epoch's output dir nonces.json
-
-        // === WRITE EPOCH METADATA ===
-
-        vm.writeFile(
-            string.concat(_epochDir(_epoch), "order-count.txt"),
-            vm.toString(signed.length)
-        );
+        noncesToJson(_exportNonces(), _epoch);
 
         logSeparator();
         console.log(
@@ -149,6 +165,10 @@ contract BuildEpoch is
 
     // === BUILD ===
 
+    /**
+     * @dev Samples ask and bid selections across all collections, then flattens them into
+     *      a single order array. Collection bids are paused and commented out.
+     */
     function _buildOrders(
         address weth,
         address[] memory collections
@@ -218,6 +238,10 @@ contract BuildEpoch is
         // );
     }
 
+    /**
+     * @dev Iterates selections and appends one order per token ID into `orders` starting at `idx`.
+     *      Returns the updated index after all orders are appended.
+     */
     function _appendOrders(
         OrderModel.Order[] memory orders,
         uint256 idx,
@@ -246,6 +270,10 @@ contract BuildEpoch is
         return idx;
     }
 
+    /**
+     * @dev Builds a single order. Resolves the actor, price, start/end timestamps, and nonce
+     *      deterministically from the epoch index and order position.
+     */
     function _buildOrder(
         OrderModel.Side side,
         bool isCollectionBid,
@@ -302,9 +330,13 @@ contract BuildEpoch is
     //
     // maybe: DI by deploying price engine + injecting address
 
-    // Tier multiplier (rarity):  Legendary 8x | Epic 4x | Rare 2x | Common 1x
-    // Element bonus (per tier):  Thunder +5%  | Fire +5%
-    // base = tier * stat * 0.001 eth, rounded up to nearest 0.001 eth
+    /**
+     * @notice DMrktLoot-aware price override. Derives price from the token's rarity tier,
+     *         item type stat, element bonus, and a small noise factor.
+     * @dev    Tier multiplier:  Legendary 8x | Epic 4x | Rare 2x | Common 1x
+     *         Element bonus:    Thunder or Fire adds tier * 0.05 ETH
+     *         Base:             tier * stat * 0.001 ETH, rounded up to nearest 0.001 ETH
+     */
     function orderPrice(
         address,
         uint256 tokenId,
@@ -340,8 +372,11 @@ contract BuildEpoch is
 
     // === PRIVATE FUNCTIONS ===
 
-    // --- resolvers ---
-
+    /**
+     * @dev For asks: the NFT holder is the actor (they're selling).
+     *      For regular bids: a random participant who is not the NFT holder (they're buying).
+     *      For collection bids: any random participant.
+     */
     function _resolveActor(
         OrderModel.Side side,
         bool isCollectionBid,
@@ -369,6 +404,11 @@ contract BuildEpoch is
         return _resolveDate(seed, false);
     }
 
+    /**
+     * @dev Derives start/end timestamps relative to the pipeline start anchor.
+     *      Start = anchor - offset, end = anchor + offset, giving each order a window
+     *      that straddles the pipeline start and extends into the future.
+     */
     function _resolveDate(
         uint256 seed,
         bool isStart
@@ -380,6 +420,10 @@ contract BuildEpoch is
         return isStart ? anchor - offset : anchor + offset;
     }
 
+    /**
+     * @dev Returns a time offset in the range [epochSpan, 2*epochSpan] seconds.
+     *      Guarantees every order's window covers at least one full epoch span.
+     */
     function _resolveTimeOffset(uint256 seed) private view returns (uint64) {
         // forge-lint: disable-next-line(unsafe-typecast)
         return uint64((seed % epochSpan) + epochSpan); // safe because date
@@ -390,8 +434,6 @@ contract BuildEpoch is
         // forge-lint: disable-next-line(unsafe-typecast)
         return uint64(readStartTs() + (epoch * epochSpan)); // safe because date
     }
-
-    // --- nonces ---
 
     function _exportNonces()
         internal
@@ -417,8 +459,10 @@ contract BuildEpoch is
         }
     }
 
-    // --- helpers ---
-
+    /**
+     * @dev Insertion sort by order end timestamp. Ensures ExecuteOrder processes orders
+     *      in the order they expire, which matters for timestamp validation.
+     */
     function _sortByEndDate(SignedOrder[] memory arr) internal pure {
         uint256 n = arr.length;
 
@@ -436,6 +480,10 @@ contract BuildEpoch is
         }
     }
 
+    /**
+     * @dev Flattens a selections array into the `selected` storage map and returns the total token count.
+     *      The stored token IDs are later written to selections JSON for ExecuteOrder to consume.
+     */
     function _mergeSelections(
         Selection[] memory sels
     ) private returns (uint256 added) {

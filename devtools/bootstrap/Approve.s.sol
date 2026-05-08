@@ -20,8 +20,9 @@ contract Approve is BaseDevScript, DevConfig {
         logBlockTimestamp();
 
         // --------------------------------
-        // PHASE 0: LOAD CONFIG
+        // LOAD CONFIG
         // --------------------------------
+
         address weth = readWeth();
 
         address nftTransferAuth = readNftTransferAuth();
@@ -29,13 +30,13 @@ contract Approve is BaseDevScript, DevConfig {
 
         address[] memory collections = readCollections();
 
-        // --- PKs for broadcasting ---
         uint256[] memory participantPks = generateKeys();
         uint256 participantCount = participantPks.length;
 
         // --------------------------------
-        // PHASE 1: NFT TRANSFER AUTH
+        // NFT TRANSFER AUTH
         // --------------------------------
+
         logSection("APPROVE NFT TRANSFER AUTH");
 
         for (uint256 i = 0; i < collections.length; i++) {
@@ -58,7 +59,7 @@ contract Approve is BaseDevScript, DevConfig {
         }
 
         // --------------------------------
-        // PHASE 2: WETH ALLOWANCE
+        // WETH ALLOWANCE
         // --------------------------------
 
         logSection("APPROVE WETH ALLOWANCE FOR NFT TRANSFER AUTH");

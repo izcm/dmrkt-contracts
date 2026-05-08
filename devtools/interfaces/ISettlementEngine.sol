@@ -3,7 +3,6 @@ pragma solidity ^0.8.30;
 
 // local
 import {OrderModel} from "orderbook/libs/OrderModel.sol";
-import {SettlementRoles} from "orderbook/libs/SettlementRoles.sol";
 import {SignatureOps as SigOps} from "orderbook/libs/SignatureOps.sol";
 
 interface ISettlementEngine {

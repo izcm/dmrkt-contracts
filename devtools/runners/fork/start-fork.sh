@@ -1,4 +1,10 @@
 #!/bin/bash
+#
+# Starts an Anvil mainnet fork at the block written to pipeline.toml by pipeline-window.sh.
+# Funds accounts from the chain-specific mnemonic file if present, otherwise uses Anvil's default.
+#
+# Env:   FORK_RPC  — full mainnet RPC URL (any provider, e.g. https://eth-mainnet.g.alchemy.com/v2/<key>)
+#        CHAIN_ID, RPC_HOST, RPC_PORT
 
 # Kill previous anvil if running
 pkill anvil 2>/dev/null
@@ -15,7 +21,7 @@ MNEMONIC_FLAG=()
 
 # Start a fresh fork
 # https://getfoundry.sh/anvil/reference/anvil/
-anvil --fork-url https://eth-mainnet.g.alchemy.com/v2/"$ALCHEMY_KEY" \
+anvil --fork-url "$FORK_RPC" \
   --chain-id "$CHAIN_ID" \
   --host "$RPC_HOST" \
   --port "$RPC_PORT" \

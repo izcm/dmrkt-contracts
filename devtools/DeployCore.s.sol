@@ -28,14 +28,16 @@ contract DeployCore is BaseDevScript, DevConfig {
 
     function run() external {
         // --------------------------------
-        // PHASE 0: LOAD CONFIG
+        // LOAD CONFIG
         // --------------------------------
+
         address weth = readWeth();
         uint256 funderPk = generateKeys()[0];
 
         // --------------------------------
-        // PHASE 1: DEPLOY MARKETPLCE & NFTS
+        // DEPLOY MARKETPLACE & NFTS
         // --------------------------------
+
         logSection("DEPLOY CORE CONTRACTS");
 
         // since the script uses the same private key its not necessary but I like to be explicit
@@ -56,13 +58,10 @@ contract DeployCore is BaseDevScript, DevConfig {
         // logDeployment("DMrktDragonEggs", address(eggs));
 
         // --------------------------------
-        // PHASE 2: WRITE TO .TOML
+        // WRITE TO .TOML
         // --------------------------------
 
         config.set("order_engine", address(orderEngine));
-
-        // === DEPLOYED PERIPHERY NFTs ===
-
         config.set("nft_c_0", address(inventory));
 
         config.set("nft_c_count", NFT_COUNT);

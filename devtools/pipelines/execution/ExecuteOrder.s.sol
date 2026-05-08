@@ -19,19 +19,38 @@ import {SettlementValidation} from "./SettlementValidation.s.sol";
 
 // interfaces
 import {IERC20, SafeERC20} from "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
-import {ISettlementEngine} from "periphery/interfaces/ISettlementEngine.sol";
+import {ISettlementEngine} from "dev/interfaces/ISettlementEngine.sol";
 
 // types
 import {SignedOrder, Selection} from "../epochs/Types.sol";
 
-contract ExecuteOrder is EpochsJson, FillBid, SettlementValidation, BaseDevScript, DevConfig {
+/**
+ * @notice Settles a single order on-chain via OrderEngine.settle(). Called by run-epochs.sh
+ *         once per chosen order after BuildEpoch has generated and signed them.
+ * @dev    Reads the signed order from the epoch's JSON output, runs pre-settlement checks
+ *         (timestamps, NFT ownership, nonce), produces a fill, then broadcasts settle().
+ */
+contract ExecuteOrder is
+    EpochsJson,
+    FillBid,
+    SettlementValidation,
+    BaseDevScript,
+    DevConfig
+{
     using SafeERC20 for IERC20;
     using OrderModel for OrderModel.Order;
 
     uint256[] excludedFromCb;
 
+    /**
+     * @notice Entry point. Reads order at `idx` from epoch `epoch`, validates it, and settles it.
+     * @param epoch  Epoch index — determines which state directory to read from.
+     * @param idx    Order index within the epoch.
+     */
     function run(uint256 epoch, uint256 idx) external {
-        // === LOAD CONFIG & SETUP ===
+        // --------------------------------
+        // LOAD CONFIG & SETUP
+        // --------------------------------
 
         address orderSettler = readSettlementContract();
 
@@ -42,14 +61,20 @@ contract ExecuteOrder is EpochsJson, FillBid, SettlementValidation, BaseDevScrip
         console.log("Index: %s", idx);
         logSeparator();
 
-        // === PARSE JSON ===
+        // --------------------------------
+        // READ JSON
+        // --------------------------------
 
         SignedOrder memory signed = orderFromJson(epoch, idx);
 
         if (signed.order.isCollectionBid) {
             // selection.tokenIds are excluded when producing fill for collectionBids
             // this is because they are linked to some other order in this epoch
-            Selection memory selection = selectionFromJson(epoch, signed.order.collection);
+
+            Selection memory selection = selectionFromJson(
+                epoch,
+                signed.order.collection
+            );
 
             // selection across epochs that are **not** to be executed in any epoch!
 
@@ -60,7 +85,9 @@ contract ExecuteOrder is EpochsJson, FillBid, SettlementValidation, BaseDevScrip
             }
         }
 
-        // === VALIDATE AND EXECUTE ===
+        // --------------------------------
+        // VALIDATE AND EXECUTE
+        // --------------------------------
 
         OrderModel.Order memory order = signed.order;
         SigOps.Signature memory sig = signed.signature;
@@ -75,7 +102,12 @@ contract ExecuteOrder is EpochsJson, FillBid, SettlementValidation, BaseDevScrip
             revert("INVALID_NFT_OWNERSHIP");
         }
 
-        if (ISettlementEngine(orderSettler).isUserOrderNonceInvalid(order.actor, order.nonce)) {
+        if (
+            ISettlementEngine(orderSettler).isUserOrderNonceInvalid(
+                order.actor,
+                order.nonce
+            )
+        ) {
             revert("INVALID_NONCE");
         }
 
@@ -87,9 +119,16 @@ contract ExecuteOrder is EpochsJson, FillBid, SettlementValidation, BaseDevScrip
         logSeparator();
     }
 
-    function _produceFill(OrderModel.Order memory o) internal view returns (OrderModel.Fill memory) {
+    /**
+     * @dev Routes fill production by order side. Asks pick a random counterparty;
+     *      bids delegate to FillBid which handles both regular and collection bids.
+     */
+    function _produceFill(
+        OrderModel.Order memory o
+    ) internal view returns (OrderModel.Fill memory) {
         if (o.isAsk()) {
-            return _fillAsk(o.actor, uint256((uint160(o.actor) << 160) | o.nonce));
+            return
+                _fillAsk(o.actor, uint256((uint160(o.actor) << 160) | o.nonce));
         } else if (o.isBid()) {
             return fillBid(o, excludedFromCb);
         } else {
@@ -97,7 +136,18 @@ contract ExecuteOrder is EpochsJson, FillBid, SettlementValidation, BaseDevScrip
         }
     }
 
-    function _fillAsk(address orderActor, uint256 seed) internal view returns (OrderModel.Fill memory) {
-        return OrderModel.Fill({tokenId: 0, actor: otherParticipant(orderActor, seed)});
+    /**
+     * @dev Returns a fill for an ask order — picks a deterministic counterparty that is
+     *      not the order actor, derived from the actor address and nonce as seed.
+     */
+    function _fillAsk(
+        address orderActor,
+        uint256 seed
+    ) internal view returns (OrderModel.Fill memory) {
+        return
+            OrderModel.Fill({
+                tokenId: 0,
+                actor: otherParticipant(orderActor, seed)
+            });
     }
 }

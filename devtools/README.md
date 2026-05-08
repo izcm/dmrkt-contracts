@@ -42,7 +42,7 @@ Scripts that need to read participants extend [BaseDevScript](./BaseDevScript.s.
 
 **The data**
 
-After bootstrapping participants with WETH and NFTs, and doing the necessary approvals, the pipeline deterministically creates and signs EIP-712 orders, and then executes trades on a subset of these.
+After bootstrapping participants with WETH and NFTs, and doing the necessary approvals, the pipeline creates and signs EIP-712 orders, and then executes trades on a subset of these.
 
 This multi-step process happens per-epoch. Each epoch stores its generated orders and related pipeline state in its own directory.
 
@@ -82,19 +82,19 @@ data/
 
 Skim these in order to build a mental model without reading everything:
 
-| #   | File                             | What you learn                                                                                                                                 |
-| --- | -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | **`Makefile`** (targets section) | The full pipeline as named steps — what runs, in what order, and what each phase is called.                                                    |
-| 2   | **`DevConfig.s.sol`**            | All the config knobs in one place — read this to better understand the pipeline context.                                                       |
-| 3   | **`runners/run-epochs.sh`**      | The epoch loop in four labelled phases: BUILD → EXPORT → CHOOSE → EXECUTE. The probability decay logic is visible here too.                    |
-| 4   | `BuildEpoch.s.sol`               | Implements the BUILD phase — generates and signs orders for a single epoch. Dense; skim `run` then follow `_buildOrders` into `OrderSampling`. |
+| #   | File                             | What you learn                                                                                                                             |
+| --- | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| 1   | **`Makefile`** (targets section) | The full pipeline as named steps — what runs, in what order, and what each phase is called.                                                |
+| 2   | **`DevConfig.s.sol`**            | All the config knobs in one place — read this to better understand the pipeline context.                                                   |
+| 3   | **`runners/run-epochs.sh`**      | The epoch loop in four labelled phases: BUILD → EXPORT → CHOOSE → EXECUTE. The probability decay logic is visible here too.                |
+| 4   | `BuildEpoch.s.sol`               | Implements the BUILD phase — generates and signs orders for a single epoch. Dense; skim `run` then follow `_buildOrders` into `MarketSim`. |
 
 **Going deeper:**
 
 | Topic              | Read                                                                            |
 | ------------------ | ------------------------------------------------------------------------------- |
-| Sampling           | `OrderSampling.s.sol`                                                           |
-| Order signing      | `SettlementSigner.s.sol`                                                        |
+| Sampling           | `MarketSim.sol`                                                                 |
+| Order signing      | `SignOrder.s.sol`                                                               |
 | Bootstrap sequence | `DeployCore` → `BootstrapAccounts` → `BootstrapNFTs` → `Approve` in that order. |
 
 The boostrap sequence is especially good for anyone new to foundry. They're very straight forward.
@@ -113,17 +113,18 @@ The boostrap sequence is especially good for anyone new to foundry. They're very
 
 ```bash
 # Set fork window (block range + timestamps) in pipeline.toml
-node runners/fork/prepare-fork.js <seconds_ago> [end_ts]
+./runners/fork/pipeline-window.sh <seconds_ago> [end_ts]
 
 # Start Anvil fork
 ./runners/fork/start-fork.sh
 ```
 
-| Env var    | Default     | Description   |
-| ---------- | ----------- | ------------- |
-| `RPC_HOST` | `localhost` | Fork RPC host |
-| `RPC_PORT` | \_\_\_      | Fork RPC port |
-| `CHAIN_ID` | \_\_\_      |               |
+| Env var    | Default     | Description                                                                             |
+| ---------- | ----------- | --------------------------------------------------------------------------------------- |
+| `FORK_RPC` | \_\_\_      | Full mainnet RPC URL — any provider (e.g. `https://eth-mainnet.g.alchemy.com/v2/<key>`) |
+| `RPC_HOST` | `localhost` | Fork RPC host                                                                           |
+| `RPC_PORT` | \_\_\_      | Fork RPC port                                                                           |
+| `CHAIN_ID` | \_\_\_      |                                                                                         |
 
 **Run**
 
@@ -180,14 +181,25 @@ Located under `runners/`
 | ---------------------------- | ------------------------------------------------------------------------- |
 | `BuildEpoch.s.sol`           | Samples orders for an epoch; exports to JSON                              |
 | `ExecuteOrder.s.sol`         | Settles a single order on-chain via OrderEngine.settle()                  |
-| `OrderSampling.s.sol`        | Pseudo-random token selection across collections                          |
+| `MarketSim.sol`              | Pseudo-random token selection and base price generation                   |
 | `EpochsJson.s.sol`           | JSON serialization for orders and etc. data like previous epoch's nounces |
-| `SettlementSigner.s.sol`     | EIP-712 order signing                                                     |
+| `SignOrder.s.sol`            | EIP-712 order signing                                                     |
 | `SettlementValidation.s.sol` | Pre-settlement timestamp + ownership checks                               |
 | `FillBid.s.sol`              | Resolves fill recipient for regular and collection bids                   |
 
 > [!NOTE]
 > Collection bid feature is paused
+
+---
+
+### Interfaces
+
+Devtools-only interfaces, kept separate from `periphery/interfaces` which is shared with tests and production code.
+
+| Interface               | Description                                                                                           |
+| ----------------------- | ----------------------------------------------------------------------------------------------------- |
+| `DNFT.sol`              | Minimal ERC721 extension used by simulation scripts — exposes `MAX_SUPPLY`, `totalSupply`, and `mint` |
+| `ISettlementEngine.sol` | Subset of OrderEngine surface used by the pipeline — `settle`, `DOMAIN_SEPARATOR`, nonce check        |
 
 ---
 

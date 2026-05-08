@@ -1,4 +1,11 @@
 #!/bin/bash
+#
+# Orchestrates the full epoch pipeline. For each epoch: builds and signs orders (BuildEpoch),
+# optionally exports them to the indexer, then settles a subset on-chain (ExecuteOrder).
+# Execution probability decays across epochs to leave some orders unfilled for demo use.
+#
+# Usage:  run-epochs.sh <epoch_count> [--export]
+# Env:    PIPELINE_STATE_DIR, MNEMONIC_JSON, RPC_URL, PIPELINES_EPOCHS, PIPELINES_EXECUTION, ARTIFACTS_EXPORTERS
 
 RED="\033[0;31m"
 GREEN="\033[0;32m"
@@ -114,7 +121,7 @@ do
         echo "orders: $order_count"
 
         for((i = 0; i < order_count; i++)); do
-            if "$ARTIFACTS_EXPORTERS/export-order.sh" \
+            if "$RUNNERS_EXPORTERS/export-order.sh" \
                 "$order_out/order_$i.json"
             then
                 echo -e "[epoch:$epoch] [order:$i] ${GREEN}EXPORTED${RESET}"
@@ -166,6 +173,7 @@ do
         offset=$(((i % 5) - 2))
         time_jump=$((base_step + offset))
 
+        # forward time
         cast rpc evm_increaseTime $time_jump \
             --rpc-url "$RPC_URL" \
             --quiet

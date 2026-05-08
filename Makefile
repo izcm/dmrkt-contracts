@@ -15,10 +15,10 @@ export PROJECT_ROOT
 DEVTOOLS_ROOT   := devtools
 BOOTSTRAP       := $(DEVTOOLS_ROOT)/bootstrap
 PIPELINES       := $(DEVTOOLS_ROOT)/pipelines
-ARTIFACTS       := $(DEVTOOLS_ROOT)/runners
+RUNNERS       := $(DEVTOOLS_ROOT)/runners
 
-export ARTIFACTS_FORK := $(ARTIFACTS)/fork
-export ARTIFACTS_EXPORTERS := $(ARTIFACTS)/exporters
+export RUNNERS_FORK := $(RUNNERS)/fork
+export RUNNERS_EXPORTERS := $(RUNNERS)/exporters
 export PIPELINES_EPOCHS := $(PIPELINES)/epochs
 export PIPELINES_EXECUTION := $(PIPELINES)/execution
 
@@ -97,11 +97,11 @@ pipeline-setup: \
 
 dev-fork:
 	@echo "🧬 Starting anvil fork..."
-	@./$(ARTIFACTS_FORK)/start-fork.sh
+	@./$(RUNNERS_FORK)/start-fork.sh
 
 dev-prepare:
 	@echo "🔢 Finding block number and timestamps..."
-	@./$(ARTIFACTS_FORK)/pipeline-window.sh 2419200
+	@./$(RUNNERS_FORK)/pipeline-window.sh 2419200
 
 # ───────────────────────────────────────────────
 #   DEV — SETUP / GENESIS
@@ -134,7 +134,7 @@ dev-approve:
 
 dev-run-epochs:
 	@echo "📊 Building historical orders..."
-	@./$(ARTIFACTS)/run-epochs.sh $(EPOCH_COUNT) --export
+	@./$(RUNNERS)/run-epochs.sh $(EPOCH_COUNT) --export
 
 # ───────────────────────────────────────────────
 #   RESET / PROCESS CONTROL

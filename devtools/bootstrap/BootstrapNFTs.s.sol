@@ -7,7 +7,7 @@ import {DevConfig} from "dev/DevConfig.s.sol";
 import {console} from "forge-std/console.sol";
 
 // interfaces
-import {DNFT} from "periphery/interfaces/DNFT.sol";
+import {DNFT} from "dev/interfaces/DNFT.sol";
 
 /**
  * @notice Mints all tokens from each deployed NFT collection to participants using a
@@ -18,17 +18,17 @@ contract BootstrapNFTs is BaseDevScript, DevConfig {
         logBlockTimestamp();
 
         // --------------------------------
-        // PHASE 0: LOAD CONFIG
+        // LOAD CONFIG
         // --------------------------------
-        address[] memory collections = readCollections();
 
-        // --- PKs for broadcasting ---
+        address[] memory collections = readCollections();
         uint256[] memory participantPks = generateKeys();
         uint256 participantCount = participantPks.length;
 
         // --------------------------------
-        // PHASE 1: MINT NFTs
+        // MINT NFTs
         // --------------------------------
+
         logSection("MINT NFTs");
 
         for (uint256 i = 0; i < collections.length; i++) {

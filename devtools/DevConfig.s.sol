@@ -56,7 +56,7 @@ contract DevConfig is Config {
         return _orderEngine();
     }
 
-    // if multiple strategies: readAllowanceSpender(strategyId)
+    // if multiple strategies are added in future: readAllowanceSpender(strategyId)
     function readAllowanceSpender() internal view returns (address) {
         return _orderEngine();
     }

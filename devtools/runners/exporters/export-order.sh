@@ -1,4 +1,10 @@
 #!/bin/bash
+#
+# POSTs a single order JSON file to the indexer endpoint. Retries up to 3 times on failure.
+# Called by run-epochs.sh for each order when --export is passed.
+#
+# Usage: export-order.sh <path/to/order_N.json>
+# Env:   ORDER_POST_URL, CHAIN_ID
 
 RED="\033[0;31m"
 RESET="\033[0m"

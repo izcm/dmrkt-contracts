@@ -19,18 +19,17 @@ contract BootstrapAccounts is BaseDevScript, DevConfig {
         logBlockTimestamp();
 
         // --------------------------------
-        // PHASE 0: LOAD CONFIG
+        // LOAD CONFIG
         // --------------------------------
+
         address weth = readWeth();
-
-        // --- PKs for broadcasting ---
-
         uint256[] memory participantPks = generateKeys();
         uint256 participantCount = participantPks.length;
 
         // --------------------------------
-        // PHASE 2: WRAP ETH
+        // WRAP ETH
         // --------------------------------
+
         logSection("WRAP ETH => WETH");
 
         IWETH wethToken = IWETH(weth);
