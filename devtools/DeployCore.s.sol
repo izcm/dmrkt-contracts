@@ -11,10 +11,18 @@ import {DMrktLoot} from "nfts/DMrktLoot.sol";
 import {BaseDevScript} from "dev/BaseDevScript.s.sol";
 import {DevConfig} from "dev/DevConfig.s.sol";
 
-// Writes to pipeline.toml:
-//   - `order_engine` — deployed OrderEngine address
-//   - `nft_c_0`      — deployed DMrktLoot address
-//   - `nft_c_count`  — number of deployed nft collections
+/**
+ * @notice Deploys `OrderEngine` and `DMrktLoot` to the local fork, then writes their
+ *         addresses to `pipeline.toml` so downstream bootstrap and pipeline scripts can read them.
+ * @dev    To add a new collection: deploy it inside the broadcast block, log it with
+ *         `logDeployment`, and write it with `config.set("nft_c_N", address(...))` incrementing N.
+ *         Bump `NFT_COUNT` to match.
+ *
+ *         Writes to pipeline.toml:
+ *           - `order_engine`  — deployed OrderEngine address
+ *           - `nft_c_0`       — deployed DMrktLoot address
+ *           - `nft_c_count`   — number of deployed nft collections
+ */
 contract DeployCore is BaseDevScript, DevConfig {
     uint256 constant NFT_COUNT = 1;
 

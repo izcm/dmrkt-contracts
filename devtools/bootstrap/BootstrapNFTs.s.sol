@@ -9,6 +9,10 @@ import {console} from "forge-std/console.sol";
 // interfaces
 import {DNFT} from "periphery/interfaces/DNFT.sol";
 
+/**
+ * @notice Mints all tokens from each deployed NFT collection to participants using a
+ *         pseudo-random but deterministic distribution.
+ */
 contract BootstrapNFTs is BaseDevScript, DevConfig {
     function run() external {
         logBlockTimestamp();
@@ -42,6 +46,14 @@ contract BootstrapNFTs is BaseDevScript, DevConfig {
         }
     }
 
+    /**
+     * @notice Mints every token in `ct` up to MAX_SUPPLY, distributing them
+     *         deterministically across `pks`. Distribution is derived from
+     *         keccak256(collection, tokenId) so the same setup always produces
+     *         the same ownership layout.
+     * @param pks  Participant private keys — each mint is broadcast from the recipient's key.
+     * @param ct   NFT collection implementing the DNFT interface (must expose MAX_SUPPLY and mint).
+     */
     function mintTokens(uint256[] memory pks, DNFT ct) internal {
         uint256 limit = ct.MAX_SUPPLY();
 

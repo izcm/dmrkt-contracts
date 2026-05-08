@@ -68,7 +68,7 @@ Each epoch builds, exports, and settles orders within its slice, advancing Anvil
 ```
 data/
 └── <chainId>/
-    ├── mnemonic.json    # Mnemonic provided by repo user
+    ├── mnemonic.json    # Mnemonic provided by us
     └── state/
         └── epoch_N/
             ├── orders.json        # The generated orders

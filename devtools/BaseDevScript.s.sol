@@ -4,12 +4,20 @@ pragma solidity ^0.8.30;
 import {Script} from "forge-std/Script.sol";
 import {console} from "forge-std/console.sol";
 
-// Keys are derived from a mnemonic at `./data/{chainId}/mnemonic.json`.
+/**
+ * @notice Abstract base for all dev pipeline scripts. Derives participant accounts from a
+ *         mnemonic file at `data/{chainId}/mnemonic.json` and exposes helpers for key
+ *         generation, address lookup, and console logging.
+ */
 abstract contract BaseDevScript is Script {
     mapping(address => uint256) private _ownerPk;
     address[] private _participants;
 
-    // Call this if the script needs easy access to pk => addr
+    /**
+     * @notice Populates the internal participants list and pk lookup map.
+     *         Call this before using `participant()` or `pkOf()`. Scripts that only
+     *         need to broadcast can skip this and call `generateKeys()` directly.
+     */
     function _loadParticipants() internal {
         uint256[] memory pks = generateKeys();
 
@@ -22,7 +30,11 @@ abstract contract BaseDevScript is Script {
         }
     }
 
-    // If a script only needs private keys use this, no need to call loadParticipants
+    /**
+     * @notice Returns 10 private keys derived from the chain-specific mnemonic file.
+     *         Use this when the script only needs to broadcast — no participant map needed.
+     *          NB: if changing the count, remember to update the --accounts flag in start-fork.sh
+     */
     function generateKeys() internal view returns (uint256[] memory) {
         return generateKeys(10);
     }
@@ -56,6 +68,12 @@ abstract contract BaseDevScript is Script {
         return _participants;
     }
 
+    /**
+     * @notice Returns a deterministic participant that is not `excluded`, selected using `seed`.
+     *         Useful for pairing a maker with a distinct taker without repeating the same address.
+     * @param excluded  Address to skip.
+     * @param seed      Arbitrary value — same seed always picks the same counterparty.
+     */
     function otherParticipant(
         address excluded,
         uint256 seed

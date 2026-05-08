@@ -8,6 +8,12 @@ import {DevConfig} from "dev/DevConfig.s.sol";
 // interfaces
 import {IWETH} from "periphery/interfaces/IWETH.sol";
 
+/**
+ * @notice Wraps half of each participant's ETH balance into WETH so they have
+ *         liquid bid collateral for the pipeline.
+ * @dev    Participants are funded with ETH at fork startup via Anvil's `--mnemonic` flag.
+ *         This script runs after fork start and before `Approve`.
+ */
 contract BootstrapAccounts is BaseDevScript, DevConfig {
     function run() external {
         logBlockTimestamp();

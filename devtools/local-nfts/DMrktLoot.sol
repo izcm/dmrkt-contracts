@@ -9,8 +9,8 @@ import {DNFT} from "periphery/interfaces/DNFT.sol";
 import {DMrktMathConfig} from "./DMrktMathConfig.sol";
 import {DMrktNFTLib} from "./DMrktNFTLib.sol";
 
-// NOTE: Demo-only contract. Generated with AI and lightly modified.
-// NB: Contract is not part of production code nor coupled to the architecture
+// NOTE: Demo-only contract. Generated with AI
+// NB: Contract is not part of production code nor coupled to pipeline architecture
 
 contract DMrktLoot is DNFT, ERC721 {
     enum ItemType {

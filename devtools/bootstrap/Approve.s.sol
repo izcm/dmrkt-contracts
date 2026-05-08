@@ -11,6 +11,10 @@ import {DevConfig} from "dev/DevConfig.s.sol";
 import {IERC721} from "@openzeppelin/interfaces/IERC721.sol";
 import {IERC20} from "@openzeppelin/interfaces/IERC20.sol";
 
+/**
+ * @notice Grants the OrderEngine the approvals it needs to settle trades:
+ *         `setApprovalForAll` on every NFT collection and max WETH allowance for the allowance spender.
+ */
 contract Approve is BaseDevScript, DevConfig {
     function run() external {
         logBlockTimestamp();
@@ -59,9 +63,7 @@ contract Approve is BaseDevScript, DevConfig {
 
         logSection("APPROVE WETH ALLOWANCE FOR NFT TRANSFER AUTH");
 
-        // DEV-ONLY:
-        // Infinite approval used ONLY for local fork / deterministic setup.
-        // Production flow uses exact per-owner exposure-based allowances.
+        // Infinite approval from our demo participants
         IERC20 wethToken = IERC20(weth);
         uint256 allowance = type(uint256).max;
 
