@@ -22,10 +22,10 @@ order_idx=${order_idx%.json}
     exit 1
 }
 
-[[ -n "$INDEXER_URL" ]] || {
-    echo -e "${RED}INDEXER_URL not set${RESET}"
+[[ -n "$ORDER_POST_URL" ]] || {
+    echo -e "${RED}ORDER_POST_URL not set${RESET}"
     exit 1
-} 
+}
 
 MAX_RETRIES=3
 RETRY_DELAY=0.2
@@ -37,7 +37,7 @@ while true; do
         -H "Content-Type: application/json" \
         -H "X-Chain-Id: $CHAIN_ID" \
         --data-binary @"$in_file_path" \
-        "$INDEXER_URL/api/orders"
+        "$ORDER_POST_URL"
     then
         exit 0 # SUCCESS
     fi

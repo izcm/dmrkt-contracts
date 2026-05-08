@@ -15,7 +15,7 @@ export PROJECT_ROOT
 DEVTOOLS_ROOT   := devtools
 BOOTSTRAP       := $(DEVTOOLS_ROOT)/bootstrap
 PIPELINES       := $(DEVTOOLS_ROOT)/pipelines
-ARTIFACTS       := $(DEVTOOLS_ROOT)/artifacts
+ARTIFACTS       := $(DEVTOOLS_ROOT)/runners
 
 export ARTIFACTS_FORK := $(ARTIFACTS)/fork
 export ARTIFACTS_EXPORTERS := $(ARTIFACTS)/exporters

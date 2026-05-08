@@ -34,7 +34,7 @@ contract BootstrapNFTs is BaseDevScript, DevConfig {
             logSection("DNFT FINAL BALANCES");
 
             for (uint256 j = 0; j < participantCount; j++) {
-                address user = addrOf(participantPks[i]);
+                address user = addrOf(participantPks[j]);
                 uint256 bal = collectionToken.balanceOf(user);
 
                 logTokenBalance("DNFT", user, bal);
