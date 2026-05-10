@@ -8,7 +8,6 @@ contract DeployOrderEngine is Script {
     function run() external returns (OrderEngine deployed) {
         vm.startBroadcast();
 
-        // TODO: fix args
         deployed = new OrderEngine(
             0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2,
             msg.sender

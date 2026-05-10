@@ -31,8 +31,6 @@ library OrderModel {
         return o.side == Side.Bid;
     }
 
-    // bytes constraints; remember to keccak dynamic values in an inner keccak256 when hashing
-
     /// Taker's action to fulfill an `Order` whether that be:
     /// 1. Selling an NFT if order is `bid`
     /// 2. Buying an NFT if order is `ask`
@@ -43,28 +41,26 @@ library OrderModel {
 
     // https://eips.ethereum.org/EIPS/eip-712#definition-of-hashstruct:
     // hashStruct(s : 𝕊) = keccak256(typeHash ‖ encodeData(s)) where typeHash = keccak256(encodeType(typeOf(s)))
-    bytes32 constant ORDER_TYPE_HASH =
-        keccak256(
-            "Order(uint8 side,bool isCollectionBid,address collection,uint256 tokenId,address currency,uint256 price,address actor,uint64 start,uint64 end,uint256 nonce)"
-        );
+    bytes32 constant ORDER_TYPE_HASH = keccak256(
+        "Order(uint8 side,bool isCollectionBid,address collection,uint256 tokenId,address currency,uint256 price,address actor,uint64 start,uint64 end,uint256 nonce)"
+    );
 
     // TODO: implement this in assembly and test gas savings
     function hash(Order memory o) internal pure returns (bytes32) {
-        return
-            keccak256(
-                abi.encode(
-                    ORDER_TYPE_HASH,
-                    o.side,
-                    o.isCollectionBid,
-                    o.collection,
-                    o.tokenId,
-                    o.currency,
-                    o.price,
-                    o.actor,
-                    o.start,
-                    o.end,
-                    o.nonce
-                )
-            );
+        return keccak256(
+            abi.encode(
+                ORDER_TYPE_HASH,
+                o.side,
+                o.isCollectionBid,
+                o.collection,
+                o.tokenId,
+                o.currency,
+                o.price,
+                o.actor,
+                o.start,
+                o.end,
+                o.nonce
+            )
+        );
     }
 }

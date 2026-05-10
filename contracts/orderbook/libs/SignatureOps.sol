@@ -4,12 +4,9 @@ pragma solidity ^0.8.30;
 import {IERC1271} from "@openzeppelin/interfaces/IERC1271.sol";
 
 library SignatureOps {
-    // ===== ERRORS =====
     error InvalidYParity();
     error InvalidSParameter();
     error InvalidSignature();
-
-    // ===== SIG OBJ & METHODS =====
 
     struct Signature {
         uint8 v; // Y-parity - 27 or 28 always
@@ -17,16 +14,12 @@ library SignatureOps {
         bytes32 s;
     }
 
-    /**
-     * @dev Simply a structural / semantic helper
-     */
+    /// @dev Semantic helper. Unpacks a Signature into its (v, r, s) components.
     function vrs(
         Signature calldata sig
     ) internal pure returns (uint8, bytes32, bytes32) {
         return (sig.v, sig.r, sig.s);
     }
-
-    // ===== SIG VERIFICATION =====
 
     function recover(
         bytes32 hash,
@@ -37,6 +30,15 @@ library SignatureOps {
         return ecrecover(hash, v, r, s);
     }
 
+    /**
+     * @notice Verifies an EIP-712 signature against an expected signer.
+     * @dev Validates Y-parity and EIP-2 s-value malleability before recovering.
+     *      Supports EOA signers via ecrecover and contract signers via EIP-1271.
+     *      Reverts on any verification failure.
+     * @param domainSeparator The EIP-712 domain separator.
+     * @param msgHash         The EIP-712 struct hash of the message.
+     * @param expectedSigner  Address that must have produced the signature.
+     */
     function verify(
         bytes32 domainSeparator,
         bytes32 msgHash,
@@ -45,10 +47,10 @@ library SignatureOps {
         bytes32 r,
         bytes32 s
     ) internal view {
-        // Check v (Y-parity)
+        // check v (y-parity)
         if (v != 27 && v != 28) revert InvalidYParity();
 
-        // Check s <= n/2 https://eips.ethereum.org/EIPS/eip-2
+        // check s <= n/2 https://eips.ethereum.org/EIPS/eip-2
         if (
             uint256(s) >
             0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0
@@ -56,7 +58,7 @@ library SignatureOps {
             revert InvalidSParameter();
         }
 
-        // Build digest
+        // build digest
         bytes32 digest = digest712(domainSeparator, msgHash);
 
         if ((expectedSigner.code.length > 0)) {
@@ -77,6 +79,12 @@ library SignatureOps {
         }
     }
 
+    /**
+     * @dev Constructs an EIP-712 typed data digest:
+     * keccak256(0x19 0x01 || domainSeparator || hashStruct(message))
+     * @see https://eips.ethereum.org/EIPS/eip-712#specification-of-the-eth_signtypeddata-json-rpc
+     *
+     */
     function digest712(
         bytes32 domain,
         bytes32 msgHash

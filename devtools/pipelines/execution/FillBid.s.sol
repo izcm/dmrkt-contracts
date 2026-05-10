@@ -19,13 +19,18 @@ abstract contract FillBid {
      * @param excludedCb  Token IDs excluded from collection bid fills — typically tokens already
      *                    assigned to other orders in this epoch.
      */
-    function fillBid(OrderModel.Order memory bid, uint256[] memory excludedCb)
-        internal
-        view
-        returns (OrderModel.Fill memory)
-    {
+    function fillBid(
+        OrderModel.Order memory bid,
+        uint256[] memory excludedCb
+    ) internal view returns (OrderModel.Fill memory) {
         if (bid.isCollectionBid) {
-            return _fillCollectionBid(bid.collection, bid.actor, bid.nonce, excludedCb);
+            return
+                _fillCollectionBid(
+                    bid.collection,
+                    bid.actor,
+                    bid.nonce,
+                    excludedCb
+                );
         } else {
             return _fillRegularBid(bid.collection, bid.tokenId);
         }
@@ -34,8 +39,15 @@ abstract contract FillBid {
     /**
      * @dev For a regular bid the tokenId is fixed — just resolve the current owner as the filler.
      */
-    function _fillRegularBid(address collection, uint256 tokenId) internal view returns (OrderModel.Fill memory) {
-        return OrderModel.Fill({tokenId: tokenId, actor: DNFT(collection).ownerOf(tokenId)});
+    function _fillRegularBid(
+        address collection,
+        uint256 tokenId
+    ) internal view returns (OrderModel.Fill memory) {
+        return
+            OrderModel.Fill({
+                tokenId: tokenId,
+                actor: DNFT(collection).ownerOf(tokenId)
+            });
     }
 
     /**
@@ -46,11 +58,12 @@ abstract contract FillBid {
      * @param seed         Used to derive the starting token ID.
      * @param excluded     Token IDs already committed to other orders in this epoch.
      */
-    function _fillCollectionBid(address collection, address orderActor, uint256 seed, uint256[] memory excluded)
-        internal
-        view
-        returns (OrderModel.Fill memory)
-    {
+    function _fillCollectionBid(
+        address collection,
+        address orderActor,
+        uint256 seed,
+        uint256[] memory excluded
+    ) internal view returns (OrderModel.Fill memory) {
         uint256 supply = DNFT(collection).totalSupply();
 
         uint256 tokenId = seed % supply;
@@ -64,7 +77,10 @@ abstract contract FillBid {
         return OrderModel.Fill({tokenId: tokenId, actor: nftHolder});
     }
 
-    function _isExcluded(uint256 tokenId, uint256[] memory excluded) private pure returns (bool) {
+    function _isExcluded(
+        uint256 tokenId,
+        uint256[] memory excluded
+    ) private pure returns (bool) {
         for (uint256 i = 0; i < excluded.length; i++) {
             if (tokenId == excluded[i]) return true;
         }

@@ -1,57 +1,84 @@
 # Marketplace Engines
 
-## The on-chain protocol
-
-### contracts/
-
-Core protocol implementations:
-
-- `orderbook/` - OrderEngine and settlement logic
-
-### test/
-
-Test suite organized by scope:
-
-- `unit/` - Isolated component tests
-- `integration/` - End-to-end settlement and revert scenarios
-- `helpers/` - Shared test utilities (OrderHelper, AccountsHelper, SettlementHelper)
-- `mocks/` - Test-only contracts (MockWETH, MockERC721)
+<one-liner about what this repo is>
 
 ---
 
-## Testing Scope
+## Repository Layout
 
-This repository contains both the on-chain protocol and local development tooling.
-
-### 🔗 On-chain (production-critical, fully tested)
-
-These contracts / libraries are deployed on-chain and are covered by exhaustive tests:
-
-- `contracts/orderbook/`
-  - `OrderEngine.sol`
-  - `libs/OrderModel.sol`
-  - `libs/SignatureOps.sol`
-  - `libs/SettlementRoles.sol`
-
-They all reach ~100% line / branch coverage and are the **security-critical surface**.
-
-Contracts in `periphery/nfts` are only meant for lab / dev environment and not part of the testing scope.
-
-Test helpers are tested proportionally to the risk they introduce.
-
-Eg: `OrderHelper` not returning `Orders` of expected format could silently corrupt tests and invalidate tests results, so unit tests are implemented to detect this.
+```
+contracts/    production contracts
+test/         test suite
+periphery/    shared builders + interfaces
+devtools/     local simulation pipeline (not production)
+```
 
 ---
 
-### 🧰 Periphery / Dev Tooling (not tested by design)
+## Contracts
 
-The following directories are **not deployed on-chain** and are used only for
-local development, scripting, or simulation:
+**`OrderEngine.sol`** — <what it does>
 
-- `periphery/`
-- `script/`
-- `script/dev/**`
-
-These are intentionally excluded from test coverage.
+| File                      | Description |
+| ------------------------- | ----------- |
+| `libs/OrderModel.sol`     |             |
+| `libs/SignatureOps.sol`   |             |
+| `libs/SettlementRoles.sol`|             |
 
 ---
+
+## Testing
+
+<scope note — what is and isn't covered>
+
+```
+unit/         isolated lib tests
+integration/  end-to-end settle + revert scenarios
+helpers/      OrderHelper, AccountsHelper, SettlementHelper
+mocks/        MockWETH, MockERC721, etc.
+```
+
+Production contracts (`contracts/orderbook/`) reach ~100% line / branch coverage and are the security-critical surface. Contracts and scripts in `devtools/` are for demo purposes only and are not part of the testing scope.
+
+---
+
+## Running Tests
+
+```bash
+# run all tests
+forge test
+
+# coverage
+forge coverage
+```
+
+---
+
+## Dev Pipeline
+
+Local simulation pipeline lives in `devtools/` — see [devtools/README.md](./devtools/README.md) for the full breakdown.
+
+```bash
+# spin up a local fork with seeded state
+make dev-start
+```
+
+---
+
+## Setup
+
+**Prerequisites**
+
+| Tool                       | Version |
+| -------------------------- | ------- |
+| Foundry (forge/cast/anvil) |         |
+
+**Environment**
+
+Copy `.env.example` to `.env` and fill in:
+
+| Var        | Description |
+| ---------- | ----------- |
+| `FORK_RPC` | Mainnet RPC URL |
+| `RPC_URL`  | Fork RPC URL (used by Makefile) |
+| `CHAIN_ID` |             |

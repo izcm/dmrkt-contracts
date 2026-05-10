@@ -8,23 +8,29 @@ library SettlementRoles {
 
     error InvalidOrderSide();
 
+    /**
+     * @notice Derives settlement roles from an order/fill pair.
+     * @dev Ask: the order creator holds the NFT and the fill actor is the buyer.
+     *      The token ID is always taken from the order.
+     *
+     *      Bid: the fill actor supplies the NFT and the order creator is the buyer.
+     *      Token ID selection depends on `isCollectionBid`:
+     *        - collection bid  → any token in the collection is accepted; ID comes from the fill.
+     *        - specific bid    → the fill's tokenId is ignored; ID comes from the order.
+     * @param f The fill submitted against the order.
+     * @param o The standing order being settled.
+     * @return nftHolder Address currently holding the NFT to be transferred.
+     * @return spender   Address that will pay for the NFT.
+     * @return tokenId   Token ID to settle on.
+     */
     function resolve(OrderModel.Fill memory f, OrderModel.Order memory o)
         internal
         pure
         returns (address nftHolder, address spender, uint256 tokenId)
     {
         if (o.isAsk()) {
-            // order creator holds nft (nftHolder)
-            // fill actor buys the nft (spender)
-            // the tokenId is specified by order creator (tokenId)
             return (o.actor, f.actor, o.tokenId);
         } else if (o.isBid()) {
-            // fill actor responds to a bid with a provided nft (nftHolder)
-            // order creator will pay for the token provided in fill (spender)
-
-            // if order is a collection bid:
-            // true: any tokenId specified in `fill` will work as long as its the correct collection
-            // false: the tokenId provided in fill is !IGNORED! order.tokenId
             return (f.actor, o.actor, o.isCollectionBid ? f.tokenId : o.tokenId);
         }
 

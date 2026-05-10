@@ -20,11 +20,11 @@ abstract contract SignOrder is Script {
      * @param order            The order to sign.
      * @param signerPk         Private key of the order maker.
      */
-    function signOrder(bytes32 domainSeparator, OrderModel.Order memory order, uint256 signerPk)
-        internal
-        pure
-        returns (SigOps.Signature memory)
-    {
+    function signOrder(
+        bytes32 domainSeparator,
+        OrderModel.Order memory order,
+        uint256 signerPk
+    ) internal pure returns (SigOps.Signature memory) {
         bytes32 digest = SigOps.digest712(domainSeparator, order.hash());
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPk, digest);
