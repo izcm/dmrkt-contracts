@@ -1,6 +1,6 @@
-# Marketplace Engines
+# Dmrkt Engines
 
-<one-liner about what this repo is>
+A simple orderbook contract with foundry scripts to simulate marketplace activity. Made with the intent to make an interactive demo with a tutorial-ish format, developed into some generic scripts that might be of use for devs making their own foundry pipelines.
 
 ---
 
@@ -9,7 +9,7 @@
 ```
 contracts/    production contracts
 test/         test suite
-periphery/    shared builders + interfaces
+periphery/    builders shared by tests and devtools
 devtools/     local simulation pipeline (not production)
 ```
 
@@ -17,13 +17,16 @@ devtools/     local simulation pipeline (not production)
 
 ## Contracts
 
-**`OrderEngine.sol`** — <what it does>
+This order model uses the term `actor` instead of the traditional maker / taker terminology.
+Documentation may still use “maker” and “taker” informally when describing settlement flow.
 
-| File                      | Description |
-| ------------------------- | ----------- |
-| `libs/OrderModel.sol`     |             |
-| `libs/SignatureOps.sol`   |             |
-| `libs/SettlementRoles.sol`|             |
+**OrderEngine.sol** — a single-strategy marketplace engine that accepts signed EIP-712 orders and settles them against matching fills, enforcing the exact terms defined by the maker.
+
+| File                       | Description                                                                                                           |
+| -------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `libs/OrderModel.sol`      | `Order` and `Fill` definitions and hashing logic.                                                                     |
+| `libs/SignatureOps.sol`    | Signature verification helpers for EOAs and EIP-1271 contract wallets.                                                |
+| `libs/SettlementRoles.sol` | Resolves settlement roles (`nftHolder`, `spender`, `tokenId`) from an order/fill pair depending on side and bid type. |
 
 ---
 
@@ -38,7 +41,7 @@ helpers/      OrderHelper, AccountsHelper, SettlementHelper
 mocks/        MockWETH, MockERC721, etc.
 ```
 
-Production contracts (`contracts/orderbook/`) reach ~100% line / branch coverage and are the security-critical surface. Contracts and scripts in `devtools/` are for demo purposes only and are not part of the testing scope.
+Testing scope includes all content in `comtracts/*` + sanity tests for certain helpers.
 
 ---
 
@@ -56,10 +59,10 @@ forge coverage
 
 ## Dev Pipeline
 
-Local simulation pipeline lives in `devtools/` — see [devtools/README.md](./devtools/README.md) for the full breakdown.
+Main focus of this repo is the marketplace activity simulation. Its docs are separate, see [devtools/README.md](./devtools/README.md).
 
 ```bash
-# spin up a local fork with seeded state
+# spin up a local fiork with seeded state
 make dev-start
 ```
 
@@ -72,13 +75,3 @@ make dev-start
 | Tool                       | Version |
 | -------------------------- | ------- |
 | Foundry (forge/cast/anvil) |         |
-
-**Environment**
-
-Copy `.env.example` to `.env` and fill in:
-
-| Var        | Description |
-| ---------- | ----------- |
-| `FORK_RPC` | Mainnet RPC URL |
-| `RPC_URL`  | Fork RPC URL (used by Makefile) |
-| `CHAIN_ID` |             |

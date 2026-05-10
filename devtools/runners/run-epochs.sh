@@ -26,7 +26,6 @@ epoch_count=$1
 export_to_indexer=false
 [ "$2" = "--export" ] && export_to_indexer=true
 
-TOML="./pipeline.toml"
 
 # -------------------------
 # PHASE 0: CONFIG / CTX
@@ -40,8 +39,8 @@ DEPLOYER_ADDR=$(cast wallet address "$DEPLOYER_PK")
 
 # --- timestamps and epochs ---
 
-START_TS=$(awk -F ' ' '$1=="pipeline_start_ts" { print $3 }' $TOML)
-END_TS=$(awk -F ' ' '$1=="pipeline_end_ts" { print $3 }' $TOML)
+START_TS=$(awk -F ' ' '$1=="pipeline_start_ts" { print $3 }' "$TOML")
+END_TS=$(awk -F ' ' '$1=="pipeline_end_ts" { print $3 }' "$TOML")
 
 delta=$(( END_TS - START_TS ))
 

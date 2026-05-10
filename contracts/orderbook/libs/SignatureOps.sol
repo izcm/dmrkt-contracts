@@ -82,8 +82,7 @@ library SignatureOps {
     /**
      * @dev Constructs an EIP-712 typed data digest:
      * keccak256(0x19 0x01 || domainSeparator || hashStruct(message))
-     * @see https://eips.ethereum.org/EIPS/eip-712#specification-of-the-eth_signtypeddata-json-rpc
-     *
+     * https://eips.ethereum.org/EIPS/eip-712#specification-of-the-eth_signtypeddata-json-rpc
      */
     function digest712(
         bytes32 domain,

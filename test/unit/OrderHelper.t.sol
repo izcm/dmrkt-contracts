@@ -31,7 +31,11 @@ contract OrderHelperTest is OrderHelper {
     function test_make_order_sets_collection_bid_flag() public {
         address actor = makeAddr("bid_actor");
 
-        OrderModel.Order memory order = makeOrder(OrderModel.Side.Bid, true, actor);
+        OrderModel.Order memory order = makeOrder(
+            OrderModel.Side.Bid,
+            true,
+            actor
+        );
 
         assertTrue(order.isBid());
         assertTrue(order.isCollectionBid);
@@ -41,7 +45,11 @@ contract OrderHelperTest is OrderHelper {
     function test_make_order_uses_defaults() public {
         address actor = makeAddr("default_actor");
 
-        OrderModel.Order memory order = makeOrder(OrderModel.Side.Ask, false, actor);
+        OrderModel.Order memory order = makeOrder(
+            OrderModel.Side.Ask,
+            false,
+            actor
+        );
 
         assertEq(order.collection, defaultCollection);
         assertEq(order.currency, defaultCurrency);
@@ -53,12 +61,18 @@ contract OrderHelperTest is OrderHelper {
         assertFalse(order.isCollectionBid);
     }
 
-    function test_make_ask_custom_collection_currency_uses_provided_values() public {
+    function test_make_ask_custom_collection_currency_uses_provided_values()
+        public
+    {
         address actor = makeAddr("custom_actor");
         address customCollection = makeAddr("custom_collection");
         address customCurrency = makeAddr("custom_currency");
 
-        OrderModel.Order memory order = makeAsk(customCollection, customCurrency, actor);
+        OrderModel.Order memory order = makeAsk(
+            customCollection,
+            customCurrency,
+            actor
+        );
 
         assertEq(order.collection, customCollection);
         assertEq(order.currency, customCurrency);

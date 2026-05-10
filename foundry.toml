@@ -12,11 +12,6 @@ remappings = [
     "@openzeppelin/=lib/openzeppelin-contracts/contracts/"
 ]
 
-fs_permissions = [
-    { access = "read-write", path = "data/" },
-    { access = "read-write", path = "pipeline.toml" }
-]
-
 ignored_error_codes = [2424]
 
 [lint]

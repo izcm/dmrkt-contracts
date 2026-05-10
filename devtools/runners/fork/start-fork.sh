@@ -9,11 +9,10 @@
 # Kill previous anvil if running
 pkill anvil 2>/dev/null
 
-TOML="./pipeline.toml"
 MNEMONIC_JSON="./data/31337/mnemonic.json"
 
 # read fork config
-FORK_START_BLOCK=$(awk -F ' ' '$1=="fork_start_block" { print $3 }' $TOML)
+FORK_START_BLOCK=$(awk -F ' ' '$1=="fork_start_block" { print $3 }' "$TOML")
 PHRASE=$([ -f "$MNEMONIC_JSON" ] && jq -r .mnemonic "$MNEMONIC_JSON" || echo "")
 
 MNEMONIC_FLAG=()

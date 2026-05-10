@@ -13,4 +13,4 @@ USER foundry
 
 RUN forge build
 
-CMD ["make", "dev-execute-pipeline"]
+CMD ["make"]

@@ -13,8 +13,8 @@ remappings = [
 ]
 
 fs_permissions = [
-    { access = "read-write", path = "../data/" },
-    { access = "read-write", path = "../pipeline.toml" },
+    { access = "read-write", path = "./data/" },
+    { access = "read-write", path = "pipeline.toml" },
 ]
 
 ignored_error_codes = [2424, 5574, 4591, 3860]

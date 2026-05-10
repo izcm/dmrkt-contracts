@@ -28,7 +28,11 @@ contract SignatureOpsTest is OrderHelper {
         user = vm.addr(userPrivateKey);
         signer = vm.addr(signerPk);
 
-        _initOrderHelper(domainSeparator, makeAddr("dummy_collection"), makeAddr("dummy_currency"));
+        _initOrderHelper(
+            domainSeparator,
+            makeAddr("dummy_collection"),
+            makeAddr("dummy_currency")
+        );
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -36,7 +40,10 @@ contract SignatureOpsTest is OrderHelper {
     //////////////////////////////////////////////////////////////*/
 
     function test_verify_valid_signature_succeeds() public {
-        (OrderModel.Order memory order, SigOps.Signature memory sig) = makeSignedAsk(signer, signerPk);
+        (
+            OrderModel.Order memory order,
+            SigOps.Signature memory sig
+        ) = makeSignedAsk(signer, signerPk);
 
         vm.prank(user);
         verifier.verify(order, sig);
@@ -47,7 +54,10 @@ contract SignatureOpsTest is OrderHelper {
     //////////////////////////////////////////////////////////////*/
 
     function test_verify_mutated_order_reverts() public {
-        (OrderModel.Order memory order, SigOps.Signature memory sig) = makeSignedAsk(signer, signerPk);
+        (
+            OrderModel.Order memory order,
+            SigOps.Signature memory sig
+        ) = makeSignedAsk(signer, signerPk);
 
         // mutate ANY field (pick one, doesn't matter)
         order.price += 1;
@@ -57,10 +67,17 @@ contract SignatureOpsTest is OrderHelper {
     }
 
     function test_verify_corrupted_s_reverts() public {
-        (OrderModel.Order memory order, SigOps.Signature memory sig) = makeSignedAsk(signer, signerPk);
+        (
+            OrderModel.Order memory order,
+            SigOps.Signature memory sig
+        ) = makeSignedAsk(signer, signerPk);
 
         // simulate corrupt s <= n/2 https://eips.ethereum.org/EIPS/eip-2
-        sig.s = bytes32(uint256(0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0) + 1);
+        sig.s = bytes32(
+            uint256(
+                0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0
+            ) + 1
+        );
 
         vm.prank(user);
         vm.expectRevert(SigOps.InvalidSParameter.selector);
@@ -68,7 +85,10 @@ contract SignatureOpsTest is OrderHelper {
     }
 
     function test_verify_corrupted_v_reverts() public {
-        (OrderModel.Order memory order, SigOps.Signature memory sig) = makeSignedAsk(signer, signerPk);
+        (
+            OrderModel.Order memory order,
+            SigOps.Signature memory sig
+        ) = makeSignedAsk(signer, signerPk);
 
         assertTrue(sig.v == 27 || sig.v == 28);
 
@@ -80,7 +100,10 @@ contract SignatureOpsTest is OrderHelper {
     }
 
     function test_verify_wrong_signer_reverts() public {
-        (OrderModel.Order memory order, SigOps.Signature memory sig) = makeSignedAsk(signer, signerPk);
+        (
+            OrderModel.Order memory order,
+            SigOps.Signature memory sig
+        ) = makeSignedAsk(signer, signerPk);
 
         order.actor = makeAddr("imposter");
 

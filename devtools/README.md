@@ -119,12 +119,16 @@ The boostrap sequence is especially good for anyone new to foundry. They're very
 ./runners/fork/start-fork.sh
 ```
 
-| Env var    | Default     | Description                                                                             |
-| ---------- | ----------- | --------------------------------------------------------------------------------------- |
-| `FORK_RPC` | \_\_\_      | Full mainnet RPC URL — any provider (e.g. `https://eth-mainnet.g.alchemy.com/v2/<key>`) |
-| `RPC_HOST` | `localhost` | Fork RPC host                                                                           |
-| `RPC_PORT` | \_\_\_      | Fork RPC port                                                                           |
-| `CHAIN_ID` | \_\_\_      |                                                                                         |
+**Environment**
+
+| Var              | Description                           | Example                                      |
+| ---------------- | ------------------------------------- | -------------------------------------------- |
+| `FORK_RPC`       | Mainnet RPC URL used to seed the fork | `https://eth-mainnet.g.alchemy.com<API_KEY>` |
+| `RPC_URL`        | Local fork RPC URL (used by Makefile) | `http://localhost:8545`                      |
+| `RPC_HOST`       | Anvil bind address                    | `0.0.0.0`                                    |
+| `RPC_PORT`       | Anvil port                            | `8545`                                       |
+| `ORDER_POST_URL` | API endpoint for submitting orders    | `http://localhost:5000/api/orders`           |
+| `CHAIN_ID`       | Chain ID for the local fork network   | `31337`                                      |
 
 **Run**
 

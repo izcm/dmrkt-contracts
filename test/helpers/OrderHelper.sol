@@ -30,6 +30,7 @@ abstract contract OrderHelper is Test {
     // === MAKE ORDERS ===
 
     // === ASK ===
+
     function makeAsk(
         address actor
     ) internal view returns (OrderModel.Order memory order) {
