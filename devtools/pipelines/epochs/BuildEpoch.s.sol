@@ -43,9 +43,8 @@ contract BuildEpoch is
 {
     // ctx
     uint256 private epoch;
-    uint256 private epochSpan;
+    uint256 private timeWindow;
 
-    // note: could have used hash(epoch, actor, orderIdx) like an UUID instead of sequential nonces
     mapping(address => uint256) private actorNonceIdx; // per-actor nonce counter, carried over between epochs via nonces.json
     mapping(address => uint256[]) private selected; // selected tokenIds per collection
 
@@ -54,10 +53,12 @@ contract BuildEpoch is
     /**
      * @notice Entry point. Loads config, imports the previous epoch's nonces, builds and signs
      *         all orders, sorts them by end date, and exports them to JSON.
-     * @param _epoch      Current epoch index.
-     * @param _epochSpan  Full pipeline delta in seconds — used to derive order timestamp offsets.
+     * @param _epoch       Current epoch index.
+     * @param _timeWindow  Full pipeline delta in seconds. Passed as the full delta (not epoch slice)
+     *                     so every order's end timestamp is guaranteed >= pipeline_end_ts,
+     *                     keeping unsettled orders valid for demo users to settle manually.
      */
-    function run(uint256 _epoch, uint256 _epochSpan) external {
+    function run(uint256 _epoch, uint256 _timeWindow) external {
         // --------------------------------
         // LOAD CONFIG & SETUP
         // --------------------------------
@@ -88,7 +89,7 @@ contract BuildEpoch is
         }
 
         epoch = _epoch;
-        epochSpan = _epochSpan;
+        timeWindow = _timeWindow;
 
         address[] memory collections = readCollections();
 
@@ -185,27 +186,11 @@ contract BuildEpoch is
             collections,
             epoch
         );
-        // **collectionBid feature paused**
-        // Selection[] memory selectionsCb = collect(
-        //     OrderModel.Side.Bid,
-        //     true,
-        //     collections,
-        //     epoch
-        // );
 
         uint256 count;
 
-        // count asks & bids + push tokenids to storage for later json write
         count += _mergeSelections(selectionsAsk);
         count += _mergeSelections(selectionsBid);
-
-        // collectionbids don't have tokenIds like ask / regular bid => only get count
-        // for (uint256 i = 0; i < selectionsCb.length; i++) {
-        //     Selection memory s = selectionsCb[i];
-        //     for (uint256 j = 0; j < s.tokenIds.length; j++) {
-        //         count++;
-        //     }
-        // }
 
         orders = new OrderModel.Order[](count);
         uint256 idx;
@@ -227,15 +212,6 @@ contract BuildEpoch is
             selectionsBid,
             weth
         );
-
-        // _appendOrders(
-        //     orders,
-        //     idx,
-        //     OrderModel.Side.Bid,
-        //     true,
-        //     selectionsCb,
-        //     weth
-        // );
     }
 
     /**
@@ -316,19 +292,6 @@ contract BuildEpoch is
     }
 
     // === PRICING ===
-
-    // todo: add input that decides whether to use priceOf dmrktlib style (rarity etc.)
-    // or just default MarketSim.priceOf / another price engine
-    //
-    // interface IPriceEngine {
-    //     function priceOf(
-    //         address collection,
-    //         uint256 tokenId,
-    //         uint256 seed
-    //     ) external view returns (uint256);
-    // }
-    //
-    // maybe: DI by deploying price engine + injecting address
 
     /**
      * @notice DMrktLoot-aware price override. Derives price from the token's rarity tier,
@@ -413,7 +376,6 @@ contract BuildEpoch is
         uint256 seed,
         bool isStart
     ) private view returns (uint64) {
-        // uint64 anchor = _epochAnchor(); // with epoch_slice in run-epochs this will give more realistic start dates
         uint64 anchor = uint64(readStartTs());
         uint64 offset = _resolveTimeOffset(seed);
 
@@ -421,18 +383,12 @@ contract BuildEpoch is
     }
 
     /**
-     * @dev Returns a time offset in the range [epochSpan, 2*epochSpan] seconds.
-     *      Guarantees every order's window covers at least one full epoch span.
+     * @dev Returns an offset in [timeWindow, 2*timeWindow]. Since timeWindow is the full pipeline
+     *      delta, end = anchor + offset >= pipeline_end_ts for every order.
      */
     function _resolveTimeOffset(uint256 seed) private view returns (uint64) {
         // forge-lint: disable-next-line(unsafe-typecast)
-        return uint64((seed % epochSpan) + epochSpan); // safe because date
-    }
-
-    // Not in use per now
-    function _epochAnchor() private view returns (uint64) {
-        // forge-lint: disable-next-line(unsafe-typecast)
-        return uint64(readStartTs() + (epoch * epochSpan)); // safe because date
+        return uint64((seed % timeWindow) + timeWindow);
     }
 
     function _exportNonces()

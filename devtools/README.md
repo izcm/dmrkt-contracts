@@ -1,11 +1,11 @@
 # DevTools
 
-Foundry scripts glued together to simulate marketplace activity. Computes a start block (default: 28 days ago) and forks mainnet at that block. The pipeline goes like:
+Foundry scripts glued together to simulate marketplace activity. Computes a start block (default: 28 days ago) and forks mainnet at that block. Once your `.env` is in order, `make execute-pipeline` runs the whole thing.
 
 - Deploys orderbook + demo NFT collections
 - Bootstraps accounts derived from the provided mnemonic
 - Generates realistic-looking orders and signs them EIP-712 style
-- Settles a subset of orders per epoch, with probability decay to leave some unfilled
+- Settles a subset of orders, with probability decay leaving some unfilled
 
 ```
 prepare-fork.js          writes fork block + timestamps
@@ -21,6 +21,8 @@ run-epochs.sh  ──loop──► BuildEpoch    generates + signs orders (JSON)
                     │     ExecuteOrder     settles subset on-chain
                     └──── advance block time
 ```
+
+**Contents** — [Overview](#overview) · [Epochs](#epochs) · [Where to Start](#where-to-start) · [Setup](#setup) · [Pipeline Reference](#pipeline-reference)
 
 ---
 
@@ -82,12 +84,12 @@ data/
 
 Skim these in order to build a mental model without reading everything:
 
-| #   | File                             | What you learn                                                                                                                             |
-| --- | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| 1   | **`Makefile`** (targets section) | The full pipeline as named steps — what runs, in what order, and what each phase is called.                                                |
-| 2   | **`DevConfig.s.sol`**            | All the config knobs in one place — read this to better understand the pipeline context.                                                   |
-| 3   | **`runners/run-epochs.sh`**      | The epoch loop in four labelled phases: BUILD → EXPORT → CHOOSE → EXECUTE. The probability decay logic is visible here too.                |
-| 4   | `BuildEpoch.s.sol`               | Implements the BUILD phase — generates and signs orders for a single epoch. Dense; skim `run` then follow `_buildOrders` into `MarketSim`. |
+| #   | File                             | What you learn                                                                                                                                                 |
+| --- | -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | **`Makefile`** (targets section) | The full pipeline as named steps — what runs, in what order, and what each phase is called.                                                                    |
+| 2   | **`DevConfig.s.sol`**            | All the config knobs in one place — read this to better understand the pipeline context.                                                                       |
+| 3   | **`runners/run-epochs.sh`**      | The epoch loop in four labelled phases: BUILD → EXPORT → CHOOSE → EXECUTE. The probability decay logic is visible here too.                                    |
+| 4   | `BuildEpoch.s.sol`               | Implements the BUILD phase — generates and signs orders for a single epoch. Its dense; skim `run` then follow `_buildOrders` into `MarketSim`. Just forget the |
 
 **Going deeper:**
 
@@ -103,23 +105,38 @@ The boostrap sequence is especially good for anyone new to foundry. They're very
 
 ## Setup
 
-**Prerequisites**
+**Dependencies**
 
 | Tool                       | Version | Notes |
 | -------------------------- | ------- | ----- |
 | Foundry (forge/cast/anvil) | \_\_\_  |       |
+| curl                       |         |       |
+| jq                         |         |       |
 
-**Fork**
+**Run**
 
-```bash
-# Set fork window (block range + timestamps) in pipeline.toml
-./runners/fork/pipeline-window.sh <seconds_ago> [end_ts]
+Per now, the scripts are not generic enough to accept just any marketplace. Anyone may use whatever they want from this repo and adapt them to their own contracts.
 
-# Start Anvil fork
-./runners/fork/start-fork.sh
+To run the pipeline as is, with `OrderEngine.sol`, run the entrypoint `make` command:
+
+```
+make execute-pipeline
 ```
 
-**Environment**
+This command runs all pipeline steps, you can call it from project root or from `devtools` directory. To see a reference of available `make`:
+
+```
+make help
+```
+
+> [!NOTE]
+> The default is disabled export. If you have specified .env variable `ORDER_POST_URL`, run:
+>
+> ```
+> make execute-pipeline EXPORT=1
+> ```
+
+**Environment variables**
 
 | Var              | Description                           | Example                                      |
 | ---------------- | ------------------------------------- | -------------------------------------------- |
@@ -129,10 +146,6 @@ The boostrap sequence is especially good for anyone new to foundry. They're very
 | `RPC_PORT`       | Anvil port                            | `8545`                                       |
 | `ORDER_POST_URL` | API endpoint for submitting orders    | `http://localhost:5000/api/orders`           |
 | `CHAIN_ID`       | Chain ID for the local fork network   | `31337`                                      |
-
-**Run**
-
-Makefile (maybe move makefileinto into devtools? nah... i think its better in root)
 
 ---
 
@@ -162,7 +175,7 @@ Located under `runners/`
 | `pipeline-window.sh` | Computes fork start block + window timestamps and writes these to `pipeline.toml`                                                                      |
 | `start-fork.sh`      | Starts the anvil fork. Reads start block from `pipeline.toml` and mnemonic from the data directory, defaulting to block 0 and anvil's default mnemonic |
 | `run-epochs.sh`      | Orchestrates the full epoch pipeline for each epoch                                                                                                    |
-| `export-order.sh`    | POST single order to endpoint specified as env variable `ORDER_POST_URL`. Called by `run-epochs` when `--export` is passed                             |
+| `export-order.sh`    | POST single order to endpoint specified as env variable `ORDER_POST_URL`. Called by `run-epochs` when `--export` is passed.                            |
 
 ---
 

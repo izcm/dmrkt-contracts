@@ -86,9 +86,9 @@ add_token() {
 
 for ((epoch=0; epoch < epoch_count; epoch++));
 do
-    # TMP: use full delta instead of epoch_slice as build_script.TIME_WINDOW
+    # We'll use full delta instead of epoch_slice as BuildEpoch.TIME_WINDOW
     # - all orders across epochs will have start/end timestamps valid at pipeline_end_ts
-    # - any unsettled order will be valid for demo user to settle themselves in the dmrkt frontend
+    # - any unsettled order will be valid for demo user to settle themselves
 
     #--------------------------
     # PHASE 1: BUILD ORDERS

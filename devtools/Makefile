@@ -36,8 +36,6 @@ SILENT ?= 1
 
 ifeq ($(SILENT),1)
 FORGE_SILENT = --silent
-else
-FORGE_SILENT =
 endif
 
 # ───────────────────────────────────────────────
@@ -50,10 +48,20 @@ FORGE_COMMON_FLAGS = \
 	$(FORGE_SILENT)
 
 # ───────────────────────────────────────────────
+#   ETC. FLAGS
+# ───────────────────────────────────────────────
+
+EXPORT ?= 0
+
+ifeq ($(EXPORT), 1)
+EXPORT_FLAG = --export
+endif
+
+# ───────────────────────────────────────────────
 #   DOCKER ENTRYPOINTS
 # ───────────────────────────────────────────────
 
-execute-pipeline: wait pipeline-setup pipeline-separator run-epochs
+execute-pipeline: wait pipeline-setup pipeline-separator run-epochs ## Run the full pipeline (Docker entrypoint)
 	@echo "🚀 Dev environment ready"
 
 wait:
@@ -74,10 +82,10 @@ pipeline-separator:
 #   HIGH-LEVEL PIPELINES
 # ───────────────────────────────────────────────
 
-start: prepare fork pipeline-setup
+start: prepare fork pipeline-setup ## Compute window, start fork, deploy, and bootstrap
 	@echo "🚀 Dev environment ready"
 
-reset: kill-anvil start
+reset: kill-anvil start ## Kill anvil and restart from scratch
 	@echo "🔄 Dev reset complete"
 
 pipeline-setup: \
@@ -91,11 +99,11 @@ pipeline-setup: \
 #   ENVIRONMENT BOOT
 # ───────────────────────────────────────────────
 
-fork:
+fork: ## Start the anvil fork
 	@echo "🧬 Starting anvil fork..."
 	@./$(RUNNERS_FORK)/start-fork.sh
 
-prepare:
+prepare: ## Compute fork start block and pipeline window timestamps
 	@echo "🔢 Finding block number and timestamps..."
 	@./$(RUNNERS_FORK)/pipeline-window.sh 2419200
 
@@ -103,23 +111,23 @@ prepare:
 #   SETUP / GENESIS
 # ───────────────────────────────────────────────
 
-bootstrap-accounts:
+bootstrap-accounts: ## Wrap ETH into WETH for all participants
 	@echo "💻 Bootstrapping dev accounts..."
 	@forge script $(BOOTSTRAP)/BootstrapAccounts.s.sol \
 		$(FORGE_COMMON_FLAGS)
 
-deploy-core:
+deploy-core: ## Deploy OrderEngine + NFT collections, write addresses to pipeline.toml
 	@echo "🧾 Deploying core contracts..."
 	@forge script DeployCore.s.sol \
 		$(FORGE_COMMON_FLAGS)
 
 bootstrap-nfts: FORGE_SILENT =
-bootstrap-nfts:
+bootstrap-nfts: ## Mint NFTs to all participants
 	@echo "👾 Bootstrapping NFTs..."
 	@forge script $(BOOTSTRAP)/BootstrapNFTs.s.sol \
 		$(FORGE_COMMON_FLAGS)
 
-approve:
+approve: ## Grant NFT + WETH allowances to OrderEngine
 	@echo "✔ Executing approvals..."
 	@forge script $(BOOTSTRAP)/Approve.s.sol \
 		$(FORGE_COMMON_FLAGS)
@@ -128,15 +136,15 @@ approve:
 #   STATE / SCENARIOS
 # ───────────────────────────────────────────────
 
-run-epochs:
+run-epochs: ## Generate, sign, export, and settle orders across all epochs
 	@echo "📊 Building historical orders..."
-	@./$(RUNNERS)/run-epochs.sh $(EPOCH_COUNT) --export
+	@./$(RUNNERS)/run-epochs.sh $(EPOCH_COUNT) $(EXPORT_FLAG)
 
 # ───────────────────────────────────────────────
 #   RESET / PROCESS CONTROL
 # ───────────────────────────────────────────────
 
-kill-anvil:
+kill-anvil: ## Kill the running anvil process
 	@echo "💀 Killing anvil..."
 	pkill anvil 2>/dev/null || true
 
@@ -144,7 +152,7 @@ kill-anvil:
 #   CHAIN READ HELPERS
 # ───────────────────────────────────────────────
 
-weth-balance:
+weth-balance: ## Read WETH balance for an address  (ADDR=0x...)
 	@if [ -z "$(ADDR)" ]; then \
 		echo "❌ Missing ADDR. Usage: make weth-balance ADDR=0xYourAddress"; \
 		exit 1; \
@@ -156,7 +164,7 @@ weth-balance:
 		$(ADDR) \
 		--rpc-url $(RPC_URL) | cast from-wei
 
-token-owner:
+token-owner: ## Read token owner  (COL=0x... ID=N)
 	@if [ -z "$(COL)" ] || [ -z "$(ID)" ]; then \
 		echo "❌ Missing COL or ID. Usage: make token-owner COL=0xCollectionAddr ID=TokenId"; \
 		exit 1; \
@@ -173,6 +181,11 @@ token-owner:
 
 chmod-scripts:
 	@find . -type f -name "*.sh" -exec chmod +x {} +
+
+help: ## List available targets
+	@awk 'BEGIN {FS=":.*##"; printf "\n%-22s %s\n\n","target","description"} \
+	/^[a-zA-Z_-]+:.*?##/ {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}' \
+	$(MAKEFILE_LIST)
 
 tree:
 	@if [ -z "$(DEPTH)" ]; then DEPTH=3; fi; \
