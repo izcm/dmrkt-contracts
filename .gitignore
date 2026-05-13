@@ -5,7 +5,7 @@ out/
 # Ignores development broadcast logs
 
 # Ignore EVERYTHING in broadcast
-broadcast/**
+**/broadcast/
 
 # !/broadcast
 # /broadcast/*/31337/

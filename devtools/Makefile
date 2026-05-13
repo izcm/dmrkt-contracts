@@ -32,7 +32,7 @@ EPOCH_COUNT ?= 4
 #   LOGGING / VERBOSITY
 # ───────────────────────────────────────────────
 
-SILENT ?= 1
+SILENT ?= 0
 
 ifeq ($(SILENT),1)
 FORGE_SILENT = --silent
@@ -58,10 +58,18 @@ EXPORT_FLAG = --export
 endif
 
 # ───────────────────────────────────────────────
-#   DOCKER ENTRYPOINTS
+#   RESERVED FOR DMRKT-COMPOSE
 # ───────────────────────────────────────────────
 
-execute-pipeline: wait pipeline-setup pipeline-separator run-epochs ## Run the full pipeline (Docker entrypoint)
+# This entrypoint is used by another repo that has its own fork prepare pipeline
+compose-entrypoint: EXPORT_FLAG = --export
+compose-entrypoint: wait pipeline-setup pipeline-separator run-epochs ## Docker Compose entrypoint — assumes fork + pipeline.toml are provided externally
+	
+# ───────────────────────────────────────────────
+#   ENTRYPOINT
+# ───────────────────────────────────────────────
+
+execute-pipeline: start pipeline-separator run-epochs ## Run the full pipeline
 	@echo "🚀 Dev environment ready"
 
 wait:

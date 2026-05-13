@@ -45,16 +45,14 @@ contract Approve is BaseDevScript, DevConfig {
             logSection(string.concat("APPROVE COLLECTION #", vm.toString(i)));
 
             for (uint256 j = 0; j < participantCount; j++) {
+                address owner = addrOf(participantPks[j]);
+                console.log("[nft-approve] participant %s/%s | %s", j + 1, participantCount, owner);
+
                 vm.startBroadcast(participantPks[j]);
                 collectionToken.setApprovalForAll(nftTransferAuth, true);
                 vm.stopBroadcast();
 
-                address owner = addrOf(participantPks[j]);
-                console.log(
-                    "%s HAS APPROVED DMRKT FOR ALL: ",
-                    owner,
-                    collectionToken.isApprovedForAll(owner, nftTransferAuth)
-                );
+                console.log("[nft-approve] done | approved: %s", collectionToken.isApprovedForAll(owner, nftTransferAuth));
             }
         }
 
@@ -64,21 +62,18 @@ contract Approve is BaseDevScript, DevConfig {
 
         logSection("APPROVE WETH ALLOWANCE FOR NFT TRANSFER AUTH");
 
-        // Infinite approval from our demo participants
         IERC20 wethToken = IERC20(weth);
         uint256 allowance = type(uint256).max;
 
         for (uint256 i = 0; i < participantCount; i++) {
+            address owner = addrOf(participantPks[i]);
+            console.log("[weth-approve] participant %s/%s | %s", i + 1, participantCount, owner);
+
             vm.startBroadcast(participantPks[i]);
             wethToken.approve(allowanceSpender, allowance);
             vm.stopBroadcast();
 
-            address owner = addrOf(participantPks[i]);
-            console.log(
-                "%s HAS APPROVED ALLOWANCE FOR SPENDER: ",
-                owner,
-                wethToken.allowance(owner, allowanceSpender)
-            );
+            console.log("[weth-approve] done | allowance: %s", wethToken.allowance(owner, allowanceSpender));
         }
     }
 }

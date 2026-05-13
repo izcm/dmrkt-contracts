@@ -6,11 +6,11 @@ RUN apt-get update && apt-get install -y make curl jq
 WORKDIR /app 
 COPY . .
 
-RUN mkdir -p data/31337/state
+RUN mkdir -p devtools/data/31337/state
 RUN chown -R foundry:foundry /app
 
 USER foundry
 
 RUN forge build
 
-CMD ["make"]
+CMD ["make compose-entrypoint"]

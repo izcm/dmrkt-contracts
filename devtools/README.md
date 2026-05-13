@@ -123,18 +123,16 @@ To run the pipeline as is, with `OrderEngine.sol`, run the entrypoint `make` com
 make execute-pipeline
 ```
 
-This command runs all pipeline steps, you can call it from project root or from `devtools` directory. To see a reference of available `make`:
+This command computes the fork window, starts anvil, deploys, bootstraps, and runs all epochs. Export is off by default. If `ORDER_POST_URL` is set in your `.env`, enable it with `make execute-pipeline EXPORT=1`.
+
+You can call any of the available commands from project root or from `devtools` directory. To see a reference of available targets:
 
 ```
 make help
 ```
 
 > [!NOTE]
-> The default is disabled export. If you have specified .env variable `ORDER_POST_URL`, run:
->
-> ```
-> make execute-pipeline EXPORT=1
-> ```
+> To run the full demo environment — including the frontend and indexer — see [dmrkt-compose](REPO_URL). That repo has its own setup and uses `compose-entrypoint` from this Makefile instead of `execute-pipeline`.
 
 **Environment variables**
 

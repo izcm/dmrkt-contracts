@@ -40,6 +40,7 @@ attempt=1
 
 while true; do
     if curl -X POST -f -s -S -o /dev/null \
+        --connect-timeout 3 \
         -H "Content-Type: application/json" \
         -H "X-Chain-Id: $CHAIN_ID" \
         --data-binary @"$in_file_path" \
