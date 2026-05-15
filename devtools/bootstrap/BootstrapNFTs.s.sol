@@ -47,38 +47,31 @@ contract BootstrapNFTs is BaseDevScript, DevConfig {
     }
 
     /**
-     * @notice Mints all tokens in `collection` to participants using a deterministic distribution
-     *         (keccak256 of collection + tokenId). Buckets tokens per recipient first so we open
-     *         one broadcast per participant instead of one per token — smaller broadcast log means foundry doesn't stall after this step.
-     * @param pks  Participant private keys — mints go out from the recipient's own key.
-     * @param collection  The NFT collection to mint from (needs MAX_SUPPLY and mint).
+     * @notice Mints every token in `collection` up to MAX_SUPPLY, distributing them
+     *         deterministically across `pks`. Distribution is derived from
+     *         keccak256(collection, tokenId) so the same setup always produces
+     *         the same ownership layout.
+     * @param pks  Participant private keys — each mint is broadcast from the recipient's key.
+     * @param collection   NFT collection implementing the DNFT interface (must expose MAX_SUPPLY and mint).
      */
     function mintTokens(uint256[] memory pks, DNFT collection) internal {
         uint256 limit = collection.MAX_SUPPLY();
-        uint256 participantCount = pks.length;
-
-        uint256[] memory assignments = new uint256[](limit);
-        uint256[] memory tokenCounts = new uint256[](participantCount);
 
         for (uint256 i = 0; i < limit; i++) {
-            uint256 j = uint256(keccak256(abi.encode(address(collection), i))) %
-                participantCount;
-            assignments[i] = j;
-            tokenCounts[j]++;
-        }
+            bytes32 h = keccak256(abi.encode(address(collection), i));
+            uint256 j = uint256(h) % pks.length;
 
-        for (uint256 j = 0; j < participantCount; j++) {
-            if (tokenCounts[j] == 0) continue;
+            uint256 pk = pks[j];
+            address to = addrOf(pk);
 
-            address to = addrOf(pks[j]);
+            // Broadcast as the recipient
+            vm.startBroadcast(pk);
 
-            vm.startBroadcast(pks[j]);
-            for (uint256 i = 0; i < limit; i++) {
-                if (assignments[i] != j) continue;
-                collection.mint(to);
-                console.log("MINT | tokenId: %s | to: %s", i, to);
-            }
+            collection.mint(to);
+
             vm.stopBroadcast();
+
+            console.log("MINT | tokenId: %s | block: %s", i, block.number);
         }
     }
 }

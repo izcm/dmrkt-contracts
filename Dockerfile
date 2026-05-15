@@ -11,6 +11,7 @@ RUN chown -R foundry:foundry /app
 
 USER foundry
 
+RUN forge soldeer install
 RUN forge build
 
 CMD ["make compose-entrypoint"]

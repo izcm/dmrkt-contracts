@@ -14,5 +14,10 @@ remappings = [
 
 ignored_error_codes = [2424]
 
+[dependencies]
+forge-std = "1.12.0"
+"@openzeppelin-contracts" = "5.5.0"
+
+
 [lint]
 exclude_lints = ["unaliased-plain-import", "asm-keccak256"]
