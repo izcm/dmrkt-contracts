@@ -22,8 +22,6 @@ export PIPELINE_STATE_DIR := data/31337/state
 export MNEMONIC_JSON      := data/31337/mnemonic.json
 export TOML               := pipeline.toml
 
-# chain
-WETH := 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2
 
 # epoch defs
 EPOCH_COUNT ?= 4
@@ -159,6 +157,9 @@ kill-anvil: ## Kill the running anvil process
 # ───────────────────────────────────────────────
 #   CHAIN READ HELPERS
 # ───────────────────────────────────────────────
+
+# chain
+WETH := 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2
 
 weth-balance: ## Read WETH balance for an address  (ADDR=0x...)
 	@if [ -z "$(ADDR)" ]; then \

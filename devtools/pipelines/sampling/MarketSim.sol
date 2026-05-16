@@ -90,8 +90,9 @@ abstract contract MarketSim is Script {
     }
 
     /**
-     * @dev Derives a density from the mixIn in range [10, 30], then scans token IDs 0..scanLimit
-     *      including each with probability 1/density. Returns roughly scanLimit/density token IDs.
+     * @dev Derives a gap from the mixIn in range [25, 30], then scans token IDs 0..scanLimit
+     *      including each with probability 1/gap. Returns roughly scanLimit/gap token IDs.
+     *      Bigger gap = fewer tokens selected.
      */
     function _selectTokens(
         OrderModel.Side side,
@@ -102,15 +103,15 @@ abstract contract MarketSim is Script {
     ) internal pure returns (uint256[] memory) {
         uint256 seed = selectionSalt(side, isCollectionBid, collection, mixIn);
         // forge-lint: disable-next-line(unsafe-typecast)
-        uint8 density = (uint8(seed) % 21) + 10; // 1 out of 10..30
+        uint8 gap = (uint8(seed) % 6) + 25; // pick 1 every 25..30 tokens
 
         uint256 count = 0;
-        uint256 targetCount = scanLimit / density;
+        uint256 targetCount = scanLimit / gap;
         uint256[] memory ids = new uint256[](targetCount);
 
         for (uint256 i = 0; i < scanLimit && count < targetCount; i++) {
             bytes32 h = keccak256(abi.encode(collection, seed, i));
-            if (uint256(h) % density == 0) {
+            if (uint256(h) % gap == 0) {
                 ids[count++] = i;
             }
         }

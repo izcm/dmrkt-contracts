@@ -136,14 +136,14 @@ make help
 
 **Environment variables**
 
-| Var              | Description                           | Example                                      |
-| ---------------- | ------------------------------------- | -------------------------------------------- |
-| `FORK_RPC`       | Mainnet RPC URL used to seed the fork | `https://eth-mainnet.g.alchemy.com<API_KEY>` |
-| `RPC_URL`        | Local fork RPC URL (used by Makefile) | `http://localhost:8545`                      |
-| `RPC_HOST`       | Anvil bind address                    | `0.0.0.0`                                    |
-| `RPC_PORT`       | Anvil port                            | `8545`                                       |
-| `ORDER_POST_URL` | API endpoint for submitting orders    | `http://localhost:5000/api/orders`           |
-| `CHAIN_ID`       | Chain ID for the local fork network   | `31337`                                      |
+| Var              | Description                               | Example                                      |
+| ---------------- | ----------------------------------------- | -------------------------------------------- |
+| `FORK_RPC`       | Mainnet RPC URL used to seed the fork     | `https://eth-mainnet.g.alchemy.com<API_KEY>` |
+| `RPC_URL`        | Local fork RPC URL (used by Makefile)     | `http://localhost:8545`                      |
+| `RPC_HOST`       | Anvil bind address, expects an IP address | `127.0.0.1`                                  |
+| `RPC_PORT`       | Anvil port                                | `8545`                                       |
+| `ORDER_POST_URL` | API endpoint for submitting orders        | `http://localhost:5000/api/orders`           |
+| `CHAIN_ID`       | Chain ID for the local fork network       | `31337`                                      |
 
 ---
 
