@@ -1,23 +1,16 @@
-# Compiler files
+# compiler files
 cache/
 out/
 
-# Ignores development broadcast logs
-
-# Ignore EVERYTHING in broadcast
+# ignores development broadcast logs
 **/broadcast/
 
-# !/broadcast
-# /broadcast/*/31337/
-# /broadcast/**/dry-run/
-
-# Docs
+# docs
 docs/
-
-# Dotenv file
-.env
-
 notes/
 
-# setup script read / write ops
+# env
+.env
+
+# devtools out / in
 data/

@@ -9,7 +9,6 @@ library OrderModel {
     }
 
     /// Maker's Intent
-    // TODO: add chain id to prevent cross-chain replay attacks
     struct Order {
         Side side;
         bool isCollectionBid; // if side = bid and order is for any item in collection

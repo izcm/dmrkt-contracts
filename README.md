@@ -1,8 +1,6 @@
-# Dmrkt Engines
+# d | mrkt engines
 
 A simple orderbook contract with foundry scripts to simulate marketplace activity. Made with the intent to make an interactive demo with a tutorial-ish format, developed into some generic scripts that might be of use for devs making their own foundry pipelines.
-
----
 
 ## Repository Layout
 
@@ -17,7 +15,7 @@ devtools/     local simulation pipeline (not production)
 
 ## Contracts
 
-This order model uses the term `actor` instead of the traditional maker / taker terminology.
+Order model uses the term `actor` instead of the traditional maker / taker terminology.
 Documentation may still use “maker” and “taker” informally when describing settlement flow.
 
 **OrderEngine.sol** — a single-strategy marketplace engine that accepts signed EIP-712 orders and settles them against matching fills, enforcing the exact terms defined by the maker.
@@ -27,6 +25,16 @@ Documentation may still use “maker” and “taker” informally when describi
 | `libs/OrderModel.sol`      | `Order` and `Fill` definitions and hashing logic.                                                                     |
 | `libs/SignatureOps.sol`    | Signature verification helpers for EOAs and EIP-1271 contract wallets.                                                |
 | `libs/SettlementRoles.sol` | Resolves settlement roles (`nftHolder`, `spender`, `tokenId`) from an order/fill pair depending on side and bid type. |
+
+---
+
+## Setup
+
+### Dependencies
+
+| Tool                       | Version |
+| -------------------------- | ------- |
+| Foundry (forge/cast/anvil) |         |
 
 ---
 
@@ -67,11 +75,3 @@ make dev-start
 ```
 
 ---
-
-## Setup
-
-**Prerequisites**
-
-| Tool                       | Version |
-| -------------------------- | ------- |
-| Foundry (forge/cast/anvil) |         |
