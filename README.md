@@ -1,6 +1,8 @@
 # d | mrkt engines
 
-A simple orderbook contract with foundry scripts to simulate marketplace activity. Made with the intent to make an interactive demo with a tutorial-ish format, developed into some generic scripts that might be of use for devs making their own foundry pipelines.
+A simple orderbook contract paired with foundry scripts to simulate marketplace activity.
+
+Made with the intent to make an interactive demo with a tutorial-ish format, developed into some generic scripts that might be of use for devs making their own foundry pipelines.
 
 ## Repository Layout
 
@@ -25,6 +27,10 @@ Documentation may still use “maker” and “taker” informally when describi
 | `libs/OrderModel.sol`      | `Order` and `Fill` definitions and hashing logic.                                                                     |
 | `libs/SignatureOps.sol`    | Signature verification helpers for EOAs and EIP-1271 contract wallets.                                                |
 | `libs/SettlementRoles.sol` | Resolves settlement roles (`nftHolder`, `spender`, `tokenId`) from an order/fill pair depending on side and bid type. |
+
+---
+
+## Libraries
 
 ---
 
@@ -73,5 +79,3 @@ Main focus of this repo is the marketplace activity simulation. Its docs are sep
 # spin up a local fiork with seeded state
 make dev-start
 ```
-
----

@@ -13,7 +13,7 @@ library OrderModel {
         Side side;
         bool isCollectionBid; // if side = bid and order is for any item in collection
         address collection;
-        uint256 tokenId; // specific token for bid / ask, ignored if isCollectionBid = true
+        uint256 tokenId; // ignored if isCollectionBid = true
         address currency;
         uint256 price;
         address actor;

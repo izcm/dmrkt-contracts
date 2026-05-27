@@ -1,4 +1,4 @@
-# DevTools
+# devtools
 
 Foundry scripts glued together to simulate marketplace activity. Computes a start block (default: 28 days ago) and forks mainnet at that block. Once your `.env` is in order, `make execute-pipeline` runs the whole thing.
 
@@ -61,7 +61,7 @@ Each epoch builds, exports, and settles orders within its slice, advancing Anvil
 - **Sampling** —Orders are generated from deterministic inputs (collection, side, epoch, etc.), so the simulation gets variation while still producing reproducible results. In short, same input &rarr; same output.
 - **Signing** — Signs orders.
 - **Export** — Pushes orders to an optional endpoint. Gated behind the `--export` flag, off by default, enabled by the root `Makefile`.
-- **Execution** — ...
+- **Execution** — Match orders to fill and execute trade on-chain.
 
 ---
 
@@ -84,12 +84,12 @@ data/
 
 Skim these in order to build a mental model without reading everything:
 
-| #   | File                             | What you learn                                                                                                                                                 |
-| --- | -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | **`Makefile`** (targets section) | The full pipeline as named steps — what runs, in what order, and what each phase is called.                                                                    |
-| 2   | **`DevConfig.s.sol`**            | All the config knobs in one place — read this to better understand the pipeline context.                                                                       |
-| 3   | **`runners/run-epochs.sh`**      | The epoch loop in four labelled phases: BUILD → EXPORT → CHOOSE → EXECUTE. The probability decay logic is visible here too.                                    |
-| 4   | `BuildEpoch.s.sol`               | Implements the BUILD phase — generates and signs orders for a single epoch. Its dense; skim `run` then follow `_buildOrders` into `MarketSim`. Just forget the |
+| #   | File                             | What you learn                                                                                                                                 |
+| --- | -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | **`Makefile`** (targets section) | The full pipeline as named steps — what runs, in what order, and what each phase is called.                                                    |
+| 2   | **`DevConfig.s.sol`**            | All the config knobs in one place — read this to better understand the pipeline context.                                                       |
+| 3   | **`runners/run-epochs.sh`**      | The epoch loop in four labelled phases: BUILD → EXPORT → CHOOSE → EXECUTE. The probability decay logic is visible here too.                    |
+| 4   | `BuildEpoch.s.sol`               | Implements the BUILD phase — generates and signs orders for a single epoch. Its dense; skim `run` then follow `_buildOrders` into `MarketSim`. |
 
 **Going deeper:**
 
@@ -113,37 +113,39 @@ The boostrap sequence is especially good for anyone new to foundry. They're very
 | curl                       |         |       |
 | jq                         |         |       |
 
-**Run**
+**Environment variables**
 
-Per now, the scripts are not generic enough to accept just any marketplace. Anyone may use whatever they want from this repo and adapt them to their own contracts.
+| Var              | Description                                  | Example                                      |
+| ---------------- | -------------------------------------------- | -------------------------------------------- |
+| `FORK_RPC`       | Mainnet RPC URL used to seed the fork        | `https://eth-mainnet.g.alchemy.com<API_KEY>` |
+| `RPC_URL`        | Local fork RPC URL                           | `http://localhost:8545`                      |
+| `RPC_HOST`       | Anvil bind address, expects an IP address    | `127.0.0.1`                                  |
+| `RPC_PORT`       | Anvil port                                   | `8545`                                       |
+| `CHAIN_ID`       | Chain ID for the local fork network          | `31337`                                      |
+| `ORDER_POST_URL` | Optional. API endpoint for submitting orders | `http://localhost:5000/api/orders`           |
 
-To run the pipeline as is, with `OrderEngine.sol`, run the entrypoint `make` command:
+---
+
+## Run
+
+The entrypoint `make` command:
 
 ```
 make execute-pipeline
 ```
 
-This command computes the fork window, starts anvil, deploys, bootstraps, and runs all epochs. Export is off by default. If `ORDER_POST_URL` is set in your `.env`, enable it with `make execute-pipeline EXPORT=1`.
+It computes the fork window, starts anvil, deploys, bootstraps, and runs all epochs. If `ORDER_POST_URL` is set in your `.env`, you can enable export by appending `EXPORT=1`.
 
-You can call any of the available commands from project root or from `devtools` directory. To see a reference of available targets:
+`make` commands can be ran from project root or from `devtools` directory. To see a reference of available targets:
 
 ```
 make help
 ```
 
-> [!NOTE]
-> To run the full demo environment — including the frontend and indexer — see [dmrkt-compose](REPO_URL). That repo has its own setup and uses `compose-entrypoint` from this Makefile instead of `execute-pipeline`.
-
-**Environment variables**
-
-| Var              | Description                               | Example                                      |
-| ---------------- | ----------------------------------------- | -------------------------------------------- |
-| `FORK_RPC`       | Mainnet RPC URL used to seed the fork     | `https://eth-mainnet.g.alchemy.com<API_KEY>` |
-| `RPC_URL`        | Local fork RPC URL (used by Makefile)     | `http://localhost:8545`                      |
-| `RPC_HOST`       | Anvil bind address, expects an IP address | `127.0.0.1`                                  |
-| `RPC_PORT`       | Anvil port                                | `8545`                                       |
-| `ORDER_POST_URL` | API endpoint for submitting orders        | `http://localhost:5000/api/orders`           |
-| `CHAIN_ID`       | Chain ID for the local fork network       | `31337`                                      |
+> [!TIP]
+> To run the full demo environment, see [dmrkt-demo](https://github.com/izcm/dmrkt-demo) (its fun and easy).
+>
+> It spins up both an indexer, frontend and seeds activity through using `devtools` scripts.
 
 ---
 
@@ -181,6 +183,8 @@ Located under `runners/`
 
 #### Bootstrap
 
+Many of the scripts are coupled to `OrderEngine.sol` and its EIP-712 definitions, but the scripts in `bootstrap/` are a clean exception — they just wrap ETH, mint NFTs, and set approvals. No order types, no settlement logic. Easy to drop into any Foundry project that needs funded, approved participants.
+
 | Script                    | Description                                                                                                                                     |
 | ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
 | `DeployCore.s.sol`        | Deploys contracts and writes addresses to pipeline.toml. Adding more nft-collections is super simple, see script's doc comment for explanation. |
@@ -202,7 +206,7 @@ Located under `runners/`
 | `SettlementValidation.s.sol` | Pre-settlement timestamp + ownership checks                               |
 | `FillBid.s.sol`              | Resolves fill recipient for regular and collection bids                   |
 
-> [!NOTE]
+> [!IMPORTANT]
 > Collection bid feature is paused
 
 ---
