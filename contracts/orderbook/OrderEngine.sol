@@ -34,7 +34,7 @@ contract OrderEngine is ReentrancyGuard {
     // === IMMUTABLES ===
 
     bytes32 public immutable DOMAIN_SEPARATOR;
-    address public immutable WETH;
+    address public immutable WHITELISTED_CURRENCY;
     uint256 public immutable PROTOCOL_FEE_BPS = 100; // immutable for simplicity
 
     // === MUTABLES ===
@@ -61,10 +61,10 @@ contract OrderEngine is ReentrancyGuard {
 
     /**
      * @notice Constructor
-     * @param _weth WETH token address
+     * @param _whitelistedCurrency Whitelisted ERC20 currency for order settlement
      * @param _protocolFeeRecipient Address receiving protocol fees
      */
-    constructor(address _weth, address _protocolFeeRecipient) {
+    constructor(address _whitelistedCurrency, address _protocolFeeRecipient) {
         DOMAIN_SEPARATOR = keccak256(
             abi.encode(
                 // EIP-712 domain type hash
@@ -79,7 +79,7 @@ contract OrderEngine is ReentrancyGuard {
             )
         );
 
-        WETH = _weth;
+        WHITELISTED_CURRENCY = _whitelistedCurrency;
         protocolFeeRecipient = _protocolFeeRecipient;
     }
 
@@ -222,7 +222,10 @@ contract OrderEngine is ReentrancyGuard {
             InvalidTimestamp()
         );
 
-        require(order.currency == WETH, CurrencyNotWhitelisted());
+        require(
+            order.currency == WHITELISTED_CURRENCY,
+            CurrencyNotWhitelisted()
+        );
 
         SigOps.verify(DOMAIN_SEPARATOR, orderHash, order.actor, v, r, s);
     }

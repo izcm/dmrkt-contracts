@@ -32,12 +32,31 @@ Deploy marketplace by running:
 
 ```bash
 forge script script/DeployOrderEngine.s.sol \
+  --sig "run(address)" <WHITELISTED_CURRENCY> \
   --rpc-url $RPC_URL \
   --private-key $PRIVATE_KEY \
   --broadcast
 ```
 
-Deployment script hardcodes `WETH`
+`WHITELISTED_CURRENCY` being the address of whichever ERC20 token you'd like as the whitelisted order currency.
+
+> [!TIP]
+> For anyone who just wants to see it work asap:
+>
+> ```bash
+> # start a local node in a separate terminal
+> anvil
+>
+> # deploy using anvil's default account
+> forge script script/DeployOrderEngine.s.sol \
+>   --sig "run(address)" 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2 \
+>   --rpc-url http://localhost:8545 \
+>   --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 \
+>   --broadcast
+> ```
+
+> [!WARNING]
+> The private key above is anvil's default test account — never use it with real funds.
 
 ---
 
@@ -80,7 +99,7 @@ struct Order {
 
 **Limitations**
 
-Supported currencies and collection standards are hardcoded — there are no admin methods to change them. Collections must implement ERC-721 (checked via ERC-165), and the only accepted currency is the `WETH` address passed to constructor.
+Supported currencies and collection standards are hardcoded — there are no admin methods to change them. Collections must implement ERC-721 (checked via ERC-165), and the only accepted currency is the address passed as `WHITELISTED_CURRENCY` at construction.
 
 ---
 
@@ -118,7 +137,7 @@ Located in `contracts/orderbook/libs/`.
 | `ZeroActor()`              | `0xb1375a3d` | `OrderEngine`     | Zero address actor                            |
 | `InvalidNonce()`           | `0x756688fe` | `OrderEngine`     | Nonce already invalidated                     |
 | `InvalidTimestamp()`       | `0xb7d09497` | `OrderEngine`     | Order outside valid window                    |
-| `CurrencyNotWhitelisted()` | `0x5f6063cc` | `OrderEngine`     | Currency != `WETH`                            |
+| `CurrencyNotWhitelisted()` | `0x5f6063cc` | `OrderEngine`     | Currency != `WHITELISTED_CURRENCY`             |
 | `UnsupportedCollection()`  | `0x0179a917` | `OrderEngine`     | Collection doesn't implement ERC721 interface |
 | `InvalidYParity()`         | `0x541b3bce` | `SignatureOps`    | `v` is not 27 or 28                           |
 | `InvalidSParameter()`      | `0x0658eabd` | `SignatureOps`    | `s` exceeds EIP-2 upper bound                 |
@@ -130,6 +149,8 @@ Located in `contracts/orderbook/libs/`.
 ## Testing
 
 <scope note — what is and isn't covered>
+
+All tests deploy `OrderEngine` with `MockWETH` as the `WHITELISTED_CURRENCY`.
 
 ```txt
 unit/         isolated lib tests

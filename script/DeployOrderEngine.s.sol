@@ -5,11 +5,13 @@ import "forge-std/Script.sol";
 import {OrderEngine} from "orderbook/OrderEngine.sol";
 
 contract DeployOrderEngine is Script {
-    function run() external returns (OrderEngine deployed) {
+    function run(
+        address whitelistedCurrency
+    ) external returns (OrderEngine deployed) {
         vm.startBroadcast();
 
         deployed = new OrderEngine(
-            0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2, // mainnet weth
+            whitelistedCurrency,
             msg.sender // msg.sender receives protocol fees
         );
 
