@@ -1,11 +1,6 @@
 # devtools
 
-Foundry scripts glued together to simulate marketplace activity. Computes a start block (default: 28 days ago) and forks mainnet at that block. Once your `.env` is in order, `make execute-pipeline` runs the whole thing.
-
-- Deploys orderbook + demo NFT collections
-- Bootstraps accounts derived from the provided mnemonic
-- Generates realistic-looking orders and signs them EIP-712 style
-- Settles a subset of orders, with probability decay leaving some unfilled
+Foundry scripts glued together to simulate marketplace activity. Computes a start block (default: 28 days ago) and forks mainnet at that block.
 
 ```
 prepare-fork.js          writes fork block + timestamps
