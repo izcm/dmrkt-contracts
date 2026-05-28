@@ -21,6 +21,7 @@ library SignatureOps {
         return (sig.v, sig.r, sig.s);
     }
 
+    /// @notice Recovers signer from digest and signature
     function recover(
         bytes32 hash,
         uint8 v,
@@ -31,13 +32,12 @@ library SignatureOps {
     }
 
     /**
-     * @notice Verifies an EIP-712 signature against an expected signer.
-     * @dev Validates Y-parity and EIP-2 s-value malleability before recovering.
-     *      Supports EOA signers via ecrecover and contract signers via EIP-1271.
+     * @notice Verifies an EIP-712 signature against an expected signer
+     * @dev Supports EOA signatures via ecrecover and contract signatures via EIP-1271.
      *      Reverts on any verification failure.
-     * @param domainSeparator The EIP-712 domain separator.
-     * @param msgHash         The EIP-712 struct hash of the message.
-     * @param expectedSigner  Address that must have produced the signature.
+     * @param domainSeparator The EIP-712 domain separator
+     * @param msgHash         The EIP-712 struct hash of the message
+     * @param expectedSigner  Address that must have produced the signature
      */
     function verify(
         bytes32 domainSeparator,

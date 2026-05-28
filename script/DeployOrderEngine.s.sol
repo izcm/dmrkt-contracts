@@ -9,8 +9,8 @@ contract DeployOrderEngine is Script {
         vm.startBroadcast();
 
         deployed = new OrderEngine(
-            0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2,
-            msg.sender
+            0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2, // mainnet weth
+            msg.sender // msg.sender receives protocol fees
         );
 
         vm.stopBroadcast();

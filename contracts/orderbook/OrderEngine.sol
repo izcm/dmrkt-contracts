@@ -59,6 +59,11 @@ contract OrderEngine is ReentrancyGuard {
         uint256 price
     );
 
+    /**
+     * @notice Constructor
+     * @param _weth WETH token address
+     * @param _protocolFeeRecipient Address receiving protocol fees
+     */
     constructor(address _weth, address _protocolFeeRecipient) {
         DOMAIN_SEPARATOR = keccak256(
             abi.encode(
@@ -81,7 +86,7 @@ contract OrderEngine is ReentrancyGuard {
     // ===== EXTERNAL FUNCTIONS =====
 
     /**
-     * @notice Cancel single order
+     * @notice Invalidates a specific nonce for a sender
      */
     function cancelOrder(uint256 nonce) external {
         _isUserOrderNonceInvalid[msg.sender][nonce] = true;
@@ -90,7 +95,7 @@ contract OrderEngine is ReentrancyGuard {
     }
 
     /**
-     * @notice Check if user nonce is invalid
+     * @notice Checks if user nonce is invalid
      */
     function isUserOrderNonceInvalid(
         address user,
@@ -100,7 +105,11 @@ contract OrderEngine is ReentrancyGuard {
     }
 
     /**
-     * @notice Matches a `Fill` request to an existing `Order`
+     * @notice Settles a matching order and fill pair
+     * @dev Validates order fields, verifies signature, invalidates nonce, transfers payment, and transfers NFT
+     * @param fill Taker fill request
+     * @param order Signed maker order
+     * @param sig Maker EIP-712 signature
      */
     function settle(
         OrderModel.Fill calldata fill,
@@ -117,7 +126,7 @@ contract OrderEngine is ReentrancyGuard {
         // verify
         _validateOrder(order, orderHash, v, r, s);
 
-        // prevents replay
+        // prevent replay
         _isUserOrderNonceInvalid[order.actor][order.nonce] = true;
 
         // decide roles and asset
@@ -134,7 +143,7 @@ contract OrderEngine is ReentrancyGuard {
             tokenId,
             nftHolder, // **the nftHolder PRE transfer**
             spender,
-            order.currency, // future proofing
+            order.currency,
             order.price
         );
     }
@@ -142,7 +151,8 @@ contract OrderEngine is ReentrancyGuard {
     // ===== INTERNAL FUNCTIONS =====
 
     /**
-     * @param currency: per today always WETH.
+     * @notice Transfers currency between accounts
+     * @dev Royalty fee distribution is currently paused
      */
     function _settlePayment(
         address currency,
@@ -166,17 +176,16 @@ contract OrderEngine is ReentrancyGuard {
             sellerCompensation -= feeAmount;
         }
 
-        // calculate royalty fee
-        {
-            // IERC20(WETH).safeTransferFrom
-        }
-
         // compensate seller
         {
             IERC20(currency).safeTransferFrom(from, to, sellerCompensation);
         }
     }
 
+    /**
+     * @notice Transfers an ERC721 token between accounts
+     * @dev Reverts if collection does not implement ERC721 via ERC165
+     */
     function _transferNft(
         address collection,
         address from,
@@ -191,7 +200,8 @@ contract OrderEngine is ReentrancyGuard {
     }
 
     /**
-     * @notice Validates order.
+     * @notice Validates order fields and signature
+     * @dev Checks actor, nonce, timestamps, currency, and signature validity
      */
     function _validateOrder(
         OrderModel.Order calldata order,
