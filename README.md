@@ -22,16 +22,14 @@ devtools/     local simulation pipeline (not production)
 
 ## Deployment
 
-Ensure the following dependencies:
+Built using:
 
-| Tool                       | Version |
-| -------------------------- | ------- |
-| Foundry (forge/cast/anvil) |         |
+- Foundry 1.7.1 (`forge/cast/anvil`)
 
 Deploy marketplace by running:
 
 ```bash
-forge script script/DeployOrderEngine.s.sol \
+forge script script/DeployOE.s.sol \
   --sig "run(address)" <WHITELISTED_CURRENCY> \
   --rpc-url $RPC_URL \
   --private-key $PRIVATE_KEY \
@@ -47,9 +45,8 @@ forge script script/DeployOrderEngine.s.sol \
 > # start a local node in a separate terminal
 > anvil
 >
-> # deploy using anvil's default account
-> forge script script/DeployOrderEngine.s.sol \
->   --sig "run(address)" 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2 \
+> # deploys MockWETH + OrderEngine using anvil's default account
+> forge script script/DeployOEMockWETH.s.sol \
 >   --rpc-url http://localhost:8545 \
 >   --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 \
 >   --broadcast
@@ -137,7 +134,7 @@ Located in `contracts/orderbook/libs/`.
 | `ZeroActor()`              | `0xb1375a3d` | `OrderEngine`     | Zero address actor                            |
 | `InvalidNonce()`           | `0x756688fe` | `OrderEngine`     | Nonce already invalidated                     |
 | `InvalidTimestamp()`       | `0xb7d09497` | `OrderEngine`     | Order outside valid window                    |
-| `CurrencyNotWhitelisted()` | `0x5f6063cc` | `OrderEngine`     | Currency != `WHITELISTED_CURRENCY`             |
+| `CurrencyNotWhitelisted()` | `0x5f6063cc` | `OrderEngine`     | Currency != `WHITELISTED_CURRENCY`            |
 | `UnsupportedCollection()`  | `0x0179a917` | `OrderEngine`     | Collection doesn't implement ERC721 interface |
 | `InvalidYParity()`         | `0x541b3bce` | `SignatureOps`    | `v` is not 27 or 28                           |
 | `InvalidSParameter()`      | `0x0658eabd` | `SignatureOps`    | `s` exceeds EIP-2 upper bound                 |

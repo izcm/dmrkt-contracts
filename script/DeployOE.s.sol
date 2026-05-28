@@ -17,6 +17,6 @@ contract DeployOrderEngine is Script {
 
         vm.stopBroadcast();
 
-        console2.log("Engine created at address: ", address(deployed));
+        console2.log("Engine deployed at: ", address(deployed));
     }
 }
