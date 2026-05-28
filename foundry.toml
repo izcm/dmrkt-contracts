@@ -12,7 +12,7 @@ remappings = [
     "@openzeppelin/=lib/openzeppelin-contracts/contracts/"
 ]
 
-ignored_error_codes = [2424]
+ignored_error_codes = [2424, 6335]
 
 [dependencies]
 forge-std = "1.12.0"
