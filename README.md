@@ -106,11 +106,11 @@ Supported currencies and collection standards are hardcoded — there are no adm
 
 All implemented in `OrderEngine`.
 
-| Function                                               | Description                                       |
-| ------------------------------------------------------ | ------------------------------------------------- |
-| `settle(Fill, Order, Signature)`                       | Match a fill request to a signed order and settle |
-| `cancelOrder(uint256 nonce)`                           | Invalidate a nonce, preventing order settlement   |
-| `isUserOrderNonceInvalid(address user, uint256 nonce)` | Check whether a nonce has been invalidated        |
+| Function                                               | Description                                     |
+| ------------------------------------------------------ | ----------------------------------------------- |
+| `settle(Fill, Order, Signature)`                       | Settle a signed order against matching fill     |
+| `cancelOrder(uint256 nonce)`                           | Invalidate a nonce for `msg.sender`             |
+| `isUserOrderNonceInvalid(address user, uint256 nonce)` | Check whether nonce is invalid for a given user |
 
 ### Libraries
 
@@ -145,9 +145,7 @@ Located in `contracts/orderbook/libs/`.
 
 ## Testing
 
-<scope note — what is and isn't covered>
-
-All tests deploy `OrderEngine` with `MockWETH` as the `WHITELISTED_CURRENCY`.
+Testing scope includes all content in `contracts/*` plus sanity tests for certain helpers. All tests deploy `OrderEngine` with `MockWETH` as the `WHITELISTED_CURRENCY`.
 
 ```txt
 unit/         isolated lib tests
@@ -155,8 +153,6 @@ integration/  end-to-end settle + revert scenarios
 helpers/      OrderHelper, AccountsHelper, SettlementHelper
 mocks/        MockWETH, MockERC721, etc.
 ```
-
-Testing scope includes all content in `contracts/*` plus sanity tests for certain helpers.
 
 ### Run
 
