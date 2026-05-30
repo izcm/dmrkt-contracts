@@ -31,12 +31,12 @@ abstract contract BaseDevScript is Script {
     }
 
     /**
-     * @notice Returns 10 private keys derived from the chain-specific mnemonic file.
+     * @notice Returns N private keys derived from the chain-specific mnemonic file.
      *         Use this when the script only needs to broadcast — no participant map needed.
      *          NB: if changing the count, remember to update the --accounts flag in start-fork.sh
      */
     function generateKeys() internal view returns (uint256[] memory) {
-        return generateKeys(10);
+        return generateKeys(5);
     }
 
     function generateKeys(
