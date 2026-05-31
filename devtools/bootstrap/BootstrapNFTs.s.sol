@@ -70,8 +70,6 @@ contract BootstrapNFTs is BaseDevScript, DevConfig {
             collection.mint(to);
 
             vm.stopBroadcast();
-
-            console.log("MINT | tokenId: %s | block: %s", i, block.number);
         }
     }
 }
