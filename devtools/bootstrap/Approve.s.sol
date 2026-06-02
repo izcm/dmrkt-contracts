@@ -73,7 +73,7 @@ contract Approve is BaseDevScript, DevConfig {
             wethToken.approve(allowanceSpender, allowance);
             vm.stopBroadcast();
 
-            console.log("[weth-approve] done | allowance: %s", wethToken.allowance(owner, allowanceSpender));
+            console.log("[weth-approve] done | allowance: unlimited");
         }
     }
 }
