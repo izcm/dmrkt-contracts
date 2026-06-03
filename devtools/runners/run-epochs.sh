@@ -119,15 +119,18 @@ do
         echo "=== PHASE 2: EXPORT ORDERS (epoch $epoch) ==="
         echo "orders: $order_count"
 
+        export_errors=0
         for((i = 0; i < order_count; i++)); do
-            if "$RUNNERS_EXPORTERS/export-order.sh" \
-                "$order_out/order_$i.json"
-            then
-                echo -e "[epoch:$epoch] [order:$i] ${GREEN}EXPORTED${RESET}"
-            else
-                echo -e "[epoch:$epoch] [order:$i] ${RED}EXPORT_ERR${RESET}"
-            fi
+            "$RUNNERS_EXPORTERS/export-order.sh" \
+                "$order_out/order_$i.json" \
+            || ((export_errors++))
         done
+
+        if ((export_errors == 0)); then
+            echo -e "   ${GREEN}All $order_count orders exported successfully${RESET}"
+        else
+            echo -e "   ${RED}$export_errors/$order_count orders failed to export${RESET}"
+        fi
     fi
     
     #--------------------------
