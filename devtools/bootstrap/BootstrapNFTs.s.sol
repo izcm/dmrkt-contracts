@@ -38,7 +38,7 @@ contract BootstrapNFTs is BaseDevScript, DevConfig {
 
         for (uint256 i = 0; i < collections.length; i++) {
             IERC721Metadata collectionToken = IERC721Metadata(collections[i]);
-            string memory symbol = collectionToken.symbol();
+            string memory name = collectionToken.name();
             mintTokens(participantPks, DNFT(collections[i]));
 
             logSection("NFT FINAL BALANCES");
@@ -47,7 +47,7 @@ contract BootstrapNFTs is BaseDevScript, DevConfig {
                 address user = addrOf(participantPks[j]);
                 uint256 bal = collectionToken.balanceOf(user);
 
-                logTokenBalance(symbol, user, bal);
+                logTokenBalance(name, user, bal);
             }
         }
     }
