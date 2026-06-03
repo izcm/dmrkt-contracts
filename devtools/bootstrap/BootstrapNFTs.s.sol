@@ -1,6 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
+// oz
+import {
+    IERC721Metadata
+} from "@openzeppelin/token/ERC721/extensions/IERC721Metadata.sol";
+
 // scripts
 import {BaseDevScript} from "dev/BaseDevScript.s.sol";
 import {DevConfig} from "dev/DevConfig.s.sol";
@@ -32,9 +37,9 @@ contract BootstrapNFTs is BaseDevScript, DevConfig {
         logSection("MINT NFTs");
 
         for (uint256 i = 0; i < collections.length; i++) {
-            DNFT collectionToken = DNFT(collections[i]);
+            IERC721Metadata collectionToken = IERC721Metadata(collections[i]);
             string memory symbol = collectionToken.symbol();
-            mintTokens(participantPks, collectionToken);
+            mintTokens(participantPks, DNFT(collections[i]));
 
             logSection("NFT FINAL BALANCES");
 
