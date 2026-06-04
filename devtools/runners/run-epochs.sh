@@ -134,7 +134,7 @@ do
     fi
     
     #--------------------------
-    # PHASE 3: CHOOSE LINGER
+    # PHASE 3: CHOOSE LINGERl
     #--------------------------
     
     echo

@@ -58,6 +58,8 @@ Each epoch builds, exports, and settles orders within its slice, advancing Anvil
 - **Export** — Pushes orders to an optional endpoint. Gated behind the `--export` flag, off by default, enabled by the root `Makefile`.
 - **Execution** — Match orders to fill and execute trade on-chain.
 
+> Orders are built and executed in the same order across runs. Orders are sorted by token ID so the executed subset is stable regardless of the fork block.
+
 ---
 
 ### Data Layout

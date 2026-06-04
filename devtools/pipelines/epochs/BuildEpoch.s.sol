@@ -128,8 +128,8 @@ contract BuildEpoch is
         // SORT ORDERS
         // --------------------------------
 
-        console.log("Sorting by 'end' timestamp...");
-        _sortByEndDate(signed);
+        console.log("Sorting by token ID...");
+        _sortByTokenId(signed);
 
         // --------------------------------
         // WRITE OUTPUTS
@@ -416,18 +416,17 @@ contract BuildEpoch is
     }
 
     /**
-     * @dev Insertion sort by order end timestamp. Ensures ExecuteOrder processes orders
-     *      in the order they expire, which matters for timestamp validation.
+     * @dev Insertion sort by token ID for a stable, delta-independent order index mapping.
      */
-    function _sortByEndDate(SignedOrder[] memory arr) internal pure {
+    function _sortByTokenId(SignedOrder[] memory arr) internal pure {
         uint256 n = arr.length;
 
         for (uint256 i = 1; i < n; i++) {
             SignedOrder memory key = arr[i];
-            uint256 keyEnd = key.order.end;
+            uint256 keyToken = key.order.tokenId;
 
             uint256 j = i;
-            while (j > 0 && arr[j - 1].order.end > keyEnd) {
+            while (j > 0 && arr[j - 1].order.tokenId > keyToken) {
                 arr[j] = arr[j - 1];
                 j--;
             }
