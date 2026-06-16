@@ -8,7 +8,7 @@ nft_c_0 = "0xa1E25aef7feDD5dc15619769111ffa31897b8459"
 nft_c_1 = "0xF10685a7b083BA60D1467b15Cb83E8bFc28b5961"
 
 [31337.uint]
-pipeline_start_ts = 1778054639
-pipeline_end_ts = 1780473845
-fork_start_block = 25034668
+pipeline_start_ts = 1779232559
+pipeline_end_ts = 1781651767
+fork_start_block = 25132498
 nft_c_count = 1

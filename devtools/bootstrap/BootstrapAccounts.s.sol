@@ -42,8 +42,6 @@ contract BootstrapAccounts is BaseDevScript, DevConfig {
             vm.stopBroadcast();
 
             logTokenBalance("POST WETH", a, wethToken.balanceOf(a));
-
-            logSeparator();
         }
     }
 }

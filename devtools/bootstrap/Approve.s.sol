@@ -40,7 +40,8 @@ contract Approve is BaseDevScript, DevConfig {
         for (uint256 i = 0; i < collections.length; i++) {
             IERC721 collectionToken = IERC721(collections[i]);
 
-            logSection(string.concat("APPROVE COLLECTION #", vm.toString(i)));
+            console.log("");
+            console.log(string.concat("APPROVE COLLECTION #", vm.toString(i)));
 
             for (uint256 j = 0; j < participantCount; j++) {
                 address owner = addrOf(participantPks[j]);

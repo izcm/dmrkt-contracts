@@ -98,7 +98,6 @@ contract BuildEpoch is
         logSection("BUILD ORDERS");
         console.log("Block timestamp: %s", block.timestamp);
         console.log("Epoch: %s | Collections: %s", epoch, collections.length);
-        logSeparator();
 
         OrderModel.Order[] memory orders = _buildOrders(weth, collections);
 
@@ -153,13 +152,11 @@ contract BuildEpoch is
 
         noncesToJson(_exportNonces(), _epoch);
 
-        logSeparator();
         console.log(
             "Epoch %s ready with %s signed orders!",
             _epoch,
             signed.length
         );
-        logSeparator();
     }
 
     // === BUILD ===

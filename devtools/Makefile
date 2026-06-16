@@ -118,23 +118,31 @@ prepare: ## Compute fork start block and pipeline window timestamps
 # ───────────────────────────────────────────────
 
 bootstrap-accounts: ## Wrap ETH into WETH for all participants
+	@echo ""
 	@echo "💻 Bootstrapping dev accounts..."
+	@echo ""
 	@forge script $(BOOTSTRAP)/BootstrapAccounts.s.sol \
 		$(FORGE_COMMON_FLAGS)
 
 deploy-core: ## Deploy OrderEngine + NFT collections, write addresses to pipeline.toml
+	@echo ""
 	@echo "🧾 Deploying core contracts..."
+	@echo ""
 	@forge script DeployCore.s.sol \
 		$(FORGE_COMMON_FLAGS)
 
 bootstrap-nfts: FORGE_SILENT =
 bootstrap-nfts: ## Mint NFTs to all participants
+	@echo ""
 	@echo "👾 Bootstrapping NFTs..."
+	@echo ""
 	@forge script $(BOOTSTRAP)/BootstrapNFTs.s.sol \
 		$(FORGE_COMMON_FLAGS)
 
 approve: ## Grant NFT + WETH allowances to OrderEngine
+	@echo ""
 	@echo "✔ Executing approvals..."
+	@echo ""
 	@forge script $(BOOTSTRAP)/Approve.s.sol \
 		$(FORGE_COMMON_FLAGS)
 
@@ -143,7 +151,9 @@ approve: ## Grant NFT + WETH allowances to OrderEngine
 # ───────────────────────────────────────────────
 
 run-epochs: ## Generate, sign, export, and settle orders across all epochs
+	@echo ""
 	@echo "📊 Building historical orders..."
+	@echo ""
 	@./$(RUNNERS)/run-epochs.sh $(EPOCH_COUNT) $(EXPORT_FLAG)
 
 # ───────────────────────────────────────────────
