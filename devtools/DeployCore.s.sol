@@ -54,7 +54,7 @@ contract DeployCore is BaseDevScript, DevConfig {
         // log deployments
         logDeployment("OrderEngine", address(orderEngine));
 
-        logDeployment("DMrktLoot", address(inventory));
+        logDeployment("DMrktLoot  ", address(inventory));
         // logDeployment("DMrktDragonEggs", address(eggs));
 
         // --------------------------------

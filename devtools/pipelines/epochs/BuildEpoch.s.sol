@@ -76,9 +76,7 @@ contract BuildEpoch is
                 "DATA_DIR config exists => out dir set to %s",
                 _dataDir()
             );
-        } catch {
-            console.log("DATA_DIR not set => default out dir %s", _dataDir());
-        }
+        } catch {}
         _loadParticipants();
         _createDefaultDirs(_epoch);
 

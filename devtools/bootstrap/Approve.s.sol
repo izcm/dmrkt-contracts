@@ -17,8 +17,6 @@ import {IERC20} from "@openzeppelin/interfaces/IERC20.sol";
  */
 contract Approve is BaseDevScript, DevConfig {
     function run() external {
-        logBlockTimestamp();
-
         // --------------------------------
         // LOAD CONFIG
         // --------------------------------
@@ -46,13 +44,21 @@ contract Approve is BaseDevScript, DevConfig {
 
             for (uint256 j = 0; j < participantCount; j++) {
                 address owner = addrOf(participantPks[j]);
-                console.log("[nft-approve] participant %s/%s | %s", j + 1, participantCount, owner);
+                console.log(
+                    "[nft-approve] participant %s/%s | %s",
+                    j + 1,
+                    participantCount,
+                    owner
+                );
 
                 vm.startBroadcast(participantPks[j]);
                 collectionToken.setApprovalForAll(nftTransferAuth, true);
                 vm.stopBroadcast();
 
-                console.log("[nft-approve] done | approved: %s", collectionToken.isApprovedForAll(owner, nftTransferAuth));
+                console.log(
+                    "[nft-approve] done | approved: %s",
+                    collectionToken.isApprovedForAll(owner, nftTransferAuth)
+                );
             }
         }
 
@@ -67,7 +73,12 @@ contract Approve is BaseDevScript, DevConfig {
 
         for (uint256 i = 0; i < participantCount; i++) {
             address owner = addrOf(participantPks[i]);
-            console.log("[weth-approve] participant %s/%s | %s", i + 1, participantCount, owner);
+            console.log(
+                "[weth-approve] participant %s/%s | %s",
+                i + 1,
+                participantCount,
+                owner
+            );
 
             vm.startBroadcast(participantPks[i]);
             wethToken.approve(allowanceSpender, allowance);
