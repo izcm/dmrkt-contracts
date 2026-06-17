@@ -77,7 +77,7 @@ wait:
 pipeline-separator:
 	@echo ""
 	@echo "───────────────────────────────────────────────"
-	@echo "CORE SETUP COMPLETE — BUILDING MARKET HISTORY"
+	@echo "CORE SETUP COMPLETE — SIMULATE MARKET HISTORY"
 	@echo "───────────────────────────────────────────────"
 	@echo ""
 
@@ -117,6 +117,10 @@ prepare: ## Compute fork start block and pipeline window timestamps
 
 print-participants: ## Print pipeline participants
 	@echo ""
+	@echo "───────────────────────────────────────────────"
+	@echo "BOOTSTRAP"
+	@echo "───────────────────────────────────────────────"
+	@echo ""
 	@echo "⚙️ Start bootstrap sequence..."
 	@echo ""
 	@forge script $(BOOTSTRAP)/PrintParticipants.s.sol \
@@ -124,7 +128,7 @@ print-participants: ## Print pipeline participants
 
 bootstrap-funds: ## Wrap ETH into WETH for all participants
 	@echo ""
-	@echo "💰 Wrapping ETH..."
+	@echo "💰 Funding WETH..."
 	@echo ""
 	@forge script $(BOOTSTRAP)/BootstrapFunds.s.sol \
 		$(FORGE_COMMON_FLAGS)
@@ -132,7 +136,7 @@ bootstrap-funds: ## Wrap ETH into WETH for all participants
 deploy-core: ## Deploy OrderEngine + NFT collections, write addresses to pipeline.toml
 	@echo ""
 	@echo "───────────────────────────────────────────────"
-	@echo "DEPLOY AND BOOTSTRAP"
+	@echo "DEPLOY"
 	@echo "───────────────────────────────────────────────"
 	@echo ""
 	@echo "🧾 Deploying core contracts..."
@@ -149,6 +153,10 @@ bootstrap-nfts: ## Mint NFTs to all participants
 		$(FORGE_COMMON_FLAGS)
 
 approve: ## Grant NFT + WETH allowances to OrderEngine
+	@echo ""
+	@echo "───────────────────────────────────────────────"
+	@echo "APPROVALS"
+	@echo "───────────────────────────────────────────────"
 	@echo ""
 	@echo "✔ Executing approvals..."
 	@echo ""
