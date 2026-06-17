@@ -9,7 +9,9 @@ import {DevConfig} from "dev/DevConfig.s.sol";
 
 // interfaces
 import {IERC721} from "@openzeppelin/interfaces/IERC721.sol";
-import {IERC721Metadata} from "@openzeppelin/token/ERC721/extensions/IERC721Metadata.sol";
+import {
+    IERC721Metadata
+} from "@openzeppelin/token/ERC721/extensions/IERC721Metadata.sol";
 import {IERC20} from "@openzeppelin/interfaces/IERC20.sol";
 
 /**
@@ -42,8 +44,7 @@ contract Approve is BaseDevScript, DevConfig {
             IERC721 collectionToken = IERC721(collections[i]);
             string memory name = IERC721Metadata(collections[i]).name();
 
-            console.log("");
-            console.log(name);
+            console.log("COLLECTION | %s", name);
 
             for (uint256 j = 0; j < participantCount; j++) {
                 address owner = addrOf(participantPks[j]);
@@ -60,11 +61,14 @@ contract Approve is BaseDevScript, DevConfig {
             }
         }
 
+        printSpace();
+
         // --------------------------------
         // WETH ALLOWANCE
         // --------------------------------
 
-        logSection("APPROVE WETH ALLOWANCE FOR NFT TRANSFER AUTH");
+        logSection("APPROVE ALLOWANCE FOR NFT TRANSFER AUTH");
+        console.log("TOKEN | WETH");
 
         IERC20 wethToken = IERC20(weth);
         uint256 allowance = type(uint256).max;

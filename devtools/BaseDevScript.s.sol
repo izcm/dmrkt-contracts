@@ -108,6 +108,10 @@ abstract contract BaseDevScript is Script {
 
     // === LOG HELPERS ===
 
+    function printSpace() internal pure {
+        console.log("");
+    }
+
     function logSection(string memory title) internal pure {
         logSeparator();
         console.log(title);
