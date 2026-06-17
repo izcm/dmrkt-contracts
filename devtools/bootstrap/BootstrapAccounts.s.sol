@@ -29,18 +29,17 @@ contract BootstrapAccounts is BaseDevScript, DevConfig {
         // WRAP ETH
         // --------------------------------
 
-        logSection("WRAP ETH => WETH");
-
-        IWETH wethToken = IWETH(weth);
-
-        console.log("");
-        console.log("DEMO PARTICIPANTS");
+        console.log("PIPELINE PARTICIPANTS");
         console.log("--------------------");
         for (uint256 i = 0; i < participantCount; i++) {
             console.log("P%s | %s", i + 1, addrOf(participantPks[i]));
         }
         console.log("--------------------");
         console.log("");
+
+        logSection("WRAP ETH => WETH");
+
+        IWETH wethToken = IWETH(weth);
 
         for (uint256 i = 0; i < participantCount; i++) {
             address a = addrOf(participantPks[i]);
