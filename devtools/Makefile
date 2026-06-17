@@ -71,9 +71,6 @@ execute-pipeline: start pipeline-separator run-epochs ## Run the full pipeline
 	@echo "🚀 Dev environment ready"
 
 wait:
-	@echo "----------------"
-	@echo " GETTING READY "
-	@echo "----------------"
 	@forge clean
 	@sleep 4
 
