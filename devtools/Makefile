@@ -76,9 +76,9 @@ wait:
 
 pipeline-separator:
 	@echo ""
-	@echo "================="
-	@echo " PHASE COMPLETE "
-	@echo "================="
+	@echo "───────────────────────────────────────────────"
+	@echo "CORE SETUP COMPLETE — BUILDING MARKET HISTORY"
+	@echo "───────────────────────────────────────────────"
 	@echo ""
 
 # ───────────────────────────────────────────────
@@ -93,10 +93,11 @@ reset: kill-anvil start ## Kill anvil and restart from scratch
 
 pipeline-setup: \
 	deploy-core \
-	bootstrap-accounts \
+	print-participants \
+	bootstrap-funds \
 	bootstrap-nfts \
 	approve
-	@echo "🧱 Setup pipeline complete"
+	@echo "✅ Core deployed and participants bootstrapped"
 
 # ───────────────────────────────────────────────
 #   ENVIRONMENT BOOT
@@ -114,11 +115,18 @@ prepare: ## Compute fork start block and pipeline window timestamps
 #   SETUP / GENESIS
 # ───────────────────────────────────────────────
 
-bootstrap-accounts: ## Wrap ETH into WETH for all participants
+print-participants: ## Print pipeline participants
 	@echo ""
 	@echo "💻 Bootstrapping participants..."
 	@echo ""
-	@forge script $(BOOTSTRAP)/BootstrapAccounts.s.sol \
+	@forge script $(BOOTSTRAP)/PrintParticipants.s.sol \
+		--rpc-url $(RPC_URL)
+
+bootstrap-funds: ## Wrap ETH into WETH for all participants
+	@echo ""
+	@echo "💰 Wrapping ETH..."
+	@echo ""
+	@forge script $(BOOTSTRAP)/BootstrapFunds.s.sol \
 		$(FORGE_COMMON_FLAGS)
 
 deploy-core: ## Deploy OrderEngine + NFT collections, write addresses to pipeline.toml
@@ -131,7 +139,7 @@ deploy-core: ## Deploy OrderEngine + NFT collections, write addresses to pipelin
 bootstrap-nfts: FORGE_SILENT =
 bootstrap-nfts: ## Mint NFTs to all participants
 	@echo ""
-	@echo "👾 Bootstrapping NFTs..."
+	@echo "👾 Minting NFTs..."
 	@echo ""
 	@forge script $(BOOTSTRAP)/BootstrapNFTs.s.sol \
 		$(FORGE_COMMON_FLAGS)

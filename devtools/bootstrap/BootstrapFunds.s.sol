@@ -15,7 +15,7 @@ import {IWETH} from "periphery/interfaces/IWETH.sol";
  * @dev    Participants are funded with ETH at fork startup via Anvil's `--mnemonic` flag.
  *         This script runs after fork start and before `Approve`.
  */
-contract BootstrapAccounts is BaseDevScript, DevConfig {
+contract BootstrapFunds is BaseDevScript, DevConfig {
     function run() external {
         // --------------------------------
         // LOAD CONFIG
@@ -28,14 +28,6 @@ contract BootstrapAccounts is BaseDevScript, DevConfig {
         // --------------------------------
         // WRAP ETH
         // --------------------------------
-
-        console.log("PIPELINE PARTICIPANTS");
-        console.log("--------------------");
-        for (uint256 i = 0; i < participantCount; i++) {
-            console.log("P%s | %s", i + 1, addrOf(participantPks[i]));
-        }
-        console.log("--------------------");
-        console.log("");
 
         logSection("WRAP ETH => WETH");
 
