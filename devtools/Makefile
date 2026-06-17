@@ -116,7 +116,7 @@ prepare: ## Compute fork start block and pipeline window timestamps
 
 bootstrap-accounts: ## Wrap ETH into WETH for all participants
 	@echo ""
-	@echo "💻 Bootstrapping dev accounts..."
+	@echo "💻 Bootstrapping participants..."
 	@echo ""
 	@forge script $(BOOTSTRAP)/BootstrapAccounts.s.sol \
 		$(FORGE_COMMON_FLAGS)
