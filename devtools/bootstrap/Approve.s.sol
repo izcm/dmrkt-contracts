@@ -9,6 +9,7 @@ import {DevConfig} from "dev/DevConfig.s.sol";
 
 // interfaces
 import {IERC721} from "@openzeppelin/interfaces/IERC721.sol";
+import {IERC721Metadata} from "@openzeppelin/token/ERC721/extensions/IERC721Metadata.sol";
 import {IERC20} from "@openzeppelin/interfaces/IERC20.sol";
 
 /**
@@ -39,25 +40,21 @@ contract Approve is BaseDevScript, DevConfig {
 
         for (uint256 i = 0; i < collections.length; i++) {
             IERC721 collectionToken = IERC721(collections[i]);
+            string memory name = IERC721Metadata(collections[i]).name();
 
             console.log("");
-            console.log(string.concat("APPROVE COLLECTION #", vm.toString(i)));
+            console.log(name);
 
             for (uint256 j = 0; j < participantCount; j++) {
                 address owner = addrOf(participantPks[j]);
-                console.log(
-                    "[nft-approve] participant %s/%s | %s",
-                    j + 1,
-                    participantCount,
-                    owner
-                );
 
                 vm.startBroadcast(participantPks[j]);
                 collectionToken.setApprovalForAll(nftTransferAuth, true);
                 vm.stopBroadcast();
 
                 console.log(
-                    "[nft-approve] done | approved: %s",
+                    "[nft-approve] P%s | approved: %s",
+                    j + 1,
                     collectionToken.isApprovedForAll(owner, nftTransferAuth)
                 );
             }
@@ -73,19 +70,11 @@ contract Approve is BaseDevScript, DevConfig {
         uint256 allowance = type(uint256).max;
 
         for (uint256 i = 0; i < participantCount; i++) {
-            address owner = addrOf(participantPks[i]);
-            console.log(
-                "[weth-approve] participant %s/%s | %s",
-                i + 1,
-                participantCount,
-                owner
-            );
-
             vm.startBroadcast(participantPks[i]);
             wethToken.approve(allowanceSpender, allowance);
             vm.stopBroadcast();
 
-            console.log("[weth-approve] done | allowance: unlimited");
+            console.log("[weth-approve] P%s | allowance: unlimited", i + 1);
         }
     }
 }

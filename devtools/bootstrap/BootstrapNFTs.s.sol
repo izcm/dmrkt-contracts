@@ -40,13 +40,12 @@ contract BootstrapNFTs is BaseDevScript, DevConfig {
             mintTokens(participantPks, DNFT(collections[i]));
 
             console.log("");
-            console.log("NFT FINAL BALANCES");
 
             for (uint256 j = 0; j < participantCount; j++) {
                 address user = addrOf(participantPks[j]);
                 uint256 bal = collectionToken.balanceOf(user);
 
-                logTokenBalance(name, user, bal);
+                console.log("%s | P%s | balance: %s", name, j + 1, bal);
             }
         }
     }

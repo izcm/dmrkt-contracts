@@ -96,7 +96,6 @@ contract BuildEpoch is
         // --------------------------------
 
         logSection("BUILD ORDERS");
-        console.log("Block timestamp: %s", block.timestamp);
         console.log("Epoch: %s | Collections: %s", epoch, collections.length);
 
         OrderModel.Order[] memory orders = _buildOrders(weth, collections);

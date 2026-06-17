@@ -32,16 +32,25 @@ contract BootstrapAccounts is BaseDevScript, DevConfig {
 
         IWETH wethToken = IWETH(weth);
 
+        console.log("");
+        console.log("DEMO PARTICIPANTS");
+        console.log("--------------------");
+        for (uint256 i = 0; i < participantCount; i++) {
+            console.log("P%s | %s", i + 1, addrOf(participantPks[i]));
+        }
+        console.log("--------------------");
+        console.log("");
+
         for (uint256 i = 0; i < participantCount; i++) {
             address a = addrOf(participantPks[i]);
-            logTokenBalance("PRE  WETH", a, wethToken.balanceOf(a));
+            console.log("PRE  WETH | P%s | balance: %s", i + 1, wethToken.balanceOf(a));
 
             vm.startBroadcast(participantPks[i]);
             uint256 wethWrapAmount = a.balance / 2; // wraps half of eth balance to weth
             wethToken.deposit{value: wethWrapAmount}();
             vm.stopBroadcast();
 
-            logTokenBalance("POST WETH", a, wethToken.balanceOf(a));
+            console.log("POST WETH | P%s | balance: %s", i + 1, wethToken.balanceOf(a));
         }
     }
 }
