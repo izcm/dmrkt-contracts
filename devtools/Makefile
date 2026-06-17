@@ -117,7 +117,7 @@ prepare: ## Compute fork start block and pipeline window timestamps
 
 print-participants: ## Print pipeline participants
 	@echo ""
-	@echo "💻 Bootstrapping participants..."
+	@echo "⚙️ Start bootstrap sequence..."
 	@echo ""
 	@forge script $(BOOTSTRAP)/PrintParticipants.s.sol \
 		--rpc-url $(RPC_URL)
@@ -130,6 +130,10 @@ bootstrap-funds: ## Wrap ETH into WETH for all participants
 		$(FORGE_COMMON_FLAGS)
 
 deploy-core: ## Deploy OrderEngine + NFT collections, write addresses to pipeline.toml
+	@echo ""
+	@echo "───────────────────────────────────────────────"
+	@echo "DEPLOY AND BOOTSTRAP"
+	@echo "───────────────────────────────────────────────"
 	@echo ""
 	@echo "🧾 Deploying core contracts..."
 	@echo ""
