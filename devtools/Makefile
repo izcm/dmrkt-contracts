@@ -77,7 +77,7 @@ wait:
 pipeline-separator:
 	@echo ""
 	@echo "───────────────────────────────────────────────"
-	@echo "CORE SETUP COMPLETE — SIMULATE MARKET HISTORY"
+	@echo "SIMULATE MARKET ACTIVITY"
 	@echo "───────────────────────────────────────────────"
 	@echo ""
 
@@ -169,7 +169,7 @@ approve: ## Grant NFT + WETH allowances to OrderEngine
 
 run-epochs: ## Generate, sign, export, and settle orders across all epochs
 	@echo ""
-	@echo "📊 Building historical orders..."
+	@echo "📊 Building orders..."
 	@echo ""
 	@./$(RUNNERS)/run-epochs.sh $(EPOCH_COUNT) $(EXPORT_FLAG)
 

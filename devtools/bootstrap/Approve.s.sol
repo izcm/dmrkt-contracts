@@ -54,7 +54,7 @@ contract Approve is BaseDevScript, DevConfig {
                 vm.stopBroadcast();
 
                 console.log(
-                    "[nft-approve] P%s | approved for all: %s",
+                    "[nft-approve-all] P%s | approved: %s",
                     j + 1,
                     collectionToken.isApprovedForAll(owner, nftTransferAuth)
                 );
