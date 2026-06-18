@@ -36,7 +36,7 @@ contract BootstrapFunds is BaseDevScript, DevConfig {
         for (uint256 i = 0; i < participantCount; i++) {
             address a = addrOf(participantPks[i]);
             console.log(
-                "PRE | P%s | balance: %s",
+                "PRE  | P%s | balance: %s",
                 i + 1,
                 wethToken.balanceOf(a)
             );

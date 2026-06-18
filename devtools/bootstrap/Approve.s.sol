@@ -38,13 +38,16 @@ contract Approve is BaseDevScript, DevConfig {
         // NFT TRANSFER AUTH
         // --------------------------------
 
+        console.log("MARKETPLACE | OrderEngine at %s", nftTransferAuth);
+        printSpace();
+
         logSection("APPROVE NFT TRANSFER AUTH");
 
         for (uint256 i = 0; i < collections.length; i++) {
             IERC721 collectionToken = IERC721(collections[i]);
             string memory name = IERC721Metadata(collections[i]).name();
 
-            console.log("COLLECTION | %s", name);
+            console.log("COLLECTION | %s | setApprovalForAll()", name);
 
             for (uint256 j = 0; j < participantCount; j++) {
                 address owner = addrOf(participantPks[j]);
@@ -54,7 +57,7 @@ contract Approve is BaseDevScript, DevConfig {
                 vm.stopBroadcast();
 
                 console.log(
-                    "[nft-approve-all] P%s | approved: %s",
+                    "[nft-approve] P%s | approved: %s",
                     j + 1,
                     collectionToken.isApprovedForAll(owner, nftTransferAuth)
                 );
@@ -67,8 +70,8 @@ contract Approve is BaseDevScript, DevConfig {
         // WETH ALLOWANCE
         // --------------------------------
 
-        logSection("APPROVE ALLOWANCE FOR NFT TRANSFER AUTH");
-        console.log("TOKEN | WETH");
+        logSection("APPROVE TOKEN SPENDER");
+        console.log("TOKEN | WETH | approve()");
 
         IERC20 wethToken = IERC20(weth);
         uint256 allowance = type(uint256).max;
