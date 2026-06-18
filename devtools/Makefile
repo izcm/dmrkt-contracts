@@ -91,13 +91,11 @@ start: prepare fork pipeline-setup ## Compute window, start fork, deploy, and bo
 reset: kill-anvil start ## Kill anvil and restart from scratch
 	@echo "🔄 Dev reset complete"
 
-pipeline-setup: \
-	deploy-core \
-	print-participants \
-	bootstrap-funds \
-	bootstrap-nfts \
-	approve
+pipeline-setup: deploy-core print-participants bootstrap-funds bootstrap-nfts
 	@echo "✅ Core deployed and participants bootstrapped"
+	$(MAKE) approve
+	@echo "✅ OrderEngine fully authorized"
+
 
 # ───────────────────────────────────────────────
 #   ENVIRONMENT BOOT
