@@ -38,9 +38,6 @@ contract Approve is BaseDevScript, DevConfig {
         // NFT TRANSFER AUTH
         // --------------------------------
 
-        console.log("MARKETPLACE | OrderEngine at %s", nftTransferAuth);
-        printSpace();
-
         logSection("APPROVE NFT TRANSFER AUTH");
 
         for (uint256 i = 0; i < collections.length; i++) {
