@@ -119,8 +119,6 @@ print-participants: ## Print pipeline participants
 	@echo "BOOTSTRAP"
 	@echo "───────────────────────────────────────────────"
 	@echo ""
-	@echo "⚙️ Start bootstrap sequence..."
-	@echo ""
 	@forge script $(BOOTSTRAP)/PrintParticipants.s.sol \
 		--rpc-url $(RPC_URL)
 
