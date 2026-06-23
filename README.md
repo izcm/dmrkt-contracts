@@ -1,4 +1,4 @@
-# d | mrkt contracts
+# Marketplace contracts + market simulation scripts
 
 A minimal marketplace paired with foundry scripts to simulate marketplace activity.
 
