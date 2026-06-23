@@ -1,4 +1,4 @@
-# Marketplace contracts + market simulation scripts
+# Marketplace contracts + market simulation pipeline
 
 A minimal marketplace paired with foundry scripts to simulate marketplace activity.
 
