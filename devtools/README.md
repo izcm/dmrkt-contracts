@@ -102,6 +102,20 @@ The boostrap sequence is especially good for anyone new to foundry. They're very
 
 ## Setup
 
+**`pipeline.toml`**
+
+You need to create `devtools/pipeline.toml` before running the pipeline. It tells the scripts where your local fork is and where to find WETH:
+
+```toml
+[31337]
+endpoint_url = "http://localhost:8545"
+
+[31337.address]
+weth = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
+```
+
+The deploy scripts will populate the rest of the fields (contract addresses, fork block, timestamps) when they run.
+
 **Dependencies**
 
 | Tool                       | Version | Notes |

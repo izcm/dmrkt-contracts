@@ -14,3 +14,4 @@ notes/
 
 # devtools out / in
 data/
+devtools/pipeline.toml
