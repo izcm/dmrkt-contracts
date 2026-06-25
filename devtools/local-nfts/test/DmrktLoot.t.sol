@@ -3,8 +3,8 @@ pragma solidity ^0.8.30;
 
 import "forge-std/Test.sol";
 
-import {DMrktLoot} from "../DMrktLoot.sol";
-import {DMrktMathConfig} from "../DMrktMathConfig.sol";
+import { DMrktLoot } from "../DMrktLoot.sol";
+import { DMrktMathConfig } from "../DMrktMathConfig.sol";
 
 /**
  * nb: tests are made by AI (this is only demo-periphery stuff)

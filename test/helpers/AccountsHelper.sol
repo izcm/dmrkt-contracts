@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
-import {Test} from "forge-std/Test.sol";
+import { Test } from "forge-std/Test.sol";
 
 abstract contract AccountsHelper is Test {
     struct Actors {
@@ -41,9 +41,7 @@ abstract contract AccountsHelper is Test {
         return addrOf(testKeys[idx]);
     }
 
-    function someActors(
-        string memory seed
-    ) internal view returns (Actors memory a) {
+    function someActors(string memory seed) internal view returns (Actors memory a) {
         a.order = actor(string.concat(seed, "_order"));
         a.fill = actor(string.concat(seed, "_fill"));
 

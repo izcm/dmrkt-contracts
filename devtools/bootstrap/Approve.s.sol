@@ -1,18 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
-import {console} from "forge-std/console.sol";
+import { console } from "forge-std/console.sol";
 
 // scripts
-import {BaseDevScript} from "dev/BaseDevScript.s.sol";
-import {DevConfig} from "dev/DevConfig.s.sol";
+import { BaseDevScript } from "dev/BaseDevScript.s.sol";
+import { DevConfig } from "dev/DevConfig.s.sol";
 
 // interfaces
-import {IERC721} from "@openzeppelin/interfaces/IERC721.sol";
-import {
-    IERC721Metadata
-} from "@openzeppelin/token/ERC721/extensions/IERC721Metadata.sol";
-import {IERC20} from "@openzeppelin/interfaces/IERC20.sol";
+import { IERC721 } from "@openzeppelin/interfaces/IERC721.sol";
+import { IERC721Metadata } from "@openzeppelin/token/ERC721/extensions/IERC721Metadata.sol";
+import { IERC20 } from "@openzeppelin/interfaces/IERC20.sol";
 
 /**
  * @notice Grants the OrderEngine the approvals it needs to settle trades:

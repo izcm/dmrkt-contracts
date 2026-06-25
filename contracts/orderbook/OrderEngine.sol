@@ -2,15 +2,15 @@
 pragma solidity ^0.8.30;
 
 // oz
-import {IERC721} from "@openzeppelin/interfaces/IERC721.sol";
-import {IERC165} from "@openzeppelin/interfaces/IERC165.sol";
-import {IERC20, SafeERC20} from "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
-import {ReentrancyGuard} from "@openzeppelin/utils/ReentrancyGuard.sol";
+import { IERC721 } from "@openzeppelin/interfaces/IERC721.sol";
+import { IERC165 } from "@openzeppelin/interfaces/IERC165.sol";
+import { IERC20, SafeERC20 } from "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
+import { ReentrancyGuard } from "@openzeppelin/utils/ReentrancyGuard.sol";
 
 // local
-import {OrderModel} from "./libs/OrderModel.sol";
-import {SettlementRoles} from "./libs/SettlementRoles.sol";
-import {SignatureOps as SigOps} from "./libs/SignatureOps.sol";
+import { OrderModel } from "./libs/OrderModel.sol";
+import { SettlementRoles } from "./libs/SettlementRoles.sol";
+import { SignatureOps as SigOps } from "./libs/SignatureOps.sol";
 
 bytes4 constant INTERFACE_ID_ERC721 = 0x80ac58cd;
 
@@ -42,8 +42,7 @@ contract OrderEngine is ReentrancyGuard {
     address public protocolFeeRecipient;
 
     // TODO: make nonce bitmap instead 1x uint256 holding 256 nonces
-    mapping(address => mapping(uint256 => bool))
-        private _isUserOrderNonceInvalid;
+    mapping(address => mapping(uint256 => bool)) private _isUserOrderNonceInvalid;
 
     // === EVENTS ===
 
@@ -97,10 +96,7 @@ contract OrderEngine is ReentrancyGuard {
     /**
      * @notice Checks if user nonce is invalid
      */
-    function isUserOrderNonceInvalid(
-        address user,
-        uint256 nonce
-    ) external view returns (bool) {
+    function isUserOrderNonceInvalid(address user, uint256 nonce) external view returns (bool) {
         return _isUserOrderNonceInvalid[user][nonce];
     }
 
@@ -130,8 +126,10 @@ contract OrderEngine is ReentrancyGuard {
         _isUserOrderNonceInvalid[order.actor][order.nonce] = true;
 
         // decide roles and asset
-        (address nftHolder, address spender, uint256 tokenId) = SettlementRoles
-            .resolve(fill, order);
+        (address nftHolder, address spender, uint256 tokenId) = SettlementRoles.resolve(
+            fill,
+            order
+        );
 
         _settlePayment(order.currency, spender, nftHolder, order.price);
 
@@ -154,12 +152,7 @@ contract OrderEngine is ReentrancyGuard {
      * @notice Transfers currency between accounts
      * @dev Royalty fee distribution is currently paused
      */
-    function _settlePayment(
-        address currency,
-        address from,
-        address to,
-        uint256 amount
-    ) internal {
+    function _settlePayment(address currency, address from, address to, uint256 amount) internal {
         uint256 sellerCompensation = amount;
 
         // calculate protocol fee
@@ -167,11 +160,7 @@ contract OrderEngine is ReentrancyGuard {
             uint256 feeAmount = (amount * PROTOCOL_FEE_BPS) / 10000;
 
             // using SafeERC20 to future proof
-            IERC20(currency).safeTransferFrom(
-                from,
-                protocolFeeRecipient,
-                feeAmount
-            );
+            IERC20(currency).safeTransferFrom(from, protocolFeeRecipient, feeAmount);
 
             sellerCompensation -= feeAmount;
         }
@@ -186,12 +175,7 @@ contract OrderEngine is ReentrancyGuard {
      * @notice Transfers an ERC721 token between accounts
      * @dev Reverts if collection does not implement ERC721 via ERC165
      */
-    function _transferNft(
-        address collection,
-        address from,
-        address to,
-        uint256 tokenId
-    ) internal {
+    function _transferNft(address collection, address from, address to, uint256 tokenId) internal {
         if (!IERC165(collection).supportsInterface(INTERFACE_ID_ERC721)) {
             revert UnsupportedCollection();
         }
@@ -212,20 +196,11 @@ contract OrderEngine is ReentrancyGuard {
     ) internal view {
         require(order.actor != address(0), ZeroActor());
 
-        require(
-            !_isUserOrderNonceInvalid[order.actor][order.nonce],
-            InvalidNonce()
-        );
+        require(!_isUserOrderNonceInvalid[order.actor][order.nonce], InvalidNonce());
 
-        require(
-            order.start <= block.timestamp && order.end >= block.timestamp,
-            InvalidTimestamp()
-        );
+        require(order.start <= block.timestamp && order.end >= block.timestamp, InvalidTimestamp());
 
-        require(
-            order.currency == WHITELISTED_CURRENCY,
-            CurrencyNotWhitelisted()
-        );
+        require(order.currency == WHITELISTED_CURRENCY, CurrencyNotWhitelisted());
 
         SigOps.verify(DOMAIN_SEPARATOR, orderHash, order.actor, v, r, s);
     }

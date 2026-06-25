@@ -2,10 +2,10 @@
 pragma solidity ^0.8.30;
 
 // oz
-import {IERC721} from "@openzeppelin/interfaces/IERC721.sol";
+import { IERC721 } from "@openzeppelin/interfaces/IERC721.sol";
 
 // core libs
-import {OrderModel} from "orderbook/libs/OrderModel.sol";
+import { OrderModel } from "orderbook/libs/OrderModel.sol";
 
 /**
  * @notice Pre-settlement checks run by ExecuteOrder before calling settle().
@@ -17,9 +17,7 @@ abstract contract SettlementValidation {
     /**
      * @notice Returns true if the current block timestamp falls within the order's validity window.
      */
-    function validTimestamps(
-        OrderModel.Order memory o
-    ) internal view returns (bool) {
+    function validTimestamps(OrderModel.Order memory o) internal view returns (bool) {
         uint64 blockTs = uint64(block.timestamp);
 
         bool validStart = o.start <= blockTs;

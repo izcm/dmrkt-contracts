@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
-import {Script} from "forge-std/Script.sol";
+import { Script } from "forge-std/Script.sol";
 
 // core libs
-import {OrderModel} from "orderbook/libs/OrderModel.sol";
+import { OrderModel } from "orderbook/libs/OrderModel.sol";
 
 // interfaces
-import {DNFT} from "dev/interfaces/DNFT.sol";
+import { DNFT } from "dev/interfaces/DNFT.sol";
 
 // types
-import {Selection} from "../epochs/Types.sol";
+import { Selection } from "../epochs/Types.sol";
 
 /**
  * @notice Abstract base for order sampling and price generation. Selects a pseudo-random but
@@ -46,10 +46,7 @@ abstract contract MarketSim is Script {
                 mixIn
             );
 
-            selections[i] = Selection({
-                collection: collection,
-                tokenIds: tokens
-            });
+            selections[i] = Selection({ collection: collection, tokenIds: tokens });
         }
     }
 
@@ -66,10 +63,7 @@ abstract contract MarketSim is Script {
         address collection,
         uint256 mixIn
     ) internal pure returns (uint256) {
-        return
-            uint256(
-                keccak256(abi.encode(collection, side, isCollectionBid, mixIn))
-            );
+        return uint256(keccak256(abi.encode(collection, side, isCollectionBid, mixIn)));
     }
 
     /**
@@ -82,9 +76,7 @@ abstract contract MarketSim is Script {
         uint256 tokenId,
         uint256 mixIn
     ) internal pure virtual returns (uint256) {
-        bytes32 h = keccak256(
-            abi.encode("DMRKT_PRICE_V1", collection, mixIn, tokenId)
-        );
+        bytes32 h = keccak256(abi.encode("DMRKT_PRICE_V1", collection, mixIn, tokenId));
         uint256 bucket = uint256(h) % 11;
         return (bucket + 1) * 0.05 ether;
     }

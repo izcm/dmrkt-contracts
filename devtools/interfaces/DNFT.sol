@@ -4,7 +4,7 @@ pragma solidity ^0.8.30;
 /// @dev dev-only interface for periphery NFTs used in similation scripts
 /// @notice shorthand for DMrkt NFT
 
-import {IERC721} from "@openzeppelin/interfaces/IERC721.sol";
+import { IERC721 } from "@openzeppelin/interfaces/IERC721.sol";
 
 // interfaceId: 0x40bf1e93
 interface DNFT is IERC721 {

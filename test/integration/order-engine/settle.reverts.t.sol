@@ -2,18 +2,18 @@
 pragma solidity ^0.8.30;
 
 // core
-import {OrderEngine} from "orderbook/OrderEngine.sol";
+import { OrderEngine } from "orderbook/OrderEngine.sol";
 
 // base
-import {OrderEngineSettleBase} from "./settle.base.t.sol";
+import { OrderEngineSettleBase } from "./settle.base.t.sol";
 
 // mocks
-import {MockUnsupported} from "mocks/MockUnsupported.sol";
-import {MockERC721} from "mocks/MockERC721.sol";
+import { MockUnsupported } from "mocks/MockUnsupported.sol";
+import { MockERC721 } from "mocks/MockERC721.sol";
 
 // core libs
-import {OrderModel} from "orderbook/libs/OrderModel.sol";
-import {SignatureOps as SigOps} from "orderbook/libs/SignatureOps.sol";
+import { OrderModel } from "orderbook/libs/OrderModel.sol";
+import { SignatureOps as SigOps } from "orderbook/libs/SignatureOps.sol";
 
 /// NOTE:
 /// When testing branches that revert before any `order.Side` logic,
@@ -36,31 +36,16 @@ contract OrderEngineSettleRevertsTest is OrderEngineSettleBase {
             SigOps.Signature memory sig
         ) = _buildBasicRevertTest("invalid_sender");
 
-        _expectSettleRevert(
-            fill,
-            order,
-            sig,
-            txSender,
-            OrderEngine.UnauthorizedFillActor.selector
-        );
+        _expectSettleRevert(fill, order, sig, txSender, OrderEngine.UnauthorizedFillActor.selector);
     }
 
     function test_settle_zero_as_order_actor_reverts() public {
-        Actors memory actors = Actors({
-            order: address(0),
-            fill: actor("not_important")
-        });
+        Actors memory actors = Actors({ order: address(0), fill: actor("not_important") });
         OrderModel.Order memory order = makeAsk(actors.order);
         OrderModel.Fill memory fill = makeFill(actors.fill);
         SigOps.Signature memory sig = dummySig();
 
-        _expectSettleRevert(
-            fill,
-            order,
-            sig,
-            actors.fill,
-            OrderEngine.ZeroActor.selector
-        );
+        _expectSettleRevert(fill, order, sig, actors.fill, OrderEngine.ZeroActor.selector);
     }
 
     function test_settle_non_whitelisted_currency_reverts() public {
@@ -95,13 +80,7 @@ contract OrderEngineSettleRevertsTest is OrderEngineSettleBase {
 
         order.start = uint64(block.timestamp + 1 days);
 
-        _expectSettleRevert(
-            fill,
-            order,
-            sig,
-            fill.actor,
-            OrderEngine.InvalidTimestamp.selector
-        );
+        _expectSettleRevert(fill, order, sig, fill.actor, OrderEngine.InvalidTimestamp.selector);
     }
 
     function test_settle_order_expired_reverts() public {
@@ -117,13 +96,7 @@ contract OrderEngineSettleRevertsTest is OrderEngineSettleBase {
 
         vm.warp(3);
 
-        _expectSettleRevert(
-            fill,
-            order,
-            sig,
-            fill.actor,
-            OrderEngine.InvalidTimestamp.selector
-        );
+        _expectSettleRevert(fill, order, sig, fill.actor, OrderEngine.InvalidTimestamp.selector);
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -142,13 +115,7 @@ contract OrderEngineSettleRevertsTest is OrderEngineSettleBase {
         // tamper price
         order.price = 10;
 
-        _expectSettleRevert(
-            fill,
-            order,
-            sig,
-            actors.fill,
-            SigOps.InvalidSignature.selector
-        );
+        _expectSettleRevert(fill, order, sig, actors.fill, SigOps.InvalidSignature.selector);
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -171,13 +138,7 @@ contract OrderEngineSettleRevertsTest is OrderEngineSettleBase {
         orderEngine.settle(fill, order, sig);
 
         // replay nonce - should revert
-        _expectSettleRevert(
-            fill,
-            order,
-            sig,
-            actors.fill,
-            OrderEngine.InvalidNonce.selector
-        );
+        _expectSettleRevert(fill, order, sig, actors.fill, OrderEngine.InvalidNonce.selector);
     }
 
     function test_settle_unsupported_collection_reverts() public {

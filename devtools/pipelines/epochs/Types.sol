@@ -2,8 +2,8 @@
 pragma solidity ^0.8.30;
 
 // core libraries
-import {OrderModel} from "orderbook/libs/OrderModel.sol";
-import {SignatureOps as SigOps} from "orderbook/libs/SignatureOps.sol";
+import { OrderModel } from "orderbook/libs/OrderModel.sol";
+import { SignatureOps as SigOps } from "orderbook/libs/SignatureOps.sol";
 
 /// @notice An order paired with its EIP-712 signature, as produced by BuildEpoch and consumed by ExecuteOrder.
 struct SignedOrder {

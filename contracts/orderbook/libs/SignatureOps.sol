@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
-import {IERC1271} from "@openzeppelin/interfaces/IERC1271.sol";
+import { IERC1271 } from "@openzeppelin/interfaces/IERC1271.sol";
 
 library SignatureOps {
     error InvalidYParity();
@@ -15,19 +15,12 @@ library SignatureOps {
     }
 
     /// @dev Semantic helper. Unpacks a Signature into its (v, r, s) components.
-    function vrs(
-        Signature calldata sig
-    ) internal pure returns (uint8, bytes32, bytes32) {
+    function vrs(Signature calldata sig) internal pure returns (uint8, bytes32, bytes32) {
         return (sig.v, sig.r, sig.s);
     }
 
     /// @notice Recovers signer from digest and signature
-    function recover(
-        bytes32 hash,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) internal pure returns (address) {
+    function recover(bytes32 hash, uint8 v, bytes32 r, bytes32 s) internal pure returns (address) {
         return ecrecover(hash, v, r, s);
     }
 
@@ -51,10 +44,7 @@ library SignatureOps {
         if (v != 27 && v != 28) revert InvalidYParity();
 
         // check s <= n/2 https://eips.ethereum.org/EIPS/eip-2
-        if (
-            uint256(s) >
-            0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0
-        ) {
+        if (uint256(s) > 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0) {
             revert InvalidSParameter();
         }
 
@@ -84,10 +74,7 @@ library SignatureOps {
      * keccak256(0x19 0x01 || domainSeparator || hashStruct(message))
      * https://eips.ethereum.org/EIPS/eip-712#specification-of-the-eth_signtypeddata-json-rpc
      */
-    function digest712(
-        bytes32 domain,
-        bytes32 msgHash
-    ) internal pure returns (bytes32) {
+    function digest712(bytes32 domain, bytes32 msgHash) internal pure returns (bytes32) {
         return keccak256(abi.encodePacked("\x19\x01", domain, msgHash));
     }
 }

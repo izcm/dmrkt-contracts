@@ -3,7 +3,7 @@ pragma solidity ^0.8.30;
 
 import "forge-std/Test.sol";
 
-import {DMrktMathConfig} from "../DMrktMathConfig.sol";
+import { DMrktMathConfig } from "../DMrktMathConfig.sol";
 import "../DMrktNFTLib.sol";
 
 contract DMrktNFTLibTest is Test {
@@ -57,7 +57,9 @@ contract DMrktNFTLibTest is Test {
     // ----------------------------
 
     function testBuildRarityGlow() public pure {
-        string memory glowLegend = DMrktNFTLib.buildRarityGlow(DMrktMathConfig.rarityLegendaryMod());
+        string memory glowLegend = DMrktNFTLib.buildRarityGlow(
+            DMrktMathConfig.rarityLegendaryMod()
+        );
         assertTrue(bytes(glowLegend).length > 0);
 
         string memory glowEpic = DMrktNFTLib.buildRarityGlow(DMrktMathConfig.rarityEpicMod());
@@ -68,10 +70,14 @@ contract DMrktNFTLibTest is Test {
     }
 
     function testBuildElementOverlay() public pure {
-        string memory overlayThunder = DMrktNFTLib.buildElementOverlay(DMrktMathConfig.elementThunderMod());
+        string memory overlayThunder = DMrktNFTLib.buildElementOverlay(
+            DMrktMathConfig.elementThunderMod()
+        );
         assertTrue(bytes(overlayThunder).length > 0);
 
-        string memory overlayFire = DMrktNFTLib.buildElementOverlay(DMrktMathConfig.elementFireMod());
+        string memory overlayFire = DMrktNFTLib.buildElementOverlay(
+            DMrktMathConfig.elementFireMod()
+        );
         assertTrue(bytes(overlayFire).length > 0);
 
         string memory overlayNone = DMrktNFTLib.buildElementOverlay(1);

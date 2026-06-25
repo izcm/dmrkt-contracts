@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
-import {Config} from "forge-std/Config.sol";
+import { Config } from "forge-std/Config.sol";
 
 // TODO: https://getfoundry.sh/reference/cheatcodes/write-toml/
 // learn about json nesting in .toml

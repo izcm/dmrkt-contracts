@@ -4,7 +4,7 @@ pragma solidity ^0.8.28;
 import "@openzeppelin/utils/Base64.sol";
 import "@openzeppelin/utils/Strings.sol";
 
-import {DMrktMathConfig} from "./DMrktMathConfig.sol";
+import { DMrktMathConfig } from "./DMrktMathConfig.sol";
 
 /**
  * @title DMrktNFTLib
@@ -19,9 +19,7 @@ library DMrktNFTLib {
     // ELEMENT LOGIC
     // ----------------------------
 
-    function getElementForToken(
-        uint256 tokenId
-    ) internal pure returns (string memory) {
+    function getElementForToken(uint256 tokenId) internal pure returns (string memory) {
         if (tokenId % DMrktMathConfig.elementThunderMod() == 0) {
             return "Thunder";
         } else if (tokenId % DMrktMathConfig.elementFireMod() == 0) {
@@ -31,9 +29,7 @@ library DMrktNFTLib {
         }
     }
 
-    function getElementName(
-        uint256 tokenId
-    ) internal pure returns (string memory) {
+    function getElementName(uint256 tokenId) internal pure returns (string memory) {
         if (tokenId % DMrktMathConfig.elementThunderMod() == 0) {
             return "Thunder";
         }
@@ -41,12 +37,9 @@ library DMrktNFTLib {
         return "None";
     }
 
-    function buildElementOverlay(
-        uint256 tokenId
-    ) internal pure returns (string memory) {
+    function buildElementOverlay(uint256 tokenId) internal pure returns (string memory) {
         if (tokenId % DMrktMathConfig.elementThunderMod() == 0) {
-            return
-                '<polygon points="250,150 310,150 270,260 330,260 260,380" fill="#fde047"/>';
+            return '<polygon points="250,150 310,150 270,260 330,260 260,380" fill="#fde047"/>';
         }
 
         if (tokenId % DMrktMathConfig.elementFireMod() == 0) {
@@ -71,17 +64,15 @@ library DMrktNFTLib {
         return "Common";
     }
 
-    function getItemTypeName(
-        uint256 itemType
-    ) internal pure returns (string memory) {
+    function getItemTypeName(uint256 itemType) internal pure returns (string memory) {
         if (itemType == DMrktMathConfig.itemTypeSword()) return "Sword";
         if (itemType == DMrktMathConfig.itemTypeElixir()) return "Elixir";
         return "Shield";
     }
 
     function getDamage(uint256 tokenId) internal pure returns (uint256) {
-        uint256 base = DMrktMathConfig.damageBaseMin() +
-            (tokenId % DMrktMathConfig.damageBaseModulo());
+        uint256 base =
+            DMrktMathConfig.damageBaseMin() + (tokenId % DMrktMathConfig.damageBaseModulo());
 
         if (tokenId % DMrktMathConfig.rarityLegendaryMod() == 0) {
             return base + DMrktMathConfig.damageLegendaryBonus();
@@ -97,8 +88,8 @@ library DMrktNFTLib {
     }
 
     function getDefense(uint256 tokenId) internal pure returns (uint256) {
-        uint256 base = DMrktMathConfig.defenseBaseMin() +
-            (tokenId % DMrktMathConfig.defenseBaseModulo());
+        uint256 base =
+            DMrktMathConfig.defenseBaseMin() + (tokenId % DMrktMathConfig.defenseBaseModulo());
 
         if (tokenId % DMrktMathConfig.rarityLegendaryMod() == 0) {
             return base + DMrktMathConfig.defenseLegendaryBonus();
@@ -114,8 +105,8 @@ library DMrktNFTLib {
     }
 
     function getPower(uint256 tokenId) internal pure returns (uint256) {
-        uint256 base = DMrktMathConfig.powerBaseMin() +
-            (tokenId % DMrktMathConfig.powerBaseModulo());
+        uint256 base =
+            DMrktMathConfig.powerBaseMin() + (tokenId % DMrktMathConfig.powerBaseModulo());
 
         if (tokenId % DMrktMathConfig.rarityLegendaryMod() == 0) {
             return base + DMrktMathConfig.powerLegendaryBonus();
@@ -130,9 +121,7 @@ library DMrktNFTLib {
         return base;
     }
 
-    function getColorForToken(
-        uint256 tokenId
-    ) internal pure returns (string memory) {
+    function getColorForToken(uint256 tokenId) internal pure returns (string memory) {
         uint256 c = tokenId % DMrktMathConfig.colorPaletteSize();
 
         if (c == 0) return "#7c5cff"; // Protocol Purple
@@ -149,9 +138,7 @@ library DMrktNFTLib {
         return "#ffffff"; // Mythic White
     }
 
-    function getColorName(
-        uint256 tokenId
-    ) internal pure returns (string memory) {
+    function getColorName(uint256 tokenId) internal pure returns (string memory) {
         uint256 c = tokenId % DMrktMathConfig.colorPaletteSize();
 
         if (c == 0) return "Protocol Purple";
@@ -175,16 +162,7 @@ library DMrktNFTLib {
         string memory traitType,
         string memory value
     ) internal pure returns (string memory) {
-        return
-            string(
-                abi.encodePacked(
-                    '{"trait_type":"',
-                    traitType,
-                    '","value":"',
-                    value,
-                    '"}'
-                )
-            );
+        return string(abi.encodePacked('{"trait_type":"', traitType, '","value":"', value, '"}'));
     }
 
     function buildItemName(
@@ -202,17 +180,13 @@ library DMrktNFTLib {
         return string.concat(rarity, " ", color, " ", element, " ", base);
     }
 
-    function buildRarityGlow(
-        uint256 tokenId
-    ) internal pure returns (string memory) {
+    function buildRarityGlow(uint256 tokenId) internal pure returns (string memory) {
         if (tokenId % DMrktMathConfig.rarityLegendaryMod() == 0) {
-            return
-                '<circle cx="300" cy="300" r="240" fill="#ffd700" opacity="0.15"/>';
+            return '<circle cx="300" cy="300" r="240" fill="#ffd700" opacity="0.15"/>';
         }
 
         if (tokenId % DMrktMathConfig.rarityEpicMod() == 0) {
-            return
-                '<circle cx="300" cy="300" r="240" fill="#a855f7" opacity="0.12"/>';
+            return '<circle cx="300" cy="300" r="240" fill="#a855f7" opacity="0.12"/>';
         }
 
         return "";
@@ -244,8 +218,7 @@ library DMrktNFTLib {
             stat = buildTrait("Power", Strings.toString(getPower(tokenId)));
         }
 
-        return
-            string(abi.encodePacked('"attributes":[', common, ",", stat, "]"));
+        return string(abi.encodePacked('"attributes":[', common, ",", stat, "]"));
     }
 
     function buildLootMetadata(
@@ -275,9 +248,7 @@ library DMrktNFTLib {
             );
     }
 
-    function buildEggAttributes(
-        uint256 tokenId
-    ) internal pure returns (string memory) {
+    function buildEggAttributes(uint256 tokenId) internal pure returns (string memory) {
         return
             string(
                 abi.encodePacked(

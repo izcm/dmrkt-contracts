@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
-import {Test} from "forge-std/Test.sol";
+import { Test } from "forge-std/Test.sol";
 
 // core libraries
-import {OrderModel} from "orderbook/libs/OrderModel.sol";
-import {SignatureOps as SigOps} from "orderbook/libs/SignatureOps.sol";
+import { OrderModel } from "orderbook/libs/OrderModel.sol";
+import { SignatureOps as SigOps } from "orderbook/libs/SignatureOps.sol";
 
 abstract contract OrderHelper is Test {
     using OrderModel for OrderModel.Order;
@@ -31,9 +31,7 @@ abstract contract OrderHelper is Test {
 
     // === ASK ===
 
-    function makeAsk(
-        address actor
-    ) internal view returns (OrderModel.Order memory order) {
+    function makeAsk(address actor) internal view returns (OrderModel.Order memory order) {
         return makeOrder(OrderModel.Side.Ask, false, actor);
     }
 
@@ -42,16 +40,7 @@ abstract contract OrderHelper is Test {
         address currency,
         address actor
     ) internal view returns (OrderModel.Order memory) {
-        return
-            _order(
-                OrderModel.Side.Ask,
-                false,
-                collection,
-                currency,
-                DEFAULT_PRICE,
-                actor,
-                0
-            );
+        return _order(OrderModel.Side.Ask, false, collection, currency, DEFAULT_PRICE, actor, 0);
     }
 
     // === BID / ASK ===
@@ -102,11 +91,7 @@ abstract contract OrderHelper is Test {
     function makeSignedAsk(
         address signer,
         uint256 signerPk
-    )
-        internal
-        view
-        returns (OrderModel.Order memory order, SigOps.Signature memory sig)
-    {
+    ) internal view returns (OrderModel.Order memory order, SigOps.Signature memory sig) {
         order = makeAsk(signer);
         (, sig) = signOrder(order, signerPk);
     }
@@ -122,6 +107,6 @@ abstract contract OrderHelper is Test {
     }
 
     function dummySig() internal pure returns (SigOps.Signature memory) {
-        return SigOps.Signature({v: 0, r: bytes32(0), s: bytes32(0)});
+        return SigOps.Signature({ v: 0, r: bytes32(0), s: bytes32(0) });
     }
 }

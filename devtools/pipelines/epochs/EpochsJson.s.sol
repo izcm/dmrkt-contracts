@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
-import {Script} from "forge-std/Script.sol";
+import { Script } from "forge-std/Script.sol";
 
 // core libraries
-import {OrderModel} from "orderbook/libs/OrderModel.sol";
-import {SignatureOps as SigOps} from "orderbook/libs/SignatureOps.sol";
+import { OrderModel } from "orderbook/libs/OrderModel.sol";
+import { SignatureOps as SigOps } from "orderbook/libs/SignatureOps.sol";
 
 // types
-import {SignedOrder, ActorNonce, Selection} from "./Types.sol";
+import { SignedOrder, ActorNonce, Selection } from "./Types.sol";
 
 /**
  * @notice JSON serialization and deserialization layer for epoch pipeline data.
@@ -90,38 +90,27 @@ abstract contract EpochsJson is Script {
         return string.concat(_stateDir(), "epoch_", vm.toString(epoch), "/");
     }
 
-    function _epochOrdersDir(
-        uint256 epoch
-    ) internal view returns (string memory) {
+    function _epochOrdersDir(uint256 epoch) internal view returns (string memory) {
         return string.concat(_epochDir(epoch), "orders/");
     }
 
-    function _epochSelectionsDir(
-        uint256 epoch
-    ) internal view returns (string memory) {
+    function _epochSelectionsDir(uint256 epoch) internal view returns (string memory) {
         return string.concat(_epochDir(epoch), "selections/");
     }
 
     // === DEFAULT PATHS ===
 
-    function epochNoncesPath(
-        uint256 epoch
-    ) internal view returns (Path memory path) {
+    function epochNoncesPath(uint256 epoch) internal view returns (Path memory path) {
         path.dir = _epochDir(epoch);
         path.filename = "nonces.json";
     }
 
-    function epochOrderPath(
-        uint256 epoch,
-        uint256 idx
-    ) internal view returns (Path memory path) {
+    function epochOrderPath(uint256 epoch, uint256 idx) internal view returns (Path memory path) {
         path.dir = _epochOrdersDir(epoch);
         path.filename = string.concat("order_", vm.toString(idx), ".json");
     }
 
-    function epochOrdersPath(
-        uint256 epoch
-    ) internal view returns (Path memory path) {
+    function epochOrdersPath(uint256 epoch) internal view returns (Path memory path) {
         path.dir = _epochOrdersDir(epoch);
         path.filename = "orders.json";
     }
@@ -141,11 +130,7 @@ abstract contract EpochsJson is Script {
         noncesToJson(nonces, p.dir, p.filename);
     }
 
-    function orderToJson(
-        SignedOrder memory signed,
-        uint256 idx,
-        uint256 epoch
-    ) internal {
+    function orderToJson(SignedOrder memory signed, uint256 idx, uint256 epoch) internal {
         Path memory p = epochOrderPath(epoch, idx);
         orderToJson(signed, p.dir, p.filename, idx);
     }
@@ -157,17 +142,12 @@ abstract contract EpochsJson is Script {
 
     // === DEFAULT FROM JSON PATHS ===
 
-    function noncesFromJson(
-        uint256 epoch
-    ) internal view returns (ActorNonce[] memory) {
+    function noncesFromJson(uint256 epoch) internal view returns (ActorNonce[] memory) {
         Path memory p = epochNoncesPath(epoch);
         return noncesFromJson(string.concat(p.dir, p.filename));
     }
 
-    function orderFromJson(
-        uint256 epoch,
-        uint256 idx
-    ) internal view returns (SignedOrder memory) {
+    function orderFromJson(uint256 epoch, uint256 idx) internal view returns (SignedOrder memory) {
         Path memory p = epochOrderPath(epoch, idx);
         return orderFromJson(string.concat(p.dir, p.filename));
     }
@@ -253,20 +233,14 @@ abstract contract EpochsJson is Script {
 
         vm.serializeUint(root, "tokenIds", sel.tokenIds);
 
-        string memory finalJson = vm.serializeAddress(
-            root,
-            "collection",
-            sel.collection
-        );
+        string memory finalJson = vm.serializeAddress(root, "collection", sel.collection);
 
         vm.writeJson(finalJson, string.concat(dir, filename));
     }
 
     // === FROM JSON ===
 
-    function orderFromJson(
-        string memory path
-    ) internal view returns (SignedOrder memory signed) {
+    function orderFromJson(string memory path) internal view returns (SignedOrder memory signed) {
         bytes memory data = vm.parseJson(vm.readFile(path));
 
         SignedOrderJson memory parsed = abi.decode(data, (SignedOrderJson));
@@ -274,15 +248,10 @@ abstract contract EpochsJson is Script {
         signed = _fromSignedOrderJson(parsed);
     }
 
-    function noncesFromJson(
-        string memory path
-    ) internal view returns (ActorNonce[] memory nonces) {
+    function noncesFromJson(string memory path) internal view returns (ActorNonce[] memory nonces) {
         bytes memory data = vm.parseJson(vm.readFile(path));
 
-        PersistedNoncesJson memory parsed = abi.decode(
-            data,
-            (PersistedNoncesJson)
-        );
+        PersistedNoncesJson memory parsed = abi.decode(data, (PersistedNoncesJson));
 
         uint256 count = parsed.nonces.length;
 
@@ -293,9 +262,7 @@ abstract contract EpochsJson is Script {
         }
     }
 
-    function selectionFromJson(
-        string memory path
-    ) internal view returns (Selection memory) {
+    function selectionFromJson(string memory path) internal view returns (Selection memory) {
         bytes memory data = vm.parseJson(vm.readFile(path));
         return abi.decode(data, (Selection));
     }

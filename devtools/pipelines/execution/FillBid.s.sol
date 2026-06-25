@@ -2,10 +2,10 @@
 pragma solidity ^0.8.30;
 
 // core libraries
-import {OrderModel} from "orderbook/libs/OrderModel.sol";
+import { OrderModel } from "orderbook/libs/OrderModel.sol";
 
 // interfaces
-import {DNFT} from "dev/interfaces/DNFT.sol";
+import { DNFT } from "dev/interfaces/DNFT.sol";
 
 /**
  * @notice Resolves the fill recipient for bid orders. Handles both regular bids
@@ -24,13 +24,7 @@ abstract contract FillBid {
         uint256[] memory excludedCb
     ) internal view returns (OrderModel.Fill memory) {
         if (bid.isCollectionBid) {
-            return
-                _fillCollectionBid(
-                    bid.collection,
-                    bid.actor,
-                    bid.nonce,
-                    excludedCb
-                );
+            return _fillCollectionBid(bid.collection, bid.actor, bid.nonce, excludedCb);
         } else {
             return _fillRegularBid(bid.collection, bid.tokenId);
         }
@@ -43,11 +37,7 @@ abstract contract FillBid {
         address collection,
         uint256 tokenId
     ) internal view returns (OrderModel.Fill memory) {
-        return
-            OrderModel.Fill({
-                tokenId: tokenId,
-                actor: DNFT(collection).ownerOf(tokenId)
-            });
+        return OrderModel.Fill({ tokenId: tokenId, actor: DNFT(collection).ownerOf(tokenId) });
     }
 
     /**
@@ -74,13 +64,10 @@ abstract contract FillBid {
             nftHolder = DNFT(collection).ownerOf(tokenId);
         }
 
-        return OrderModel.Fill({tokenId: tokenId, actor: nftHolder});
+        return OrderModel.Fill({ tokenId: tokenId, actor: nftHolder });
     }
 
-    function _isExcluded(
-        uint256 tokenId,
-        uint256[] memory excluded
-    ) private pure returns (bool) {
+    function _isExcluded(uint256 tokenId, uint256[] memory excluded) private pure returns (bool) {
         for (uint256 i = 0; i < excluded.length; i++) {
             if (tokenId == excluded[i]) return true;
         }

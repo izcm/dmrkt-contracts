@@ -2,12 +2,10 @@
 pragma solidity ^0.8.30;
 
 import "forge-std/Script.sol";
-import {OrderEngine} from "orderbook/OrderEngine.sol";
+import { OrderEngine } from "orderbook/OrderEngine.sol";
 
 contract DeployOrderEngine is Script {
-    function run(
-        address whitelistedCurrency
-    ) external returns (OrderEngine deployed) {
+    function run(address whitelistedCurrency) external returns (OrderEngine deployed) {
         vm.startBroadcast();
 
         deployed = new OrderEngine(

@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
-import {BaseDevScript} from "dev/BaseDevScript.s.sol";
-import {console} from "forge-std/console.sol";
+import { BaseDevScript } from "dev/BaseDevScript.s.sol";
+import { console } from "forge-std/console.sol";
 
 /**
  * @notice Prints pipeline participants. Run before bootstrapping.

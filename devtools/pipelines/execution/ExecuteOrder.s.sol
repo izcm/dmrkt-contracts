@@ -2,27 +2,27 @@
 pragma solidity ^0.8.30;
 
 // foundry
-import {console} from "forge-std/console.sol";
+import { console } from "forge-std/console.sol";
 
 // core libraries
-import {OrderModel} from "orderbook/libs/OrderModel.sol";
-import {SignatureOps as SigOps} from "orderbook/libs/SignatureOps.sol";
+import { OrderModel } from "orderbook/libs/OrderModel.sol";
+import { SignatureOps as SigOps } from "orderbook/libs/SignatureOps.sol";
 
 // scripts base
-import {BaseDevScript} from "dev/BaseDevScript.s.sol";
-import {DevConfig} from "dev/DevConfig.s.sol";
+import { BaseDevScript } from "dev/BaseDevScript.s.sol";
+import { DevConfig } from "dev/DevConfig.s.sol";
 
 // scripts order logic
-import {EpochsJson} from "../epochs/EpochsJson.s.sol";
-import {FillBid} from "./FillBid.s.sol";
-import {SettlementValidation} from "./SettlementValidation.s.sol";
+import { EpochsJson } from "../epochs/EpochsJson.s.sol";
+import { FillBid } from "./FillBid.s.sol";
+import { SettlementValidation } from "./SettlementValidation.s.sol";
 
 // interfaces
-import {IERC20, SafeERC20} from "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
-import {ISettlementEngine} from "dev/interfaces/ISettlementEngine.sol";
+import { IERC20, SafeERC20 } from "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
+import { ISettlementEngine } from "dev/interfaces/ISettlementEngine.sol";
 
 // types
-import {SignedOrder, Selection} from "../epochs/Types.sol";
+import { SignedOrder, Selection } from "../epochs/Types.sol";
 
 /**
  * @notice Settles a single order on-chain via OrderEngine.settle(). Called by run-epochs.sh
@@ -30,13 +30,7 @@ import {SignedOrder, Selection} from "../epochs/Types.sol";
  * @dev    Reads the signed order from the epoch's JSON output, runs pre-settlement checks
  *         (timestamps, NFT ownership, nonce), produces a fill, then broadcasts settle().
  */
-contract ExecuteOrder is
-    EpochsJson,
-    FillBid,
-    SettlementValidation,
-    BaseDevScript,
-    DevConfig
-{
+contract ExecuteOrder is EpochsJson, FillBid, SettlementValidation, BaseDevScript, DevConfig {
     using SafeERC20 for IERC20;
     using OrderModel for OrderModel.Order;
 
@@ -71,10 +65,7 @@ contract ExecuteOrder is
             // selection.tokenIds are excluded when producing fill for collectionBids
             // this is because they are linked to some other order in this epoch
 
-            Selection memory selection = selectionFromJson(
-                epoch,
-                signed.order.collection
-            );
+            Selection memory selection = selectionFromJson(epoch, signed.order.collection);
 
             // selection across epochs that are **not** to be executed in any epoch!
 
@@ -102,12 +93,7 @@ contract ExecuteOrder is
             revert("INVALID_NFT_OWNERSHIP");
         }
 
-        if (
-            ISettlementEngine(orderSettler).isUserOrderNonceInvalid(
-                order.actor,
-                order.nonce
-            )
-        ) {
+        if (ISettlementEngine(orderSettler).isUserOrderNonceInvalid(order.actor, order.nonce)) {
             revert("INVALID_NONCE");
         }
 
@@ -127,8 +113,7 @@ contract ExecuteOrder is
         OrderModel.Order memory o
     ) internal view returns (OrderModel.Fill memory) {
         if (o.isAsk()) {
-            return
-                _fillAsk(o.actor, uint256((uint160(o.actor) << 160) | o.nonce));
+            return _fillAsk(o.actor, uint256((uint160(o.actor) << 160) | o.nonce));
         } else if (o.isBid()) {
             return fillBid(o, excludedFromCb);
         } else {
@@ -144,10 +129,6 @@ contract ExecuteOrder is
         address orderActor,
         uint256 seed
     ) internal view returns (OrderModel.Fill memory) {
-        return
-            OrderModel.Fill({
-                tokenId: 0,
-                actor: otherParticipant(orderActor, seed)
-            });
+        return OrderModel.Fill({ tokenId: 0, actor: otherParticipant(orderActor, seed) });
     }
 }

@@ -2,18 +2,18 @@
 pragma solidity ^0.8.30;
 
 // oz
-import {IERC20} from "@openzeppelin/interfaces/IERC20.sol";
-import {IERC721} from "@openzeppelin/interfaces/IERC721.sol";
+import { IERC20 } from "@openzeppelin/interfaces/IERC20.sol";
+import { IERC721 } from "@openzeppelin/interfaces/IERC721.sol";
 
 // local
-import {OrderEngineSettleBase} from "./settle.base.t.sol";
+import { OrderEngineSettleBase } from "./settle.base.t.sol";
 
 // core libs
-import {OrderModel} from "orderbook/libs/OrderModel.sol";
-import {SignatureOps as SigOps} from "orderbook/libs/SignatureOps.sol";
+import { OrderModel } from "orderbook/libs/OrderModel.sol";
+import { SignatureOps as SigOps } from "orderbook/libs/SignatureOps.sol";
 
 // periphery libs
-import {SettlementRoles} from "orderbook/libs/SettlementRoles.sol";
+import { SettlementRoles } from "orderbook/libs/SettlementRoles.sol";
 
 struct Balances {
     uint256 spender;
@@ -39,19 +39,11 @@ contract OrderEngineSettleSuccessTest is OrderEngineSettleBase {
     }
 
     function test_settle_bid_specific_token_succeeds() public {
-        _assertSettleSucceeds(
-            OrderModel.Side.Bid,
-            false,
-            someActors("bid_specific")
-        );
+        _assertSettleSucceeds(OrderModel.Side.Bid, false, someActors("bid_specific"));
     }
 
     function test_settle_collection_bid_succeeds() public {
-        _assertSettleSucceeds(
-            OrderModel.Side.Bid,
-            true,
-            someActors("bid_collection")
-        );
+        _assertSettleSucceeds(OrderModel.Side.Bid, true, someActors("bid_collection"));
     }
 
     function _assertSettleSucceeds(
@@ -62,11 +54,7 @@ contract OrderEngineSettleSuccessTest is OrderEngineSettleBase {
         uint256 signerPk = pkOf(actors.order);
 
         // defaults to mockERC721 + WETH
-        OrderModel.Order memory order = makeOrder(
-            side,
-            isCollectionBid,
-            actors.order
-        );
+        OrderModel.Order memory order = makeOrder(side, isCollectionBid, actors.order);
 
         (, SigOps.Signature memory sig) = signOrder(order, signerPk);
 
@@ -76,17 +64,15 @@ contract OrderEngineSettleSuccessTest is OrderEngineSettleBase {
 
         legitimizeSettlement(fill, order);
 
-        (address nftHolder, address spender, uint256 tokenId) = SettlementRoles
-            .resolve(fill, order);
+        (address nftHolder, address spender, uint256 tokenId) = SettlementRoles.resolve(
+            fill,
+            order
+        );
 
         // check balance of parties before settlement
         IERC20 token = IERC20(order.currency);
 
-        Balances memory beforeSuccess = _balanceOfParties(
-            token,
-            spender,
-            nftHolder
-        );
+        Balances memory beforeSuccess = _balanceOfParties(token, spender, nftHolder);
 
         vm.expectEmit(true, true, true, true);
         emit Settlement(
@@ -103,24 +89,14 @@ contract OrderEngineSettleSuccessTest is OrderEngineSettleBase {
         orderEngine.settle(fill, order, sig);
 
         // check balance of parties after_ settlement
-        Balances memory afterSuccess = _balanceOfParties(
-            token,
-            spender,
-            nftHolder
-        );
+        Balances memory afterSuccess = _balanceOfParties(token, spender, nftHolder);
 
-        _assertPayoutMatchesExpectations(
-            beforeSuccess,
-            afterSuccess,
-            order.price
-        );
+        _assertPayoutMatchesExpectations(beforeSuccess, afterSuccess, order.price);
 
         // check new ownership
         assertEq(IERC721(order.collection).ownerOf(tokenId), spender);
 
-        assertTrue(
-            orderEngine.isUserOrderNonceInvalid(order.actor, order.nonce)
-        );
+        assertTrue(orderEngine.isUserOrderNonceInvalid(order.actor, order.nonce));
     }
 
     function _assertPayoutMatchesExpectations(

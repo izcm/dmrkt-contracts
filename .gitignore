@@ -15,4 +15,4 @@ notes/
 # devtools out / in
 data/
 devtools/pipeline.toml
-node_modules/
+node_modules

@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
-import {Test} from "forge-std/Test.sol";
+import { Test } from "forge-std/Test.sol";
 
 // local
-import {OrderEngine} from "orderbook/OrderEngine.sol";
-import {SignatureOps as SigOps} from "orderbook/libs/SignatureOps.sol";
-import {OrderModel} from "orderbook/libs/OrderModel.sol";
+import { OrderEngine } from "orderbook/OrderEngine.sol";
+import { SignatureOps as SigOps } from "orderbook/libs/SignatureOps.sol";
+import { OrderModel } from "orderbook/libs/OrderModel.sol";
 
 contract OrderEngineCancelTest is Test {
     OrderEngine internal engine = new OrderEngine(address(0), address(0));
@@ -46,18 +46,14 @@ contract OrderEngineCancelTest is Test {
             nonce: nonce
         });
 
-        SigOps.Signature memory sig = SigOps.Signature({
-            v: 0,
-            r: bytes32(0),
-            s: bytes32(0)
-        });
+        SigOps.Signature memory sig = SigOps.Signature({ v: 0, r: bytes32(0), s: bytes32(0) });
 
         vm.prank(user);
         engine.cancelOrder(nonce);
 
         vm.expectRevert(OrderEngine.InvalidNonce.selector);
         engine.settle(
-            OrderModel.Fill({tokenId: order.tokenId, actor: address(this)}),
+            OrderModel.Fill({ tokenId: order.tokenId, actor: address(this) }),
             order,
             sig
         );

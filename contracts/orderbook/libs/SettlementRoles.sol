@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
-import {OrderModel} from "./OrderModel.sol";
+import { OrderModel } from "./OrderModel.sol";
 
 library SettlementRoles {
     using OrderModel for OrderModel.Order;
@@ -23,11 +23,10 @@ library SettlementRoles {
      * @return spender   Address that will pay for the NFT.
      * @return tokenId   Token ID to settle on.
      */
-    function resolve(OrderModel.Fill memory f, OrderModel.Order memory o)
-        internal
-        pure
-        returns (address nftHolder, address spender, uint256 tokenId)
-    {
+    function resolve(
+        OrderModel.Fill memory f,
+        OrderModel.Order memory o
+    ) internal pure returns (address nftHolder, address spender, uint256 tokenId) {
         if (o.isAsk()) {
             return (o.actor, f.actor, o.tokenId);
         } else if (o.isBid()) {

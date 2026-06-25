@@ -2,17 +2,15 @@
 pragma solidity ^0.8.30;
 
 // oz
-import {
-    IERC721Metadata
-} from "@openzeppelin/token/ERC721/extensions/IERC721Metadata.sol";
+import { IERC721Metadata } from "@openzeppelin/token/ERC721/extensions/IERC721Metadata.sol";
 
 // scripts
-import {BaseDevScript} from "dev/BaseDevScript.s.sol";
-import {DevConfig} from "dev/DevConfig.s.sol";
-import {console} from "forge-std/console.sol";
+import { BaseDevScript } from "dev/BaseDevScript.s.sol";
+import { DevConfig } from "dev/DevConfig.s.sol";
+import { console } from "forge-std/console.sol";
 
 // interfaces
-import {DNFT} from "dev/interfaces/DNFT.sol";
+import { DNFT } from "dev/interfaces/DNFT.sol";
 
 /**
  * @notice Mints all tokens from each deployed NFT collection to participants using a

@@ -2,23 +2,19 @@
 pragma solidity ^0.8.30;
 
 // local
-import {OrderEngine} from "orderbook/OrderEngine.sol";
-import {OrderModel} from "orderbook/libs/OrderModel.sol";
+import { OrderEngine } from "orderbook/OrderEngine.sol";
+import { OrderModel } from "orderbook/libs/OrderModel.sol";
 
 // helpers
-import {OrderHelper} from "test-helpers/OrderHelper.sol";
-import {AccountsHelper} from "test-helpers/AccountsHelper.sol";
-import {SettlementHelper} from "test-helpers/SettlementHelper.sol";
+import { OrderHelper } from "test-helpers/OrderHelper.sol";
+import { AccountsHelper } from "test-helpers/AccountsHelper.sol";
+import { SettlementHelper } from "test-helpers/SettlementHelper.sol";
 
 // mocks
-import {MockWETH} from "mocks/MockWETH.sol";
-import {MockERC721} from "mocks/MockERC721.sol";
+import { MockWETH } from "mocks/MockWETH.sol";
+import { MockERC721 } from "mocks/MockERC721.sol";
 
-abstract contract OrderEngineSettleBase is
-    AccountsHelper,
-    OrderHelper,
-    SettlementHelper
-{
+abstract contract OrderEngineSettleBase is AccountsHelper, OrderHelper, SettlementHelper {
     using OrderModel for OrderModel.Order;
 
     uint256 internal constant DEFAULT_ACTOR_COUNT = 10;

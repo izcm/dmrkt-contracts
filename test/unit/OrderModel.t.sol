@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.30;
 
-import {Test} from "forge-std/Test.sol";
+import { Test } from "forge-std/Test.sol";
 
 // local
-import {OrderModel} from "orderbook/libs/OrderModel.sol";
+import { OrderModel } from "orderbook/libs/OrderModel.sol";
 
 contract OrderModelTest is Test {
     using OrderModel for OrderModel.Order;

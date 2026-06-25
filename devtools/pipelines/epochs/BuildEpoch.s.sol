@@ -2,31 +2,31 @@
 pragma solidity ^0.8.30;
 
 // core libraries
-import {OrderModel} from "orderbook/libs/OrderModel.sol";
-import {SignatureOps as SigOps} from "orderbook/libs/SignatureOps.sol";
+import { OrderModel } from "orderbook/libs/OrderModel.sol";
+import { SignatureOps as SigOps } from "orderbook/libs/SignatureOps.sol";
 
 // periphery libraries
-import {OrderBuilder} from "periphery/builders/OrderBuilder.sol";
+import { OrderBuilder } from "periphery/builders/OrderBuilder.sol";
 
 // scripts
-import {BaseDevScript} from "dev/BaseDevScript.s.sol";
-import {DevConfig} from "dev/DevConfig.s.sol";
+import { BaseDevScript } from "dev/BaseDevScript.s.sol";
+import { DevConfig } from "dev/DevConfig.s.sol";
 
-import {EpochsJson} from "./EpochsJson.s.sol";
-import {MarketSim} from "../sampling/MarketSim.sol";
-import {SignOrder} from "../sampling/SignOrder.s.sol";
+import { EpochsJson } from "./EpochsJson.s.sol";
+import { MarketSim } from "../sampling/MarketSim.sol";
+import { SignOrder } from "../sampling/SignOrder.s.sol";
 
 // types
-import {SignedOrder, Selection, ActorNonce} from "./Types.sol";
+import { SignedOrder, Selection, ActorNonce } from "./Types.sol";
 
 // interfaces
-import {ISettlementEngine} from "dev/interfaces/ISettlementEngine.sol";
-import {IERC721} from "@openzeppelin/interfaces/IERC721.sol";
-import {DMrktNFTLib} from "../../local-nfts/DMrktNFTLib.sol";
-import {DMrktMathConfig} from "../../local-nfts/DMrktMathConfig.sol";
+import { ISettlementEngine } from "dev/interfaces/ISettlementEngine.sol";
+import { IERC721 } from "@openzeppelin/interfaces/IERC721.sol";
+import { DMrktNFTLib } from "../../local-nfts/DMrktNFTLib.sol";
+import { DMrktMathConfig } from "../../local-nfts/DMrktMathConfig.sol";
 
 // logging
-import {console} from "forge-std/console.sol";
+import { console } from "forge-std/console.sol";
 
 /**
  * @notice Generates and signs all orders for a single epoch. Called once per epoch by run-epochs.sh.
@@ -34,13 +34,7 @@ import {console} from "forge-std/console.sol";
  *         deterministic actors and timestamps, signs them EIP-712, sorts by end date, and
  *         writes everything to the epoch's JSON output directory.
  */
-contract BuildEpoch is
-    MarketSim,
-    SignOrder,
-    EpochsJson,
-    BaseDevScript,
-    DevConfig
-{
+contract BuildEpoch is MarketSim, SignOrder, EpochsJson, BaseDevScript, DevConfig {
     // ctx
     uint256 private epoch;
     uint256 private timeWindow;
@@ -66,16 +60,12 @@ contract BuildEpoch is
         address settlementContract = readSettlementContract();
         address weth = readWeth();
 
-        bytes32 domainSeparator = ISettlementEngine(settlementContract)
-            .DOMAIN_SEPARATOR();
+        bytes32 domainSeparator = ISettlementEngine(settlementContract).DOMAIN_SEPARATOR();
 
         // checks if another output dir is defined
         try vm.envString("DATA_DIR") returns (string memory dir) {
             _setDataDir(dir);
-            console.log(
-                "DATA_DIR config exists => out dir set to %s",
-                _dataDir()
-            );
+            console.log("DATA_DIR config exists => out dir set to %s", _dataDir());
         } catch {}
         _loadParticipants();
         _createDefaultDirs(_epoch);
@@ -115,7 +105,7 @@ contract BuildEpoch is
                 pkOf(orders[i].actor)
             );
 
-            signed[i] = SignedOrder({order: orders[i], signature: sig});
+            signed[i] = SignedOrder({ order: orders[i], signature: sig });
         }
 
         console.log("Orders signed: %s", signed.length);
@@ -139,10 +129,7 @@ contract BuildEpoch is
 
         for (uint256 i = 0; i < collections.length; i++) {
             address c = collections[i];
-            selectionToJson(
-                Selection({collection: c, tokenIds: selected[c]}),
-                _epoch
-            );
+            selectionToJson(Selection({ collection: c, tokenIds: selected[c] }), _epoch);
         }
 
         for (uint256 i = 0; i < signed.length; i++) {
@@ -151,11 +138,7 @@ contract BuildEpoch is
 
         noncesToJson(_exportNonces(), _epoch);
 
-        console.log(
-            "Epoch %s ready with %s signed orders!",
-            _epoch,
-            signed.length
-        );
+        console.log("Epoch %s ready with %s signed orders!", _epoch, signed.length);
     }
 
     // === BUILD ===
@@ -168,18 +151,8 @@ contract BuildEpoch is
         address weth,
         address[] memory collections
     ) internal returns (OrderModel.Order[] memory orders) {
-        Selection[] memory selectionsAsk = collect(
-            OrderModel.Side.Ask,
-            false,
-            collections,
-            epoch
-        );
-        Selection[] memory selectionsBid = collect(
-            OrderModel.Side.Bid,
-            false,
-            collections,
-            epoch
-        );
+        Selection[] memory selectionsAsk = collect(OrderModel.Side.Ask, false, collections, epoch);
+        Selection[] memory selectionsBid = collect(OrderModel.Side.Bid, false, collections, epoch);
 
         uint256 count;
 
@@ -189,23 +162,9 @@ contract BuildEpoch is
         orders = new OrderModel.Order[](count);
         uint256 idx;
 
-        idx = _appendOrders(
-            orders,
-            idx,
-            OrderModel.Side.Ask,
-            false,
-            selectionsAsk,
-            weth
-        );
+        idx = _appendOrders(orders, idx, OrderModel.Side.Ask, false, selectionsAsk, weth);
 
-        idx = _appendOrders(
-            orders,
-            idx,
-            OrderModel.Side.Bid,
-            false,
-            selectionsBid,
-            weth
-        );
+        idx = _appendOrders(orders, idx, OrderModel.Side.Bid, false, selectionsBid, weth);
     }
 
     /**
@@ -254,20 +213,9 @@ contract BuildEpoch is
     ) internal returns (OrderModel.Order memory order) {
         uint256 actorSeed = (epoch << 160) | orderIdx;
 
-        address actor = _resolveActor(
-            side,
-            isCollectionBid,
-            collection,
-            tokenId,
-            actorSeed
-        );
+        address actor = _resolveActor(side, isCollectionBid, collection, tokenId, actorSeed);
 
-        uint256 orderSeed = selectionSalt(
-            side,
-            isCollectionBid,
-            collection,
-            actorSeed
-        );
+        uint256 orderSeed = selectionSalt(side, isCollectionBid, collection, actorSeed);
 
         order = OrderBuilder.build(
             side,
@@ -299,23 +247,26 @@ contract BuildEpoch is
         uint256 tokenId,
         uint256 seed
     ) internal pure override returns (uint256) {
-        uint256 tier = tokenId % DMrktMathConfig.rarityLegendaryMod() == 0
-            ? 8
-            : tokenId % DMrktMathConfig.rarityEpicMod() == 0
-                ? 4
-                : tokenId % DMrktMathConfig.rarityRareMod() == 0
-                    ? 2
-                    : 1;
+        uint256 tier =
+            tokenId % DMrktMathConfig.rarityLegendaryMod() == 0
+                ? 8
+                : tokenId % DMrktMathConfig.rarityEpicMod() == 0
+                    ? 4
+                    : tokenId % DMrktMathConfig.rarityRareMod() == 0
+                        ? 2
+                        : 1;
 
         uint256 itemType = tokenId % DMrktMathConfig.itemTypeCount();
-        uint256 stat = itemType == DMrktMathConfig.itemTypeSword()
-            ? DMrktNFTLib.getDamage(tokenId)
-            : itemType == DMrktMathConfig.itemTypeShield()
-                ? DMrktNFTLib.getDefense(tokenId)
-                : DMrktNFTLib.getPower(tokenId);
+        uint256 stat =
+            itemType == DMrktMathConfig.itemTypeSword()
+                ? DMrktNFTLib.getDamage(tokenId)
+                : itemType == DMrktMathConfig.itemTypeShield()
+                    ? DMrktNFTLib.getDefense(tokenId)
+                    : DMrktNFTLib.getPower(tokenId);
 
-        bool hasElement = tokenId % DMrktMathConfig.elementThunderMod() == 0 ||
-            tokenId % DMrktMathConfig.elementFireMod() == 0;
+        bool hasElement =
+            tokenId % DMrktMathConfig.elementThunderMod() == 0 ||
+                tokenId % DMrktMathConfig.elementFireMod() == 0;
 
         uint256 base = tier * stat * 0.001 ether;
         uint256 bonus = hasElement ? tier * 0.05 ether : 0;
@@ -346,10 +297,7 @@ contract BuildEpoch is
             return ps[seed % ps.length];
         } else {
             address nftHolder = IERC721(collection).ownerOf(tokenId);
-            return
-                side == OrderModel.Side.Ask
-                    ? nftHolder
-                    : otherParticipant(nftHolder, seed);
+            return side == OrderModel.Side.Ask ? nftHolder : otherParticipant(nftHolder, seed);
         }
     }
 
@@ -366,10 +314,7 @@ contract BuildEpoch is
      *      Start = anchor - offset, end = anchor + offset, giving each order a window
      *      that straddles the pipeline start and extends into the future.
      */
-    function _resolveDate(
-        uint256 seed,
-        bool isStart
-    ) private view returns (uint64) {
+    function _resolveDate(uint256 seed, bool isStart) private view returns (uint64) {
         uint64 anchor = uint64(readStartTs());
         uint64 offset = _resolveTimeOffset(seed);
 
@@ -385,18 +330,14 @@ contract BuildEpoch is
         return uint64((seed % timeWindow) + timeWindow);
     }
 
-    function _exportNonces()
-        internal
-        view
-        returns (ActorNonce[] memory nonces)
-    {
+    function _exportNonces() internal view returns (ActorNonce[] memory nonces) {
         address[] memory ps = participants();
 
         nonces = new ActorNonce[](ps.length);
 
         for (uint256 i = 0; i < ps.length; i++) {
             address a = ps[i];
-            nonces[i] = ActorNonce({actor: a, nonce: actorNonceIdx[a]});
+            nonces[i] = ActorNonce({ actor: a, nonce: actorNonceIdx[a] });
         }
     }
 
@@ -433,9 +374,7 @@ contract BuildEpoch is
      * @dev Flattens a selections array into the `selected` storage map and returns the total token count.
      *      The stored token IDs are later written to selections JSON for ExecuteOrder to consume.
      */
-    function _mergeSelections(
-        Selection[] memory sels
-    ) private returns (uint256 added) {
+    function _mergeSelections(Selection[] memory sels) private returns (uint256 added) {
         for (uint256 i = 0; i < sels.length; i++) {
             Selection memory s = sels[i];
             address c = s.collection;

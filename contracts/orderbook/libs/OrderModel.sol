@@ -40,10 +40,9 @@ library OrderModel {
 
     // https://eips.ethereum.org/EIPS/eip-712#definition-of-hashstruct:
     // hashStruct(s : 𝕊) = keccak256(typeHash ‖ encodeData(s)) where typeHash = keccak256(encodeType(typeOf(s)))
-    bytes32 constant ORDER_TYPE_HASH =
-        keccak256(
-            "Order(uint8 side,bool isCollectionBid,address collection,uint256 tokenId,address currency,uint256 price,address actor,uint64 start,uint64 end,uint256 nonce)"
-        );
+    bytes32 constant ORDER_TYPE_HASH = keccak256(
+        "Order(uint8 side,bool isCollectionBid,address collection,uint256 tokenId,address currency,uint256 price,address actor,uint64 start,uint64 end,uint256 nonce)"
+    );
 
     // TODO: implement this in assembly and test gas savings
     function hash(Order memory o) internal pure returns (bytes32) {

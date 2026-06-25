@@ -5,9 +5,9 @@ import "@openzeppelin/token/ERC721/ERC721.sol";
 import "@openzeppelin/utils/Base64.sol";
 import "@openzeppelin/utils/Strings.sol";
 
-import {DNFT} from "dev/interfaces/DNFT.sol";
-import {DMrktMathConfig} from "./DMrktMathConfig.sol";
-import {DMrktNFTLib} from "./DMrktNFTLib.sol";
+import { DNFT } from "dev/interfaces/DNFT.sol";
+import { DMrktMathConfig } from "./DMrktMathConfig.sol";
+import { DMrktNFTLib } from "./DMrktNFTLib.sol";
 
 // NOTE: Demo-only contract. Generated with AI
 // NB: Contract is not part of production code nor coupled to pipeline architecture
@@ -47,12 +47,9 @@ contract DMrktLoot is DNFT, ERC721 {
         return _tokenType[tokenId];
     }
 
-    function tokenURI(
-        uint256 tokenId
-    ) public view override returns (string memory) {
+    function tokenURI(uint256 tokenId) public view override returns (string memory) {
         require(_ownerOf(tokenId) != address(0), "Not minted");
-        return
-            string.concat("data:application/json;base64,", _metadata(tokenId));
+        return string.concat("data:application/json;base64,", _metadata(tokenId));
     }
 
     // ----------------------------
@@ -63,14 +60,7 @@ contract DMrktLoot is DNFT, ERC721 {
         ItemType itemType = _tokenType[tokenId];
         string memory svgBase64 = Base64.encode(bytes(_svg(tokenId, itemType)));
         (string memory name, string memory desc) = _itemMeta(tokenId, itemType);
-        return
-            DMrktNFTLib.buildLootMetadata(
-                name,
-                desc,
-                tokenId,
-                uint256(itemType),
-                svgBase64
-            );
+        return DMrktNFTLib.buildLootMetadata(name, desc, tokenId, uint256(itemType), svgBase64);
     }
 
     function _itemMeta(
@@ -78,20 +68,11 @@ contract DMrktLoot is DNFT, ERC721 {
         ItemType itemType
     ) internal pure returns (string memory name, string memory desc) {
         if (itemType == ItemType.Sword) {
-            return (
-                DMrktNFTLib.buildItemName("Sword", tokenId),
-                "Fully on-chain dmrkt sword"
-            );
+            return (DMrktNFTLib.buildItemName("Sword", tokenId), "Fully on-chain dmrkt sword");
         } else if (itemType == ItemType.Elixir) {
-            return (
-                DMrktNFTLib.buildItemName("Elixir", tokenId),
-                "Fully on-chain dmrkt elixir"
-            );
+            return (DMrktNFTLib.buildItemName("Elixir", tokenId), "Fully on-chain dmrkt elixir");
         } else {
-            return (
-                DMrktNFTLib.buildItemName("Shield", tokenId),
-                "Fully on-chain dmrkt shield"
-            );
+            return (DMrktNFTLib.buildItemName("Shield", tokenId), "Fully on-chain dmrkt shield");
         }
     }
 
@@ -99,10 +80,7 @@ contract DMrktLoot is DNFT, ERC721 {
     // SVG GENERATION
     // ----------------------------
 
-    function _svg(
-        uint256 tokenId,
-        ItemType itemType
-    ) internal pure returns (string memory) {
+    function _svg(uint256 tokenId, ItemType itemType) internal pure returns (string memory) {
         string memory color = DMrktNFTLib.getColorForToken(tokenId);
         string memory element = DMrktNFTLib.buildElementOverlay(tokenId);
         string memory glow = DMrktNFTLib.buildRarityGlow(tokenId);
@@ -203,9 +181,7 @@ contract DMrktLoot is DNFT, ERC721 {
     // TRAIT LOGIC
     // ----------------------------
 
-    function _getColorForToken(
-        uint256 tokenId
-    ) private pure returns (string memory) {
+    function _getColorForToken(uint256 tokenId) private pure returns (string memory) {
         return DMrktNFTLib.getColorForToken(tokenId);
     }
 
@@ -225,15 +201,11 @@ contract DMrktLoot is DNFT, ERC721 {
         return DMrktNFTLib.getElementForToken(tokenId);
     }
 
-    function getElementName(
-        uint256 tokenId
-    ) public pure returns (string memory) {
+    function getElementName(uint256 tokenId) public pure returns (string memory) {
         return DMrktNFTLib.getElementName(tokenId);
     }
 
-    function getItemTypeName(
-        uint256 tokenId
-    ) external view returns (string memory) {
+    function getItemTypeName(uint256 tokenId) external view returns (string memory) {
         require(_ownerOf(tokenId) != address(0), "Not minted");
         return DMrktNFTLib.getItemTypeName(uint256(_tokenType[tokenId]));
     }
@@ -243,8 +215,6 @@ contract DMrktLoot is DNFT, ERC721 {
     function supportsInterface(
         bytes4 interfaceId
     ) public view virtual override(ERC721, IERC165) returns (bool) {
-        return
-            interfaceId == type(DNFT).interfaceId ||
-            super.supportsInterface(interfaceId);
+        return interfaceId == type(DNFT).interfaceId || super.supportsInterface(interfaceId);
     }
 }

@@ -2,12 +2,12 @@
 pragma solidity ^0.8.30;
 
 // local
-import {BaseDevScript} from "dev/BaseDevScript.s.sol";
-import {DevConfig} from "dev/DevConfig.s.sol";
-import {console} from "forge-std/console.sol";
+import { BaseDevScript } from "dev/BaseDevScript.s.sol";
+import { DevConfig } from "dev/DevConfig.s.sol";
+import { console } from "forge-std/console.sol";
 
 // interfaces
-import {IWETH} from "periphery/interfaces/IWETH.sol";
+import { IWETH } from "periphery/interfaces/IWETH.sol";
 
 /**
  * @notice Wraps half of each participant's ETH balance into WETH so they have
@@ -35,22 +35,14 @@ contract BootstrapFunds is BaseDevScript, DevConfig {
 
         for (uint256 i = 0; i < participantCount; i++) {
             address a = addrOf(participantPks[i]);
-            console.log(
-                "PRE  | P%s | balance: %s",
-                i + 1,
-                wethToken.balanceOf(a)
-            );
+            console.log("PRE  | P%s | balance: %s", i + 1, wethToken.balanceOf(a));
 
             vm.startBroadcast(participantPks[i]);
             uint256 wethWrapAmount = a.balance / 2; // wraps half of eth balance to weth
-            wethToken.deposit{value: wethWrapAmount}();
+            wethToken.deposit{ value: wethWrapAmount }();
             vm.stopBroadcast();
 
-            console.log(
-                "POST | P%s | balance: %s",
-                i + 1,
-                wethToken.balanceOf(a)
-            );
+            console.log("POST | P%s | balance: %s", i + 1, wethToken.balanceOf(a));
         }
     }
 }
