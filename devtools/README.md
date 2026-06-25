@@ -90,10 +90,10 @@ Skim these in order to build a mental model without reading everything:
 
 **Going deeper:**
 
-| Topic              | Read                                                                            |
-| ------------------ | ------------------------------------------------------------------------------- |
-| Sampling           | `MarketSim.sol`                                                                 |
-| Order signing      | `SignOrder.s.sol`                                                               |
+| Topic              | Read                                                                         |
+| ------------------ | ---------------------------------------------------------------------------- |
+| Sampling           | `MarketSim.sol`                                                              |
+| Order signing      | `SignOrder.s.sol`                                                            |
 | Bootstrap sequence | `DeployCore` → `BootstrapFunds` → `BootstrapNFTs` → `Approve` in that order. |
 
 The boostrap sequence is especially good for anyone new to foundry. They're very straight forward.
@@ -128,7 +128,7 @@ The deploy scripts will populate the rest of the fields (contract addresses, for
 
 | Var              | Description                                  | Example                                      |
 | ---------------- | -------------------------------------------- | -------------------------------------------- |
-| `FORK_RPC`       | Mainnet RPC URL used to seed the fork        | `https://eth-mainnet.g.alchemy.com<API_KEY>` |
+| `SOURCE_RPC`     | Mainnet RPC URL used to seed the fork        | `https://eth-mainnet.g.alchemy.com<API_KEY>` |
 | `RPC_URL`        | Local fork RPC URL                           | `http://localhost:8545`                      |
 | `RPC_HOST`       | Anvil bind address, expects an IP address    | `127.0.0.1`                                  |
 | `RPC_PORT`       | Anvil port                                   | `8545`                                       |
@@ -196,14 +196,14 @@ Located under `runners/`
 
 Many of the scripts are coupled to `OrderEngine.sol` and its EIP-712 definitions, but the scripts in `bootstrap/` are a clean exception — they just wrap ETH, mint NFTs, and set approvals. No order types, no settlement logic. Easy to drop into any Foundry project that needs funded, approved participants.
 
-| Script                    | Description                                                                                                                                     |
-| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| `DeployCore.s.sol`          | Deploys contracts and writes addresses to pipeline.toml. Adding more nft-collections is super simple, see script's doc comment for explanation. |
-| `BootstrapFunds.s.sol`      | Wraps half of each participant's ETH into WETH                                                                                                  |
-| `BootstrapNFTs.s.sol`       | Iterates over the nft-collections in `pipeline.toml` and mints tokens to participants. Assumes collections implement the `DNFT` interface.      |
-| `Approve.s.sol`             | Grants NFT transfer auth + WETH allowance to OrderEngine                                                                                        |
-| `BaseDevScript.s.sol`       | Generates private keys from given mnemonic + participant access helpers and logging utilities                                                   |
-| `DevConfig.s.sol`           | Single source for reading `pipeline.toml`                                                                                                       |
+| Script                 | Description                                                                                                                                     |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DeployCore.s.sol`     | Deploys contracts and writes addresses to pipeline.toml. Adding more nft-collections is super simple, see script's doc comment for explanation. |
+| `BootstrapFunds.s.sol` | Wraps half of each participant's ETH into WETH                                                                                                  |
+| `BootstrapNFTs.s.sol`  | Iterates over the nft-collections in `pipeline.toml` and mints tokens to participants. Assumes collections implement the `DNFT` interface.      |
+| `Approve.s.sol`        | Grants NFT transfer auth + WETH allowance to OrderEngine                                                                                        |
+| `BaseDevScript.s.sol`  | Generates private keys from given mnemonic + participant access helpers and logging utilities                                                   |
+| `DevConfig.s.sol`      | Single source for reading `pipeline.toml`                                                                                                       |
 
 #### Pipelines
 

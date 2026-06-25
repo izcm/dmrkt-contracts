@@ -1,0 +1,29 @@
+{
+  "name": "dmrkt-contracts",
+  "version": "1.0.0",
+  "description": "A minimal marketplace paired with foundry scripts to simulate marketplace activity.",
+  "main": "index.js",
+  "directories": {
+    "lib": "lib",
+    "test": "test"
+  },
+  "scripts": {
+    "fmt": "prettier --write 'contracts/**/*.sol' 'script/**/*.sol' 'test/**/*.sol' 'devtools/**/*.sol'",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/izcm/dmrkt-contracts.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/izcm/dmrkt-contracts/issues"
+  },
+  "homepage": "https://github.com/izcm/dmrkt-contracts#readme",
+  "devDependencies": {
+    "prettier": "^3.8.4",
+    "prettier-plugin-solidity": "^2.3.1"
+  }
+}

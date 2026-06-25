@@ -2,7 +2,14 @@
 #   Marketplace Engines — DEV PIPELINE
 # ───────────────────────────────────────────────
 
-include .env
+MODE ?= anvil
+
+ifeq ($(MODE), sepolia)
+	include .env.sepolia
+else 
+	include .env
+endif
+
 export
 
 # ───────────────────────────────────────────────
@@ -18,8 +25,8 @@ export RUNNERS_EXPORTERS   := $(RUNNERS)/exporters
 export PIPELINES_EPOCHS    := $(PIPELINES)/epochs
 export PIPELINES_EXECUTION := $(PIPELINES)/execution
 
-export PIPELINE_STATE_DIR := data/31337/state
-export MNEMONIC_JSON      := data/31337/mnemonic.json
+export PIPELINE_STATE_DIR := data/$(CHAIN_ID)/state
+export MNEMONIC_JSON      := data/$(CHAIN_ID)/mnemonic.json
 export TOML               := pipeline.toml
 
 
