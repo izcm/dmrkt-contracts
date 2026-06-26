@@ -20,8 +20,12 @@ RESET="\033[0m"
 : "${1:?Usage: run-epochs.sh <epoch_count> [--export]}"
 
 epoch_count=$1
-export_to_indexer=false
-[ "$2" = "--export" ] && export_to_indexer=true
+export_orders=false
+[ "$2" = "--export" ] && export_orders=true
+
+if [ "$export_orders" = "true" ]; then
+    : "${ORDERS_EXPORT_URL:?ORDERS_EXPORT_URL not set}"
+fi
 
 
 # -------------------------
@@ -112,14 +116,14 @@ do
     # PHASE 2: EXPORT ORDERS
     #--------------------------
 
-    if [ "$export_to_indexer" = "true" ]; then
+    if [ "$export_orders" = "true" ]; then
         echo
         echo "=== PHASE 2: EXPORT ORDERS (epoch $epoch) ==="
         echo "orders: $order_count"
 
         "$RUNNERS_EXPORTERS/export-orders.sh" "$order_out" "$order_count" \
             --chain-id "$CHAIN_ID" \
-            --post-url "$ORDER_POST_URL"
+            --export-url "$ORDERS_EXPORT_URL"
     fi
     
     #--------------------------

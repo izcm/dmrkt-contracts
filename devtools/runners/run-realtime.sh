@@ -17,7 +17,7 @@ USAGE_MSG="Usage: ./$(basename "$0") <path_to_orders_json> <order_percantage_to_
 
 # positional args
 ORDERS_DIR="$1" # path to generated eip-712 orders
-EXECUTION_RATE="$2"
+EXEC_RATE="$2"
 
 # count orders
 ORDER_COUNT=$(find "$ORDERS_DIR" -maxdepth 1 -name "order_*" -printf '.' | wc -m)

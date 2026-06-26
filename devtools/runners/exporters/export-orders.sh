@@ -2,13 +2,13 @@
 #
 # Exports all orders in a directory to the indexer. Calls export-order.sh for each.
 #
-# Usage: export-orders.sh <orders_dir> <order_count> --chain-id <id> --post-url <url>
+# Usage: export-orders.sh <orders_dir> <order_count> --chain-id <id> --export-url <url>
 
 GREEN="\033[0;32m"
 RED="\033[0;31m"
 RESET="\033[0m"
 
-USAGE_MSG="Usage: export-orders.sh <orders_dir> <order_count> --chain-id <id> --post-url <url>"
+USAGE_MSG="Usage: export-orders.sh <orders_dir> <order_count> --chain-id <id> --export-url <url>"
 : "${1:?$USAGE_MSG}"
 : "${2:?$USAGE_MSG}"
 
@@ -19,13 +19,13 @@ shift 2
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --chain-id) CHAIN_ID="$2"; shift 2 ;;
-        --post-url) ORDER_POST_URL="$2"; shift 2 ;;
+        --export-url) EXPORT_URL="$2"; shift 2 ;;
         *) echo "Unknown flag: $1"; exit 1 ;;
     esac
 done
 
 : "${CHAIN_ID:?$USAGE_MSG}"
-: "${ORDER_POST_URL:?$USAGE_MSG}"
+: "${EXPORT_URL:?$USAGE_MSG}"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -39,7 +39,7 @@ export_errors=0
 for ((i = 0; i < ORDER_COUNT; i++)); do
     "$SCRIPT_DIR/export-order.sh" "$ORDERS_DIR/order_$i.json" \
         --chain-id "$CHAIN_ID" \
-        --post-url "$ORDER_POST_URL" \
+        --export-url "$EXPORT_URL" \
         || ((export_errors++))
 done
 

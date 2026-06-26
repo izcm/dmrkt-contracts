@@ -55,7 +55,7 @@ Each epoch builds, exports, and settles orders within its slice, advancing Anvil
 
 - **Sampling** —Orders are generated from deterministic inputs (collection, side, epoch, etc.), so the simulation gets variation while still producing reproducible results. In short, same input &rarr; same output.
 - **Signing** — Signs orders.
-- **Export** — Pushes orders to an optional endpoint. Gated behind the `--export` flag, off by default, enabled by the root `Makefile`.
+- **Export** — Pushes orders to `ORDERS_EXPORT_URL`. Gated behind the `--export` flag passed to `run-epochs.sh`; skipped if not set.
 - **Execution** — Match orders to fill and execute trade on-chain.
 
 > Orders are built and executed in the same order across runs. Orders are sorted by token ID so the executed subset is stable regardless of the fork block.
@@ -133,7 +133,7 @@ The deploy scripts will populate the rest of the fields (contract addresses, for
 | `RPC_HOST`       | Anvil bind address, expects an IP address    | `127.0.0.1`                                  |
 | `RPC_PORT`       | Anvil port                                   | `8545`                                       |
 | `CHAIN_ID`       | Chain ID for the local fork network          | `31337`                                      |
-| `ORDER_POST_URL` | Optional. API endpoint for submitting orders | `http://localhost:5000/api/orders`           |
+| `ORDERS_EXPORT_URL` | Optional. Endpoint to POST orders to when `--export` is passed to `run-epochs.sh` | `http://localhost:5000/api/orders` |
 
 ---
 
@@ -145,7 +145,7 @@ The entrypoint `make` command:
 make execute-pipeline
 ```
 
-It computes the fork window, starts anvil, deploys, bootstraps, and runs all epochs. If `ORDER_POST_URL` is set in your `.env`, you can enable export by appending `EXPORT=1`.
+It computes the fork window, starts anvil, deploys, bootstraps, and runs all epochs. To enable order export, set `ORDERS_EXPORT_URL` in your `.env` and pass `--export` to `run-epochs.sh`.
 
 `make` commands can be ran from project root or from `devtools` directory. To see a reference of available targets:
 
