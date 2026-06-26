@@ -11,6 +11,7 @@ notes/
 
 # env
 .env
+.env.*
 
 # devtools out / in
 data/
