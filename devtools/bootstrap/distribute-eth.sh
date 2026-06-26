@@ -5,12 +5,22 @@
 #
 
 # positional args
-USAGE_MSG="Usage: distribute-eth.sh <participant_count> <wei_per_participant>"
+USAGE_MSG="Usage: distribute-eth.sh <participant_count> <wei_per_participant> --rpc-url <url>"
 : "${1:?"$USAGE_MSG"}"
 : "${2:?"$USAGE_MSG"}"
 
 P_COUNT=$1
 WEI_PER_USER=$2
+shift 2
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --rpc-url) RPC_URL="$2"; shift 2 ;;
+        *) echo "Unknown flag: $1"; exit 1 ;;
+    esac
+done
+
+: "${RPC_URL:?$USAGE_MSG}"
 
 # env 
 : "${FUNDER_PK:?FUNDER_PK not set}"

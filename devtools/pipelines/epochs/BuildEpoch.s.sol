@@ -122,6 +122,7 @@ contract BuildEpoch is MarketSim, SignOrder, EpochsJson, BaseDevScript, DevConfi
         // --------------------------------
 
         // order-count.txt is read by run-epochs.sh to know how many orders to loop over
+        // better to do this than counting with `find` to make sure the count is correct
         vm.writeFile(
             string.concat(_epochDir(_epoch), "order-count.txt"),
             vm.toString(signed.length)
@@ -247,26 +248,23 @@ contract BuildEpoch is MarketSim, SignOrder, EpochsJson, BaseDevScript, DevConfi
         uint256 tokenId,
         uint256 seed
     ) internal pure override returns (uint256) {
-        uint256 tier =
-            tokenId % DMrktMathConfig.rarityLegendaryMod() == 0
-                ? 8
-                : tokenId % DMrktMathConfig.rarityEpicMod() == 0
-                    ? 4
-                    : tokenId % DMrktMathConfig.rarityRareMod() == 0
-                        ? 2
-                        : 1;
+        uint256 tier = tokenId % DMrktMathConfig.rarityLegendaryMod() == 0
+            ? 8
+            : tokenId % DMrktMathConfig.rarityEpicMod() == 0
+                ? 4
+                : tokenId % DMrktMathConfig.rarityRareMod() == 0
+                    ? 2
+                    : 1;
 
         uint256 itemType = tokenId % DMrktMathConfig.itemTypeCount();
-        uint256 stat =
-            itemType == DMrktMathConfig.itemTypeSword()
-                ? DMrktNFTLib.getDamage(tokenId)
-                : itemType == DMrktMathConfig.itemTypeShield()
-                    ? DMrktNFTLib.getDefense(tokenId)
-                    : DMrktNFTLib.getPower(tokenId);
+        uint256 stat = itemType == DMrktMathConfig.itemTypeSword()
+            ? DMrktNFTLib.getDamage(tokenId)
+            : itemType == DMrktMathConfig.itemTypeShield()
+                ? DMrktNFTLib.getDefense(tokenId)
+                : DMrktNFTLib.getPower(tokenId);
 
-        bool hasElement =
-            tokenId % DMrktMathConfig.elementThunderMod() == 0 ||
-                tokenId % DMrktMathConfig.elementFireMod() == 0;
+        bool hasElement = tokenId % DMrktMathConfig.elementThunderMod() == 0 ||
+            tokenId % DMrktMathConfig.elementFireMod() == 0;
 
         uint256 base = tier * stat * 0.001 ether;
         uint256 bonus = hasElement ? tier * 0.05 ether : 0;

@@ -126,14 +126,14 @@ The deploy scripts will populate the rest of the fields (contract addresses, for
 
 **Environment variables**
 
-| Var              | Description                                  | Example                                      |
-| ---------------- | -------------------------------------------- | -------------------------------------------- |
-| `SOURCE_RPC`     | Mainnet RPC URL used to seed the fork        | `https://eth-mainnet.g.alchemy.com<API_KEY>` |
-| `RPC_URL`        | Local fork RPC URL                           | `http://localhost:8545`                      |
-| `RPC_HOST`       | Anvil bind address, expects an IP address    | `127.0.0.1`                                  |
-| `RPC_PORT`       | Anvil port                                   | `8545`                                       |
-| `CHAIN_ID`       | Chain ID for the local fork network          | `31337`                                      |
-| `ORDERS_EXPORT_URL` | Optional. Endpoint to POST orders to when `--export` is passed to `run-epochs.sh` | `http://localhost:5000/api/orders` |
+| Var           | Description                                                                       | Example                                      |
+| ------------- | --------------------------------------------------------------------------------- | -------------------------------------------- |
+| `SOURCE_RPC`  | Mainnet RPC URL used to seed the fork                                             | `https://eth-mainnet.g.alchemy.com<API_KEY>` |
+| `RPC_URL`     | Local fork RPC URL                                                                | `http://localhost:8545`                      |
+| `RPC_HOST`    | Anvil bind address, expects an IP address                                         | `127.0.0.1`                                  |
+| `RPC_PORT`    | Anvil port                                                                        | `8545`                                       |
+| `CHAIN_ID`    | Chain ID for the local fork network                                               | `31337`                                      |
+| `ORDERS_EXPORT_URL` | Optional. Endpoint to POST orders to when `--export` is passed to `run-epochs.sh` | `http://localhost:5000/api/orders`           |
 
 ---
 

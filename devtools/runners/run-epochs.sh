@@ -110,6 +110,7 @@ do
     sleep $epoch_sleep_time
     
     order_count=$(cat "$PIPELINE_STATE_DIR/epoch_$epoch/order-count.txt")
+    # order_count=$(find "$PIPELINE_STATE_DIR/epoch_$epoch/orders" -maxdepth 1 -name "order_*" -printf '.' | wc -m)
     order_out="$PIPELINE_STATE_DIR/epoch_$epoch/orders"
 
     #--------------------------
@@ -127,7 +128,7 @@ do
     fi
     
     #--------------------------
-    # PHASE 3: CHOOSE LINGERl
+    # PHASE 3: CHOOSE LINGERS
     #--------------------------
     
     echo

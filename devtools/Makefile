@@ -76,11 +76,16 @@ compose-entrypoint: EXPORT_FLAG = --export
 compose-entrypoint: wait pipeline-setup pipeline-separator run-epochs ## Docker Compose entrypoint — assumes fork + pipeline.toml are provided externally
 	
 # ───────────────────────────────────────────────
-#   ENTRYPOINT
+#   ENTRYPOINTSs
 # ───────────────────────────────────────────────
 
+# time warping (RPC_URL must point to a local fork)
 execute-pipeline: start pipeline-separator run-epochs ## Run the full pipeline
 	@echo "🚀 Dev environment ready"
+
+# ───────────────────────────────────────────────
+#   SEMANTIC HELPERS
+# ───────────────────────────────────────────────
 
 wait:
 	@forge clean
@@ -180,6 +185,7 @@ run-epochs: ## Generate, sign, export, and settle orders across all epochs
 	@echo "📊 Building orders..."
 	@echo ""
 	@./$(RUNNERS)/run-epochs.sh $(EPOCH_COUNT) $(EXPORT_FLAG)
+
 
 # ───────────────────────────────────────────────
 #   RESET / PROCESS CONTROL
