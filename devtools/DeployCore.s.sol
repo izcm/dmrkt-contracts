@@ -32,7 +32,8 @@ contract DeployCore is BaseDevScript, DevConfig {
         // --------------------------------
 
         address weth = readWeth();
-        uint256 funderPk = generateKeys()[0];
+
+        uint256 deployerPk = vm.envOr("DEPLOYER_PK", generateKeys()[0]);
 
         // --------------------------------
         // DEPLOY MARKETPLACE & NFTS
@@ -40,8 +41,7 @@ contract DeployCore is BaseDevScript, DevConfig {
 
         logSection("DEPLOY CORE CONTRACTS");
 
-        // since the script uses the same private key its not necessary but I like to be explicit
-        vm.startBroadcast(funderPk);
+        vm.startBroadcast(deployerPk);
 
         // deploy core
         OrderEngine orderEngine = new OrderEngine(weth, msg.sender);

@@ -4,11 +4,16 @@
 
 MODE ?= anvil
 
+# EPOCH_COUNT is 1 since when simulating on sepolia 
+# (since we aren't replaying past like on a local anvil fork)
 ifeq ($(MODE), sepolia)
 	include .env.sepolia
+	EPOCH_COUNT=1 
 else 
-	include .env
+	include .env 
 endif
+
+include .env.rpcs
 
 export
 

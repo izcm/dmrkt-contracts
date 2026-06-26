@@ -1,26 +1,23 @@
 #!/bin/bash
 #
+# FOR LOCAL FORKS  – INCLUDES TIME REPLAY
+#
 # Orchestrates the full epoch pipeline. For each epoch: builds and signs orders (BuildEpoch),
 # optionally exports them to the indexer, then settles a subset on-chain (ExecuteOrder).
 # Execution probability decays across epochs to leave some orders unfilled for demo use.
 #
 # Usage:  run-epochs.sh <epoch_count> [--export]
-# Env:    PIPELINE_STATE_DIR, MNEMONIC_JSON, RPC_URL, PIPELINES_EPOCHS, PIPELINES_EXECUTION, ARTIFACTS_EXPORTERS
+# Env:    PIPELINE_STATE_DIR, MNEMONIC_JSON, RPC_URL PIPELINES_EXECUTION
 
 RED="\033[0;31m"
 GREEN="\033[0;32m"
+YELLOW="\033[0;33m"
 RESET="\033[0m"
-YELLOW="\033[0;33m" # todo: change reverts to yellow
 
-if [ -z "$PIPELINE_STATE_DIR" ]; then
-        echo "${RED}PIPELINE_STATE_DIR not set (expected from Makefile)${RESET}"
-    exit 1
-fi
-
-if [ -z "$1" ]; then
-    echo "${RED}Missing Argument - Usage: run-epochs.sh epoch_count [--export]${RESET}"
-    exit 1
-fi
+: "${PIPELINE_STATE_DIR:?PIPELINE_STATE_DIR not set}"
+: "${MNEMONIC_JSON:?MNEMONIC_JSON not set}"
+: "${TOML:?TOML not set}"
+: "${1:?Usage: run-epochs.sh <epoch_count> [--export]}"
 
 epoch_count=$1
 export_to_indexer=false
@@ -32,6 +29,7 @@ export_to_indexer=false
 #--------------------------
 
 # --- compute address 0 from mnemonic and use as funder ---
+
 PHRASE=$(jq -r .mnemonic "$MNEMONIC_JSON")
 
 DEPLOYER_PK=$(cast wallet private-key --mnemonic "$PHRASE" --mnemonic-index 0)
@@ -119,18 +117,9 @@ do
         echo "=== PHASE 2: EXPORT ORDERS (epoch $epoch) ==="
         echo "orders: $order_count"
 
-        export_errors=0
-        for((i = 0; i < order_count; i++)); do
-            "$RUNNERS_EXPORTERS/export-order.sh" \
-                "$order_out/order_$i.json" \
-            || ((export_errors++))
-        done
-
-        if ((export_errors == 0)); then
-            echo -e "   ${GREEN}All $order_count orders exported successfully${RESET}"
-        else
-            echo -e "   ${RED}$export_errors/$order_count orders failed to export${RESET}"
-        fi
+        "$RUNNERS_EXPORTERS/export-orders.sh" "$order_out" "$order_count" \
+            --chain-id "$CHAIN_ID" \
+            --post-url "$ORDER_POST_URL"
     fi
     
     #--------------------------
