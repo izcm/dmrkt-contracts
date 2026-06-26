@@ -1,6 +1,10 @@
-# while run-epochs replays history by time warping fork
-# this script populates in realtime
-# works with testnets eg. Sepolia
+# Executes pre-built orders in realtime against a live network (e.g. Sepolia).
+#
+# Unlike run-epochs, this script does not replay history — it submits orders as-is.
+# Orders are built by BuildEpoch.s.sol using timestamps from pipeline.toml.
+#
+# On a live network, evm_increaseTime is not available, so block timestamps cannot be rewound.
+# Orders may fail if the current block timestamp falls outside an order's validity window.
 
 # Asuumptions:
 # - filenames in ORDERS_DIR with format order_x.json
@@ -22,6 +26,5 @@ EXEC_RATE="$2"
 # count orders
 ORDER_COUNT=$(find "$ORDERS_DIR" -maxdepth 1 -name "order_*" -printf '.' | wc -m)
 
-# also accept positional param execution rate 0-100
 # export all
 # execute all up to rate %

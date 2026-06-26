@@ -13,7 +13,7 @@ else
 	include .env 
 endif
 
-include .env.rpcs
+-include .env.rpcs
 
 export
 
