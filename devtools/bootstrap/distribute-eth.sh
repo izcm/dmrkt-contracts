@@ -1,17 +1,25 @@
 # Anvil lets us specify which users are the 10'000 ETH funded group.
+#
 # When running simulation on eg. Sepolia its likely that a superuser initially holds all funds.
-
 # This script distributes superuser's ETH evenly on participant group.
+#
 
-# todo: pass cound as arg
-PARTICIPANT_COUNT=5
+# positional args
+USAGE_MSG="Usage: distribute-eth.sh <participant_count> <wei_per_participant>"
+: "${1:?"$USAGE_MSG"}"
+: "${2:?"$USAGE_MSG"}"
 
-if[ ]
-MNEMONIC_TXT="data/11155111/mnemonic.txt"
+P_COUNT=$1
+WEI_PER_USER=$2
 
-for i in {0..5}
-do
+# env 
+: "${FUNDER_PK:?FUNDER_PK not set}"
+: "${PHRASE:?PHRASE not set}"
 
-    p=cast wallet address --mnemonic "$PHRASE" --mnemonic-index $i
-    cast send "$p"
+for ((i = 0; i < P_COUNT; i++)); do
+    p=$(cast wallet address --mnemonic "$PHRASE" --mnemonic-index "$i")
+    cast send "$p" \
+        --value "$WEI_PER_USER" \
+        --private-key "$FUNDER_PK" \
+        --fork-url "$RPC_URL"
 done
