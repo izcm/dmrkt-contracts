@@ -20,9 +20,7 @@ PIPELINE_END_TS=${2:-$(date +%s)}
 
 # === get timestamps ===
 
-LATEST_TS=$(cast block latest -f timestamp --rpc-url "$SOURCE_RPC")
-
-TARGET_TS=$((LATEST_TS - SECONDS_AGO))
+TARGET_TS=$(("$PIPELINE_END_TS" - SECONDS_AGO))
 
 FORK_START_BLOCK=$(cast find-block "$TARGET_TS" --rpc-url "$SOURCE_RPC")
 PIPELINE_START_TS=$(cast block "$FORK_START_BLOCK" -f timestamp --rpc-url "$SOURCE_RPC")

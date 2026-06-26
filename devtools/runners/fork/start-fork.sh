@@ -13,7 +13,7 @@ MNEMONIC_JSON="./data/31337/mnemonic.json"
 
 # read fork config
 FORK_START_BLOCK=$(awk -F ' ' '$1=="fork_start_block" { print $3 }' "$TOML")
-PHRASE=$([ -f "$MNEMONIC_JSON" ] && jq -r .mnemonic "$MNEMONIC_JSON" || echo "")
+PHRASE=$([ -f "$MNEMONIC_JSON" ] && jq -r .mnemonic "$MNEMONIC_JSON")
 
 MNEMONIC_FLAG=()
 [ -n "$PHRASE" ] && MNEMONIC_FLAG=(--mnemonic "$PHRASE")
