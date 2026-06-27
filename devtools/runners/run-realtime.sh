@@ -42,18 +42,32 @@ EXEC_LIMIT=$(( ORDER_COUNT * EXEC_RATE / 100 ))
 # compute deployer
 DEPLOYER_ADDR=$(cast wallet address "$DEPLOYER_PK")
 
+# read rpc's chainId
+CHAIN_ID=$(cast chain-id --rpc-url "$RPC_URL")
+
+# read pipeline window from .toml (order.end will always be valid when date.now() < END_TS )
+toml_get() {
+    local key="$1"
+    local val
+    val=$(awk "/^\[$CHAIN_ID\.uint\]/{found=1; next} found && \$1=="\"$key"\"{print \$3; exit} /^\[/{if(found) exit}" "$TOML")
+    : "${val:?error: $key not found for chain $CHAIN_ID in $TOML}"
+    echo "$val"
+}
+START_TS=$(toml_get pipeline_start_ts)
+END_TS=$(toml_get pipeline_end_ts)
+
+if (( END_TS < $(date +%s) )); then
+    echo "error: pipeline window has expired"
+    exit 1
+fi
+
 #--------------------------
 # PHASE 1: BUILD ORDERS
 #--------------------------
 
-# `epoch` system is intended for simulating across longer timespan
-# in this development phase realtime is built to take built orders and execute them in one go on a testnet
-# order.end will always be valid when date.now() < END_TS 
-START_TS=$(awk -F ' ' '$1=="pipeline_start_ts" { print $3 }' "$TOML")
-END_TS=$(awk -F ' ' '$1=="pipeline_end_ts" { print $3 }' "$TOML")
-
-# pipeline window
+# sim window in seconds
 DELTA=$(( END_TS - START_TS ))
+
 
 forge script "$PIPELINES_EPOCHS"/BuildEpoch.s.sol \
     --rpc-url "$RPC_URL" \
@@ -63,13 +77,20 @@ forge script "$PIPELINES_EPOCHS"/BuildEpoch.s.sol \
     --sig "run(uint256,uint256)" \
     0 $DELTA  \
 
-# export all
-# do this afterwards 
+#--------------------------
+# PHASE 2: EXPORT ORDERS IF --EXPORT FLAG
+#--------------------------
 
-# execute all up to rate %
+# export all
+
+#--------------------------
+# PHASE 3: EXECUTE ORDERS
+#--------------------------
+
 success=0
 fail=0
 
+# ADD ASYNC FLAG
 for((i = 0; i < 1; i++)); do
     if "$(dirname "$0")"/executors/exec-order.sh 0 "$i" \
         --rpc-url "$RPC_URL" \

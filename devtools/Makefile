@@ -2,7 +2,7 @@
 #   Marketplace Engines — DEV PIPELINE
 # ───────────────────────────────────────────────
 
-MODE ?= anvil
+MODE ?= sepolia
 
 # EPOCH_COUNT is 1 since when simulating on sepolia 
 # (since we aren't replaying past like on a local anvil fork)
@@ -83,8 +83,16 @@ compose-entrypoint: wait pipeline-setup pipeline-separator run-epochs ## Docker 
 execute-pipeline: start pipeline-separator run-epochs ## Run the full pipeline
 	@echo "🚀 Dev environment ready"
 
-execute-realtime: prepare pipeline-setup pipeline-separator 
+# only time-windowand build + execute orders (testnets)
+execute-realtime: prepare pipeline-separator 
 	./runners/run-realtime.sh "$(PIPELINE_STATE_DIR)/epoch_0/orders" 10
+
+# fund participants with WETH + deploy contracts (testnets)
+setup-realtime: pipeline-setup
+
+distribute-eth:
+	./bootstrap/distribute-eth.sh 5 5000000000000000000
+
 # ───────────────────────────────────────────────
 #   SEMANTIC HELPERS
 # ───────────────────────────────────────────────
@@ -141,13 +149,6 @@ print-participants: ## Print pipeline participants
 	@forge script $(BOOTSTRAP)/PrintParticipants.s.sol \
 		--rpc-url $(RPC_URL)
 
-bootstrap-funds: ## Wrap ETH into WETH for all participants
-	@echo ""
-	@echo "💰 Funding WETH..."
-	@echo ""
-	@forge script $(BOOTSTRAP)/BootstrapFunds.s.sol \
-		$(FORGE_COMMON_FLAGS)
-
 deploy-core: ## Deploy OrderEngine + NFT collections, write addresses to pipeline.toml
 	@echo ""
 	@echo "───────────────────────────────────────────────"
@@ -159,7 +160,14 @@ deploy-core: ## Deploy OrderEngine + NFT collections, write addresses to pipelin
 	@forge script DeployCore.s.sol \
 		$(FORGE_COMMON_FLAGS)
 
-bootstrap-nfts: FORGE_SILENT =
+bootstrap-funds: ## Wrap ETH into WETH for all participants
+	@echo ""
+	@echo "💰 Funding WETH..."
+	@echo ""
+	@forge script $(BOOTSTRAP)/BootstrapFunds.s.sol \
+		$(FORGE_COMMON_FLAGS)
+
+
 bootstrap-nfts: ## Mint NFTs to all participants
 	@echo ""
 	@echo "👾 Minting NFTs..."

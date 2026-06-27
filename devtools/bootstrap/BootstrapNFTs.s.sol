@@ -64,6 +64,10 @@ contract BootstrapNFTs is BaseDevScript, DevConfig {
             uint256 pk = pks[j];
             address to = addrOf(pk);
 
+            // skip if already minted
+            try collection.ownerOf(i) returns (address) {
+                continue;
+            } catch {}
             // Broadcast as the recipient
             vm.startBroadcast(pk);
 

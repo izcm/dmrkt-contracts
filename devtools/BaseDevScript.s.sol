@@ -9,7 +9,7 @@ import { console } from "forge-std/console.sol";
  *         generation, address lookup, and console logging.
  */
 abstract contract BaseDevScript is Script {
-    mapping(address => uint256) private _ownerPk;
+    mapping(address => uint256) private _participantPk;
     address[] private _participants;
 
     /**
@@ -24,7 +24,7 @@ abstract contract BaseDevScript is Script {
             uint256 pk = pks[i];
             address addr = addrOf(pk);
 
-            _ownerPk[addr] = pk;
+            _participantPk[addr] = pk;
             _participants.push(addr);
         }
     }
@@ -79,7 +79,8 @@ abstract contract BaseDevScript is Script {
     }
 
     function pkOf(address a) internal view returns (uint256) {
-        return _ownerPk[a];
+        require(_participantPk[a] != 0, "unknown participant");
+        return _participantPk[a];
     }
 
     function addrOf(uint256 pk) internal pure returns (address) {

@@ -1,8 +1,9 @@
+#!/bin/bash
+#
 # Anvil lets us specify which users are the 10'000 ETH funded group.
 #
 # When running simulation on eg. Sepolia its likely that a superuser initially holds all funds.
 # This script distributes superuser's ETH evenly on participant group.
-#
 
 # positional args
 USAGE_MSG="Usage: distribute-eth.sh <participant_count> <wei_per_participant> --rpc-url <url>"
@@ -26,10 +27,23 @@ done
 : "${DEPLOYER_PK:?DEPLOYER_PK not set}"
 : "${PHRASE:?PHRASE not set}"
 
+DEPLOYER_ADDR=$(cast wallet address "$DEPLOYER_PK")
+
+# deployer nonce
+nonce=$(cast nonce "$DEPLOYER_ADDR" --rpc-url "$RPC_URL")
+
 for ((i = 0; i < P_COUNT; i++)); do
-    p=$(cast wallet address --mnemonic "$PHRASE" --mnemonic-index "$i")
+    # participant
+    p=$(cast wallet address --mnemonic "${PHRASE//\"/}" --mnemonic-index "$i")
+    
+    [[ "$p" == "$DEPLOYER_ADDR" ]] && continue
+
+    echo "[$i] sending $WEI_PER_USER wei to $p"
     cast send "$p" \
+        --async \
         --value "$WEI_PER_USER" \
         --private-key "$DEPLOYER_PK" \
-        --fork-url "$RPC_URL"
+        --rpc-url "$RPC_URL" \
+        --nonce "$nonce"
+    ((nonce++))
 done
