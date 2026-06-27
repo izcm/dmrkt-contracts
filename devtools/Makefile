@@ -2,7 +2,7 @@
 #   Marketplace Engines — DEV PIPELINE
 # ───────────────────────────────────────────────
 
-MODE ?= sepolia
+MODE ?= anvil
 
 # EPOCH_COUNT is 1 since when simulating on sepolia 
 # (since we aren't replaying past like on a local anvil fork)
@@ -35,8 +35,7 @@ export TOML               := pipeline.toml
 
 
 # epoch defs
-# EPOCH_COUNT ?= 4
-EPOCH_COUNT ?= 1
+EPOCH_COUNT ?= 4
 
 # ───────────────────────────────────────────────
 #   LOGGING / VERBOSITY
