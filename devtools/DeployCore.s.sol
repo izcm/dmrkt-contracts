@@ -41,6 +41,8 @@ contract DeployCore is BaseDevScript, DevConfig {
 
         logSection("DEPLOY CORE CONTRACTS");
 
+        logAddress("Deployer", addrOf(deployerPk));
+
         vm.startBroadcast(deployerPk);
 
         // deploy core

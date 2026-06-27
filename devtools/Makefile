@@ -35,7 +35,8 @@ export TOML               := pipeline.toml
 
 
 # epoch defs
-EPOCH_COUNT ?= 4
+# EPOCH_COUNT ?= 4
+EPOCH_COUNT ?= 1
 
 # ───────────────────────────────────────────────
 #   LOGGING / VERBOSITY
@@ -82,6 +83,8 @@ compose-entrypoint: wait pipeline-setup pipeline-separator run-epochs ## Docker 
 execute-pipeline: start pipeline-separator run-epochs ## Run the full pipeline
 	@echo "🚀 Dev environment ready"
 
+execute-realtime: prepare pipeline-setup pipeline-separator 
+	./runners/run-realtime.sh "$(PIPELINE_STATE_DIR)/epoch_0/orders" 10
 # ───────────────────────────────────────────────
 #   SEMANTIC HELPERS
 # ───────────────────────────────────────────────
