@@ -61,7 +61,7 @@ awk -v start="$PIPELINE_START_TS" \
     END {
         if (!written) {
             print ""
-            print "[31337.uint]"
+            print "[" chain ".uint]"
             print "pipeline_start_ts = " start
             print "pipeline_end_ts = " end
             print "fork_start_block = " block

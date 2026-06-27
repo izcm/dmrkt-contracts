@@ -15,9 +15,15 @@ YELLOW="\033[0;33m"
 RESET="\033[0m"
 
 : "${PIPELINE_STATE_DIR:?PIPELINE_STATE_DIR not set}"
-: "${MNEMONIC_JSON:?MNEMONIC_JSON not set}"
 : "${TOML:?TOML not set}"
 : "${1:?Usage: run-epochs.sh <epoch_count> [--export]}"
+
+if [[ -z "${PARTICIPANT_MNEMONIC:-}" ]]; then
+    echo "⚠️  PARTICIPANT_MNEMONIC not set -> using anvil default accounts"
+    PHRASE="test test test test test test test test test test test junk"
+else
+    PHRASE="${PARTICIPANT_MNEMONIC//\"/}"
+fi
 
 epoch_count=$1
 export_orders=false
@@ -34,15 +40,14 @@ fi
 
 # --- compute address 0 from mnemonic and use as funder ---
 
-PHRASE=$(jq -r .mnemonic "$MNEMONIC_JSON")
-
 DEPLOYER_PK=$(cast wallet private-key --mnemonic "$PHRASE" --mnemonic-index 0)
 DEPLOYER_ADDR=$(cast wallet address "$DEPLOYER_PK")
 
 # --- timestamps and epochs ---
 
-START_TS=$(awk -F ' ' '$1=="pipeline_start_ts" { print $3 }' "$TOML")
-END_TS=$(awk -F ' ' '$1=="pipeline_end_ts" { print $3 }' "$TOML")
+# hardcoded chainId since script only works on anvil
+START_TS=$(awk '/^\[31337\.uint\]/{found=1; next} found && /^\[/{exit} found && $1=="pipeline_start_ts"{print $3; exit}' "$TOML")
+END_TS=$(awk '/^\[31337\.uint\]/{found=1; next} found && /^\[/{exit} found && $1=="pipeline_end_ts"{print $3; exit}' "$TOML")
 
 delta=$(( END_TS - START_TS ))
 
@@ -110,7 +115,6 @@ do
     sleep $epoch_sleep_time
     
     order_count=$(cat "$PIPELINE_STATE_DIR/epoch_$epoch/order-count.txt")
-    # order_count=$(find "$PIPELINE_STATE_DIR/epoch_$epoch/orders" -maxdepth 1 -name "order_*" -printf '.' | wc -m)
     order_out="$PIPELINE_STATE_DIR/epoch_$epoch/orders"
 
     #--------------------------

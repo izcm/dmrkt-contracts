@@ -33,7 +33,7 @@ We fork mainnet instead of a blank chain. Currencies like WETH live at their rea
 
 Participants are derived from a mnemonic. Default participant count is 10, but can be increased / decreased without breaking the pipeline.
 
-Participants are funded during fork startup through Anvil's --mnemonic flag.
+Participants are funded during fork startup through Anvil's `--mnemonic` flag. Set `PARTICIPANT_MNEMONIC` in your `.env` to use a custom mnemonic. If not set, both the fork and the pipeline scripts fall back to the standard Hardhat/Anvil default mnemonic (`test test test ... junk`).
 
 Scripts that need to read participants extend [BaseDevScript](./BaseDevScript.s.sol) — e.g. for allowance and transfer approvals. The `actor` field of every generated order or fill is one of the participant addresses.
 
@@ -67,7 +67,6 @@ Each epoch builds, exports, and settles orders within its slice, advancing Anvil
 ```
 data/
 └── <chainId>/
-    ├── mnemonic.json    # Mnemonic provided by us
     └── state/
         └── epoch_N/
             ├── orders.json        # The generated orders
@@ -126,14 +125,15 @@ The deploy scripts will populate the rest of the fields (contract addresses, for
 
 **Environment variables**
 
-| Var           | Description                                                                       | Example                                      |
-| ------------- | --------------------------------------------------------------------------------- | -------------------------------------------- |
-| `SOURCE_RPC`  | Mainnet RPC URL used to seed the fork                                             | `https://eth-mainnet.g.alchemy.com<API_KEY>` |
-| `RPC_URL`     | Local fork RPC URL                                                                | `http://localhost:8545`                      |
-| `RPC_HOST`    | Anvil bind address, expects an IP address                                         | `127.0.0.1`                                  |
-| `RPC_PORT`    | Anvil port                                                                        | `8545`                                       |
-| `CHAIN_ID`    | Chain ID for the local fork network                                               | `31337`                                      |
-| `ORDERS_EXPORT_URL` | Optional. Endpoint to POST orders to when `--export` is passed to `run-epochs.sh` | `http://localhost:5000/api/orders`           |
+| Var                    | Description                                                                                        | Example                                      |
+| ---------------------- | -------------------------------------------------------------------------------------------------- | -------------------------------------------- |
+| `SOURCE_RPC`           | Mainnet RPC URL used to seed the fork                                                              | `https://eth-mainnet.g.alchemy.com<API_KEY>` |
+| `RPC_URL`              | Local fork RPC URL                                                                                 | `http://localhost:8545`                      |
+| `RPC_HOST`             | Anvil bind address, expects an IP address                                                          | `127.0.0.1`                                  |
+| `RPC_PORT`             | Anvil port                                                                                         | `8545`                                       |
+| `CHAIN_ID`             | Chain ID for the local fork network                                                                | `31337`                                      |
+| `PARTICIPANT_MNEMONIC` | Optional. Mnemonic for participant accounts. Defaults to the standard Hardhat/Anvil junk mnemonic. | `word1 word2 ... word12`                     |
+| `ORDERS_EXPORT_URL`    | Optional. Endpoint to POST orders to when `--export` is passed to `run-epochs.sh`                  | `http://localhost:5000/api/orders`           |
 
 ---
 
@@ -181,12 +181,12 @@ Shared state file written by deploy scripts and read by pipeline runners.
 
 Located under `runners/`
 
-| Script               | Usage                                                                                                                                                  |
-| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `pipeline-window.sh` | Computes fork start block + window timestamps and writes these to `pipeline.toml`                                                                      |
-| `start-fork.sh`      | Starts the anvil fork. Reads start block from `pipeline.toml` and mnemonic from the data directory, defaulting to block 0 and anvil's default mnemonic |
-| `run-epochs.sh`      | Orchestrates the full epoch pipeline for each epoch                                                                                                    |
-| `export-order.sh`    | POST single order to endpoint specified as env variable `ORDER_POST_URL`. Called by `run-epochs` when `--export` is passed.                            |
+| Script               | Usage                                                                                                                                                       |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pipeline-window.sh` | Computes fork start block + window timestamps and writes these to `pipeline.toml`                                                                           |
+| `start-fork.sh`      | Starts the anvil fork. Reads start block from `pipeline.toml` and mnemonic from `PARTICIPANT_MNEMONIC`, defaulting to the standard junk mnemonic if not set |
+| `run-epochs.sh`      | Orchestrates the full epoch pipeline for each epoch                                                                                                         |
+| `export-order.sh`    | POST single order to endpoint specified as env variable `ORDER_POST_URL`. Called by `run-epochs` when `--export` is passed.                                 |
 
 ---
 

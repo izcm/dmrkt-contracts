@@ -23,13 +23,13 @@ done
 : "${RPC_URL:?$USAGE_MSG}"
 
 # env 
-: "${FUNDER_PK:?FUNDER_PK not set}"
+: "${DEPLOYER_PK:?DEPLOYER_PK not set}"
 : "${PHRASE:?PHRASE not set}"
 
 for ((i = 0; i < P_COUNT; i++)); do
     p=$(cast wallet address --mnemonic "$PHRASE" --mnemonic-index "$i")
     cast send "$p" \
         --value "$WEI_PER_USER" \
-        --private-key "$FUNDER_PK" \
+        --private-key "$DEPLOYER_PK" \
         --fork-url "$RPC_URL"
 done

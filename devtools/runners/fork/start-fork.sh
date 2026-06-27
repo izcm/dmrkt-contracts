@@ -9,14 +9,15 @@
 # Kill previous anvil if running
 pkill anvil 2>/dev/null
 
-MNEMONIC_JSON="./data/31337/mnemonic.json"
+MNEMONIC_FLAG=()
+if [ -n "${PARTICIPANT_MNEMONIC:-}" ]; then
+    MNEMONIC_FLAG=(--mnemonic "${PARTICIPANT_MNEMONIC//\"/}")
+else
+    echo "⚠️  PARTICIPANT_MNEMONIC not set -> using anvil default accounts"
+fi
 
 # read fork config
-FORK_START_BLOCK=$(awk -F ' ' '$1=="fork_start_block" { print $3 }' "$TOML")
-PHRASE=$([ -f "$MNEMONIC_JSON" ] && jq -r .mnemonic "$MNEMONIC_JSON")
-
-MNEMONIC_FLAG=()
-[ -n "$PHRASE" ] && MNEMONIC_FLAG=(--mnemonic "$PHRASE")
+FORK_START_BLOCK=$(awk '/^\[31337\.uint\]/{found=1; next} found && $1=="fork_start_block"{print $3; exit} /^\[/{if(found) exit}' "$TOML")
 
 # Start a fresh fork
 # https://getfoundry.sh/anvil/reference/anvil/

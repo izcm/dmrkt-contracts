@@ -6,7 +6,6 @@ import { console } from "forge-std/console.sol";
 
 /**
  * @notice Abstract base for all dev pipeline scripts. Derives participant accounts from a
- *         mnemonic file at `data/{chainId}/mnemonic.json` and exposes helpers for key
  *         generation, address lookup, and console logging.
  */
 abstract contract BaseDevScript is Script {
@@ -40,11 +39,11 @@ abstract contract BaseDevScript is Script {
     }
 
     function generateKeys(uint32 keyCount) private view returns (uint256[] memory) {
-        string memory path = string.concat("./data/", vm.toString(block.chainid), "/mnemonic.json");
-
-        string memory json = vm.readFile(path);
-        string memory mnemonic = vm.parseJsonString(json, ".mnemonic");
-
+        // use the standard eth dev mnemonic if not found
+        string memory mnemonic = vm.envOr(
+            "PARTICIPANT_MNEMONIC",
+            string("test test test test test test test test test test test junk")
+        );
         uint256[] memory keys = new uint256[](keyCount);
 
         for (uint32 i = 0; i < keyCount; i++) {
