@@ -38,6 +38,7 @@ contract BuildEpoch is MarketSim, SignOrder, EpochsJson, BaseDevScript, DevConfi
     // ctx
     uint256 private epoch;
     uint256 private timeWindow;
+    uint256 private nonceSeed;
 
     mapping(address => uint256) private actorNonceIdx; // per-actor nonce counter, carried over between epochs via nonces.json
     mapping(address => uint256[]) private selected; // selected tokenIds per collection
@@ -45,14 +46,17 @@ contract BuildEpoch is MarketSim, SignOrder, EpochsJson, BaseDevScript, DevConfi
     // === ENTRYPOINTS ===
 
     /**
-     * @notice Entry point. Loads config, imports the previous epoch's nonces, builds and signs
-     *         all orders, sorts them by end date, and exports them to JSON.
-     * @param _epoch       Current epoch index.
-     * @param _timeWindow  Full pipeline delta in seconds. Passed as the full delta (not epoch slice)
-     *                     so every order's end timestamp is guaranteed >= pipeline_end_ts,
-     *                     keeping unsettled orders valid for demo users to settle manually.
+     * @notice  Entry point. Loads config, imports the previous epoch's nonces, builds and signs
+     *          all orders, sorts them by end date, and exports them to JSON.
+     * @param _epoch        Current epoch index.
+     * @param _timeWindow   Full pipeline delta in seconds. Passed as the full delta (not epoch slice)
+     *                      so every order's end timestamp is guaranteed >= pipeline_end_ts,
+     *                      keeping unsettled orders valid for demo users to settle manually.
+     * @param _nonceSeed    Added when extending to repeated builds without tracking nonce
+     *                      Probably going to move away from the sequential nonce system all together.
+     *                      Very little value for lot the added  complexity.
      */
-    function run(uint256 _epoch, uint256 _timeWindow) external {
+    function run(uint256 _epoch, uint256 _timeWindow, uint256 _nonceSeed) external {
         // --------------------------------
         // LOAD CONFIG & SETUP
         // --------------------------------
@@ -78,6 +82,7 @@ contract BuildEpoch is MarketSim, SignOrder, EpochsJson, BaseDevScript, DevConfi
 
         epoch = _epoch;
         timeWindow = _timeWindow;
+        nonceSeed = _nonceSeed;
 
         address[] memory collections = readCollections();
 
@@ -228,7 +233,8 @@ contract BuildEpoch is MarketSim, SignOrder, EpochsJson, BaseDevScript, DevConfi
             actor,
             _resolveStartDate(orderSeed),
             _resolveEndDate(orderSeed),
-            actorNonceIdx[actor]++
+            uint256(keccak256(abi.encode(orderSeed, nonceSeed)))
+            // actorNonceIdx[actor]++
         );
 
         OrderBuilder.validate(order);

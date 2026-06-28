@@ -89,7 +89,7 @@ execute-realtime:
 	@echo "🔢 Finding block number and timestamps..."
 	@./$(RUNNERS_FORK)/pipeline-window.sh 7776000 $$(($$(date +%s) + 5184000))
 	@echo "🌀 Running realtime simulation" 
-	@./runners/run-realtime.sh 60 --export
+	@./runners/run-realtime.sh 60 0 --export
 
 # ───────────────────────────────────────────────
 #   SEMANTIC HELPERS

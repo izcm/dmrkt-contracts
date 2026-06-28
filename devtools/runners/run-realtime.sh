@@ -6,20 +6,29 @@
 #
 # On a live network, evm_increaseTime is not available, so block timestamps cannot be rewound.
 # Orders may fail if the current block timestamp falls outside an order's validity window.
-
+#
 # Asuumptions:
 # - filenames in ORDERS_DIR with format order_x.json
+# Usage: ./$(basename "$0") <order_percentage_to_execute> <nonce_seed> [--export]
+#
+# nonce_seed:
+#   Used on testnets when rebuilding orders. It is forwarded to BuildEpoch so
+#   newly generated orders use different nonces and don't clash with orders
+#   from previous runs.
+#
 
 RED="\033[0;31m"
 GREEN="\033[0;32m"
 RESET="\033[0m"
 YELLOW="\033[0;33m" 
 
-USAGE_MSG="Usage: ./$(basename "$0") <order_percantage_to_execute> [--export]"
+USAGE_MSG="Usage: ./$(basename "$0") <order_percantage_to_execute> <nonce_seed> [--export]"
 
 # positional args
 : "${1:?$USAGE_MSG}"
+: "${2:?$USAGE_MSG}"
 EXEC_RATE="$1"
+NONCE_SEED="$2"
 
 # expected env vars
 : "${PIPELINE_STATE_DIR:?PIPELINE_STATE_DIR not set}"
@@ -57,7 +66,7 @@ if (( END_TS < $(date +%s) )); then
 fi
 
 EXPORT_ORDERS=false
-[ "$2" = "--export" ] && EXPORT_ORDERS=true
+[ "$3" = "--export" ] && EXPORT_ORDERS=true
 
 if [ "$EXPORT_ORDERS" = "true" ]; then
     : "${ORDERS_EXPORT_URL:?ORDERS_EXPORT_URL not set}"
@@ -80,8 +89,8 @@ forge script "$PIPELINE_EPOCHS"/BuildEpoch.s.sol \
     --broadcast \
     --sender "$DEPLOYER_ADDR" \
     --private-key "$DEPLOYER_PK" \
-    --sig "run(uint256,uint256)" \
-    0 $DELTA  \
+    --sig "run(uint256,uint256,uint256)" \
+    0 $DELTA $NONCE_SEED \
 
 # count orders
 order_count=$(find "$ORDER_OUT" -maxdepth 1 -name "order_*" -printf '.' | wc -m)
