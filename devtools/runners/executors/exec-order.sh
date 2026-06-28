@@ -28,9 +28,9 @@ done
 : "${RPC_URL:?$USAGE_MSG}"
 : "${SENDER:?$USAGE_MSG}"
 : "${PRIVATE_KEY:?$USAGE_MSG}"
-: "${PIPELINES_EXECUTION:?PIPELINES_EXECUTION not set}"
+: "${PIPELINE_EXECUTION:?PIPELINE_EXECUTION not set}"
 
-if forge script "$PIPELINES_EXECUTION"/ExecuteOrder.s.sol \
+if forge script "$PIPELINE_EXECUTION"/ExecuteOrder.s.sol \
     --rpc-url "$RPC_URL" \
     --broadcast \
     --sender "$SENDER" \

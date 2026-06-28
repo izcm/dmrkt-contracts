@@ -25,8 +25,9 @@ done
 
 # env 
 : "${DEPLOYER_PK:?DEPLOYER_PK not set}"
-: "${PHRASE:?PHRASE not set}"
+: "${PARTICIPANT_MNEMONIC:?PHRASE not set}"
 
+PHRASE="$PARTICIPANT_MNEMONIC"
 DEPLOYER_ADDR=$(cast wallet address "$DEPLOYER_PK")
 
 # deployer nonce

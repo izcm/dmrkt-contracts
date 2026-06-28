@@ -2,12 +2,12 @@
 #
 # Usage:  run-epochs.sh <epoch_count> [--export]
 # Env: 
-#   - PIPELINES_EPOCHS: BuildEpoch script directory
+#   - PIPELINE_EPOCHS: BuildEpoch script directory
 
 # --- prerequisites ---
 
 # count orders
-ORDER_COUNT=$(find "$PIPELINES_EPOCHS"/BuildEpoch.s.sol )
+ORDER_COUNT=$(find "$PIPELINE_EPOCHS"/BuildEpoch.s.sol )
 
 (( ORDER_COUNT )) || { echo "no orders to execute in $ORDERS_DIR"; exit 1; }
 

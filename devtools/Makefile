@@ -2,7 +2,7 @@
 #   Marketplace Engines — DEV PIPELINE
 # ───────────────────────────────────────────────
 
-MODE ?= anvil
+MODE ?= sepolia
 
 # EPOCH_COUNT is 1 since when simulating on sepolia 
 # (since we aren't replaying past like on a local anvil fork)
@@ -27,15 +27,16 @@ RUNNERS         := runners
 
 export RUNNERS_FORK        := $(RUNNERS)/fork
 export RUNNERS_EXPORTERS   := $(RUNNERS)/exporters
-export PIPELINES_EPOCHS    := $(PIPELINES)/epochs
-export PIPELINES_EXECUTION := $(PIPELINES)/execution
+export PIPELINE_EPOCHS    := $(PIPELINES)/epochs
+export PIPELINE_EXECUTION := $(PIPELINES)/execution
 
 export PIPELINE_STATE_DIR := data/$(CHAIN_ID)/state
 export TOML               := pipeline.toml
 
 
 # epoch defs
-EPOCH_COUNT ?= 4
+# EPOCH_COUNT ?= 4
+EPOCH_COUNT = 1
 
 # ───────────────────────────────────────────────
 #   LOGGING / VERBOSITY
@@ -82,15 +83,13 @@ compose-entrypoint: wait pipeline-setup pipeline-separator run-epochs ## Docker 
 execute-pipeline: start pipeline-separator run-epochs ## Run the full pipeline
 	@echo "🚀 Dev environment ready"
 
-# only time-windowand build + execute orders (testnets)
-execute-realtime: prepare pipeline-separator 
-	./runners/run-realtime.sh "$(PIPELINE_STATE_DIR)/epoch_0/orders" 10
-
-# fund participants with WETH + deploy contracts (testnets)
-setup-realtime: pipeline-setup
-
-distribute-eth:
-	./bootstrap/distribute-eth.sh 5 5000000000000000000
+# only time-window and build + execute orders (testnets)
+# timeWindow is 3 months with end_ts set to 60 days from time of writing
+execute-realtime: 
+	@echo "🔢 Finding block number and timestamps..."
+	@./$(RUNNERS_FORK)/pipeline-window.sh 7776000 $$(($$(date +%s) + 5184000))
+	@echo "🌀 Running realtime simulation" 
+	@./runners/run-realtime.sh 60 --export
 
 # ───────────────────────────────────────────────
 #   SEMANTIC HELPERS
@@ -121,7 +120,6 @@ pipeline-setup: deploy-core print-participants bootstrap-funds bootstrap-nfts
 	@echo "✅ Core deployed and participants bootstrapped"
 	$(MAKE) approve
 	@echo "✅ OrderEngine fully authorized"
-
 
 # ───────────────────────────────────────────────
 #   ENVIRONMENT BOOT
@@ -184,6 +182,10 @@ approve: ## Grant NFT + WETH allowances to OrderEngine
 	@echo ""
 	@forge script $(BOOTSTRAP)/Approve.s.sol \
 		$(FORGE_COMMON_FLAGS)
+
+# for testnets 
+distribute-eth: 
+	./bootstrap/distribute-eth.sh 5 5000000000000000000
 
 # ───────────────────────────────────────────────
 #   STATE / SCENARIOS

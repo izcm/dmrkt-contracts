@@ -7,7 +7,7 @@
 # Execution probability decays across epochs to leave some orders unfilled for demo use.
 #
 # Usage:  run-epochs.sh <epoch_count> [--export]
-# Env:    PIPELINE_STATE_DIR, MNEMONIC_JSON, RPC_URL PIPELINES_EXECUTION
+# Env:    PIPELINE_STATE_DIR, MNEMONIC_JSON, RPC_URL PIPELINE_EXECUTION
 
 RED="\033[0;31m"
 GREEN="\033[0;32m"
@@ -104,7 +104,7 @@ do
     echo
     echo "=== PHASE 1: BUILD ORDERS (epoch $epoch) ==="
     
-    forge script "$PIPELINES_EPOCHS"/BuildEpoch.s.sol \
+    forge script "$PIPELINE_EPOCHS"/BuildEpoch.s.sol \
         --rpc-url "$RPC_URL" \
         --broadcast \
         --sender "$DEPLOYER_ADDR" \
@@ -178,7 +178,7 @@ do
             --rpc-url "$RPC_URL" \
             --quiet
 
-        if forge script "$PIPELINES_EXECUTION"/ExecuteOrder.s.sol \
+        if forge script "$PIPELINE_EXECUTION"/ExecuteOrder.s.sol \
             --rpc-url "$RPC_URL" \
             --broadcast \
             --sender "$DEPLOYER_ADDR" \
