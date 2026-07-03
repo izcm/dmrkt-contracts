@@ -109,7 +109,7 @@ do
         --broadcast \
         --sender "$DEPLOYER_ADDR" \
         --private-key "$DEPLOYER_PK" \
-        --sig "run(uint256,uint256)" \
+        --sig "run(uint256,uint256,uint256)" \
         $epoch $delta  0 \
 
     sleep $epoch_sleep_time

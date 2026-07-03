@@ -48,7 +48,8 @@ contract ExecuteOrder is EpochsJson, FillBid, SettlementValidation, BaseDevScrip
 
         address orderSettler = readSettlementContract();
 
-        _loadParticipants();
+        uint256 maxParticipantSize = vm.envOr("MAX_PARTICIPANT_SIZE", defaultParticipantSize());
+        loadParticipants(maxParticipantSize, 0);
 
         logSection("EXECUTING ORDER");
         console.log("Epoch: %s", epoch);

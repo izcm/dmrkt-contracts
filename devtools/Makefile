@@ -1,23 +1,4 @@
 # ───────────────────────────────────────────────
-#   Marketplace Engines — DEV PIPELINE
-# ───────────────────────────────────────────────
-
-MODE ?= sepolia
-
-# EPOCH_COUNT is 1 since when simulating on sepolia 
-# (since we aren't replaying past like on a local anvil fork)
-ifeq ($(MODE), sepolia)
-	include .env.sepolia
-	EPOCH_COUNT=1 
-else 
-	include .env 
-endif
-
--include .env.rpcs
-
-export
-
-# ───────────────────────────────────────────────
 #   ROOTS
 # ───────────────────────────────────────────────
 
@@ -30,19 +11,50 @@ export RUNNERS_EXPORTERS   := $(RUNNERS)/exporters
 export PIPELINE_EPOCHS    := $(PIPELINES)/epochs
 export PIPELINE_EXECUTION := $(PIPELINES)/execution
 
-export PIPELINE_STATE_DIR := data/$(CHAIN_ID)/state
 export TOML               := pipeline.toml
 
+# ───────────────────────────────────────────────
+#   PIPELINE CONTEXT
+# ───────────────────────────────────────────────
 
-# epoch defs
-# EPOCH_COUNT ?= 4
+MODE ?= anvil
+
+# EPOCH_COUNT is 1 since when simulating on sepolia
+# (since we aren't replaying past like on a local anvil fork)
+ifeq ($(MODE), sepolia)
+	include .env.sepolia
+	EPOCH_COUNT=1
+	CHAIN_ID=11155111
+else
+	include .env
+	CHAIN_ID=31337
+endif
+
+-include .env.rpcs
+
+export PIPELINE_STATE_DIR := data/$(CHAIN_ID)/state
+
+export
+
 EPOCH_COUNT = 1
+export PARTICIPANT_IDX_START=0
+export PARTICIPANT_SIZE=5
+# if MAX is set to any value !== PARTICIPANT_SIZE
+# it is your responsibility to fund the users P_SIZE..MAX_P_SIZE
+export MAX_PARTICIPANT_SIZE=5
+
+# realtime ctx (execute-realtime target)
+REALTIME_TIME_WINDOW  = 7776000 # 90 days, in seconds
+REALTIME_END_OFFSET   = 5184000 # 60 days from now, in seconds
+REALTIME_EXEC_RATE    = 10      # % of built orders to execute
+REALTIME_NONCE_SEED   = 1
+
 
 # ───────────────────────────────────────────────
 #   LOGGING / VERBOSITY
 # ───────────────────────────────────────────────
 
-SILENT ?= 0
+SILENT ?= 1
 
 ifeq ($(SILENT),1)
 FORGE_SILENT = --silent
@@ -85,11 +97,11 @@ execute-pipeline: start pipeline-separator run-epochs ## Run the full pipeline
 
 # only time-window and build + execute orders (testnets)
 # timeWindow is 3 months with end_ts set to 60 days from time of writing
-execute-realtime: 
+execute-realtime: print-participants
 	@echo "🔢 Finding block number and timestamps..."
-	@./$(RUNNERS_FORK)/pipeline-window.sh 7776000 $$(($$(date +%s) + 5184000))
-	@echo "🌀 Running realtime simulation" 
-	@./runners/run-realtime.sh 60 0 --export
+	@./$(RUNNERS_FORK)/pipeline-window.sh $(REALTIME_TIME_WINDOW) $$(($$(date +%s) + $(REALTIME_END_OFFSET)))
+	@echo "🌀 Running realtime simulation"
+	@./runners/run-realtime.sh $(REALTIME_EXEC_RATE) $(REALTIME_NONCE_SEED) --export
 
 # ───────────────────────────────────────────────
 #   SEMANTIC HELPERS
@@ -140,7 +152,7 @@ prepare: ## Compute fork start block and pipeline window timestamps
 print-participants: ## Print pipeline participants
 	@echo ""
 	@echo "───────────────────────────────────────────────"
-	@echo "BOOTSTRAP"
+	@echo "PARTICIPANTS"
 	@echo "───────────────────────────────────────────────"
 	@echo ""
 	@forge script $(BOOTSTRAP)/PrintParticipants.s.sol \
@@ -211,7 +223,10 @@ kill-anvil: ## Kill the running anvil process
 # ───────────────────────────────────────────────
 
 # chain
-WETH := 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2
+MAINNET_WETH := 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2
+SEPOLIA_WETH := 0x5f207d42F869fd1c71d7f0f81a2A67Fc20FF7323
+
+WETH=SEPOLIA_WETH
 
 weth-balance: ## Read WETH balance for an address  (ADDR=0x...)
 	@if [ -z "$(ADDR)" ]; then \

@@ -206,31 +206,6 @@ contract DMrktLoot is DNFT, ERC721 {
             );
     }
 
-    function collectionSvg() public pure returns (string memory) {
-        return
-            string(
-                abi.encodePacked(
-                    '<svg width="600" height="600" viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg">',
-                    '<rect width="600" height="600" rx="64" fill="#0b0b10"/>',
-                    // sword
-                    '<rect x="165" y="150" width="18" height="180" fill="#d1d5db"/>',
-                    '<rect x="130" y="300" width="88" height="18" fill="#a855f7"/>',
-                    '<rect x="169" y="318" width="10" height="70" fill="#78350f"/>',
-                    // elixir
-                    '<rect x="280" y="145" width="40" height="48" fill="#9ca3af"/>',
-                    '<rect x="268" y="120" width="64" height="28" fill="#a16207"/>',
-                    '<rect x="235" y="190" width="130" height="155" rx="18" fill="#111827" stroke="#a855f7" stroke-width="8"/>',
-                    '<rect x="255" y="255" width="90" height="70" fill="#a855f7" opacity="0.85"/>',
-                    // shield
-                    '<rect x="420" y="165" width="95" height="130" fill="#111827" stroke="#a855f7" stroke-width="8"/>',
-                    '<polygon points="420,295 515,295 468,375" fill="#111827" stroke="#a855f7" stroke-width="8"/>',
-                    '<rect x="458" y="220" width="20" height="80" fill="#a855f7"/>',
-                    '<text x="300" y="480" text-anchor="middle" fill="#ffffff" font-family="monospace" font-size="52" letter-spacing="4">dmrkt</text>',
-                    '<text x="300" y="525" text-anchor="middle" fill="#a855f7" font-family="monospace" font-size="20" letter-spacing="5">ON-CHAIN LOOT</text>',
-                    "</svg>"
-                )
-            );
-    }
     // ----------------------------
     // TRAIT LOGIC
     // ----------------------------

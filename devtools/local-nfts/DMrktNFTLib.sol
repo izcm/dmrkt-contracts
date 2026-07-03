@@ -71,8 +71,8 @@ library DMrktNFTLib {
     }
 
     function getDamage(uint256 tokenId) internal pure returns (uint256) {
-        uint256 base = DMrktMathConfig.damageBaseMin() +
-            (tokenId % DMrktMathConfig.damageBaseModulo());
+        uint256 base =
+            DMrktMathConfig.damageBaseMin() + (tokenId % DMrktMathConfig.damageBaseModulo());
 
         if (tokenId % DMrktMathConfig.rarityLegendaryMod() == 0) {
             return base + DMrktMathConfig.damageLegendaryBonus();
@@ -88,8 +88,8 @@ library DMrktNFTLib {
     }
 
     function getDefense(uint256 tokenId) internal pure returns (uint256) {
-        uint256 base = DMrktMathConfig.defenseBaseMin() +
-            (tokenId % DMrktMathConfig.defenseBaseModulo());
+        uint256 base =
+            DMrktMathConfig.defenseBaseMin() + (tokenId % DMrktMathConfig.defenseBaseModulo());
 
         if (tokenId % DMrktMathConfig.rarityLegendaryMod() == 0) {
             return base + DMrktMathConfig.defenseLegendaryBonus();
@@ -105,8 +105,8 @@ library DMrktNFTLib {
     }
 
     function getPower(uint256 tokenId) internal pure returns (uint256) {
-        uint256 base = DMrktMathConfig.powerBaseMin() +
-            (tokenId % DMrktMathConfig.powerBaseModulo());
+        uint256 base =
+            DMrktMathConfig.powerBaseMin() + (tokenId % DMrktMathConfig.powerBaseModulo());
 
         if (tokenId % DMrktMathConfig.rarityLegendaryMod() == 0) {
             return base + DMrktMathConfig.powerLegendaryBonus();

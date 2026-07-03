@@ -71,7 +71,7 @@ contract BuildEpoch is MarketSim, SignOrder, EpochsJson, BaseDevScript, DevConfi
             _setDataDir(dir);
             console.log("DATA_DIR config exists => out dir set to %s", _dataDir());
         } catch {}
-        _loadParticipants();
+        loadParticipants();
         _createDefaultDirs(_epoch);
 
         if (_epoch != 0) {
@@ -157,8 +157,16 @@ contract BuildEpoch is MarketSim, SignOrder, EpochsJson, BaseDevScript, DevConfi
         address weth,
         address[] memory collections
     ) internal returns (OrderModel.Order[] memory orders) {
-        Selection[] memory selectionsAsk = collect(OrderModel.Side.Ask, false, collections, epoch);
-        Selection[] memory selectionsBid = collect(OrderModel.Side.Bid, false, collections, epoch);
+        Selection[] memory selectionsAsk = collect(
+            collections,
+            participants(),
+            uint256(keccak256(abi.encode(OrderModel.Side.Ask, false, epoch, nonceSeed)))
+        );
+        Selection[] memory selectionsBid = collect(
+            collections,
+            participants(),
+            uint256(keccak256(abi.encode(OrderModel.Side.Bid, false, epoch, nonceSeed)))
+        );
 
         uint256 count;
 
@@ -221,7 +229,10 @@ contract BuildEpoch is MarketSim, SignOrder, EpochsJson, BaseDevScript, DevConfi
 
         address actor = _resolveActor(side, isCollectionBid, collection, tokenId, actorSeed);
 
-        uint256 orderSeed = selectionSalt(side, isCollectionBid, collection, actorSeed);
+        uint256 orderSeed = selectionSalt(
+            collection,
+            uint256(keccak256(abi.encode(side, isCollectionBid, collection, actorSeed)))
+        );
 
         order = OrderBuilder.build(
             side,

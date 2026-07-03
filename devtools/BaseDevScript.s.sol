@@ -16,9 +16,19 @@ abstract contract BaseDevScript is Script {
      * @notice Populates the internal participants list and pk lookup map.
      *         Call this before using `participant()` or `pkOf()`. Scripts that only
      *         need to broadcast can skip this and call `generateKeys()` directly.
+     * @dev    Reads `PARTICIPANT_SIZE` (default 5) and `PARTICIPANT_IDX_START` (default 0)
+     *         from env so the participant range can be changed between pipeline runs
+     *         without threading params through every script's `run()`.
      */
-    function _loadParticipants() internal {
-        uint256[] memory pks = generateKeys();
+    function loadParticipants() internal {
+        uint256 keyCount = vm.envOr("PARTICIPANT_SIZE", defaultParticipantSize());
+        uint256 startIndex = vm.envOr("PARTICIPANT_IDX_START", uint256(0));
+
+        loadParticipants(keyCount, startIndex);
+    }
+
+    function loadParticipants(uint256 keyCount, uint256 startIndex) internal {
+        uint256[] memory pks = _generateKeys(keyCount, startIndex);
 
         for (uint256 i = 0; i < pks.length; i++) {
             uint256 pk = pks[i];
@@ -29,16 +39,34 @@ abstract contract BaseDevScript is Script {
         }
     }
 
+    // when you don't need to load participant key => address into storage
+    function generateKeys(
+        uint256 keyCount,
+        uint256 startIndex
+    ) internal view returns (uint256[] memory) {
+        return _generateKeys(keyCount, startIndex);
+    }
+
+    function generateKeys() internal view returns (uint256[] memory) {
+        uint256 keyCount = vm.envOr("PARTICIPANT_SIZE", defaultParticipantSize());
+        uint256 startIndex = vm.envOr("PARTICIPANT_IDX_START", uint256(0));
+
+        return _generateKeys(keyCount, startIndex);
+    }
+
+    function defaultParticipantSize() internal pure returns (uint256) {
+        return 5;
+    }
+
     /**
      * @notice Returns N private keys derived from the chain-specific mnemonic file.
      *         Use this when the script only needs to broadcast — no participant map needed.
-     *          NB: if changing the count, remember to update the --accounts flag in start-fork.sh
+     *         NB: if changing the count, remember to update the --accounts flag in start-fork.sh
      */
-    function generateKeys() internal view returns (uint256[] memory) {
-        return generateKeys(5);
-    }
-
-    function generateKeys(uint32 keyCount) private view returns (uint256[] memory) {
+    function _generateKeys(
+        uint256 keyCount,
+        uint256 startIndex
+    ) private view returns (uint256[] memory) {
         // use the standard eth dev mnemonic if not found
         string memory mnemonic = vm.envOr(
             "PARTICIPANT_MNEMONIC",
@@ -47,7 +75,7 @@ abstract contract BaseDevScript is Script {
         uint256[] memory keys = new uint256[](keyCount);
 
         for (uint32 i = 0; i < keyCount; i++) {
-            keys[i] = vm.deriveKey(mnemonic, i);
+            keys[i] = vm.deriveKey(mnemonic, i + uint32(startIndex));
         }
 
         return keys;

@@ -125,15 +125,17 @@ The deploy scripts will populate the rest of the fields (contract addresses, for
 
 **Environment variables**
 
-| Var                    | Description                                                                                        | Example                                      |
-| ---------------------- | -------------------------------------------------------------------------------------------------- | -------------------------------------------- |
-| `SOURCE_RPC`           | Mainnet RPC URL used to seed the fork                                                              | `https://eth-mainnet.g.alchemy.com<API_KEY>` |
-| `RPC_URL`              | Local fork RPC URL                                                                                 | `http://localhost:8545`                      |
-| `RPC_HOST`             | Anvil bind address, expects an IP address                                                          | `127.0.0.1`                                  |
-| `RPC_PORT`             | Anvil port                                                                                         | `8545`                                       |
-| `CHAIN_ID`             | Chain ID for the local fork network                                                                | `31337`                                      |
-| `PARTICIPANT_MNEMONIC` | Optional. Mnemonic for participant accounts. Defaults to the standard Hardhat/Anvil junk mnemonic. | `word1 word2 ... word12`                     |
-| `ORDERS_EXPORT_URL`    | Optional. Endpoint to POST orders to when `--export` is passed to `run-epochs.sh`                  | `http://localhost:5000/api/orders`           |
+| Var                     | Description                                                                                                   | Example                                      |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------- | -------------------------------------------- |
+| `SOURCE_RPC`            | Mainnet RPC URL used to seed the fork                                                                         | `https://eth-mainnet.g.alchemy.com<API_KEY>` |
+| `RPC_URL`               | Local fork RPC URL                                                                                            | `http://localhost:8545`                      |
+| `RPC_HOST`              | Anvil bind address, expects an IP address                                                                     | `127.0.0.1`                                  |
+| `RPC_PORT`              | Anvil port                                                                                                    | `8545`                                       |
+| `CHAIN_ID`              | Chain ID for the local fork network                                                                           | `31337`                                      |
+| `PARTICIPANT_MNEMONIC`  | Optional. Mnemonic for participant accounts. Defaults to the standard Hardhat/Anvil junk mnemonic.            | `word1 word2 ... word12`                     |
+| `PARTICIPANT_IDX_START` | Optional. Index of the first participant private key to derive from the mnemonic. Defaults to `0`.            | `0`                                          |
+| `PARTICIPANT_SIZE`      | Optional. Number of participant private keys to derive, starting at `PARTICIPANT_IDX_START`. Defaults to `5`. | `5`                                          |
+| `ORDERS_EXPORT_URL`     | Optional. Endpoint to POST orders to when `--export` is passed to `run-epochs.sh`                             | `http://localhost:5000/api/orders`           |
 
 ---
 

@@ -21,16 +21,14 @@ import { Selection } from "../epochs/Types.sol";
 abstract contract MarketSim is Script {
     /**
      * @notice For each collection, selects a subset of token IDs to generate orders for.
-     * @param side             Order side (bid or ask).
-     * @param isCollectionBid  Whether the order is a collection-level bid (paused feature).
      * @param collections      Collection addresses to sample from.
+     * @param participants     Owner scope. Only select tokens that are owned by these addresses.
      * @param mixIn            Mixed into the selection hash so different values produce different tokens.
      * @return selections      One Selection per collection, each containing the sampled token IDs.
      */
     function collect(
-        OrderModel.Side side,
-        bool isCollectionBid,
         address[] memory collections,
+        address[] memory participants,
         uint256 mixIn
     ) internal view returns (Selection[] memory selections) {
         selections = new Selection[](collections.length);
@@ -39,11 +37,10 @@ abstract contract MarketSim is Script {
             address collection = collections[i];
 
             uint256[] memory tokens = _selectTokens(
-                side,
-                isCollectionBid,
                 collection,
                 DNFT(collection).totalSupply(),
-                mixIn
+                mixIn,
+                participants
             );
 
             selections[i] = Selection({ collection: collection, tokenIds: tokens });
@@ -52,18 +49,11 @@ abstract contract MarketSim is Script {
 
     /**
      * @notice Derives a deterministic seed for token selection from the given inputs.
-     * @param side             Order side.
-     * @param isCollectionBid  Collection bid flag.
      * @param collection       NFT collection address.
      * @param mixIn            Extra entropy — typically the epoch index.
      */
-    function selectionSalt(
-        OrderModel.Side side,
-        bool isCollectionBid,
-        address collection,
-        uint256 mixIn
-    ) internal pure returns (uint256) {
-        return uint256(keccak256(abi.encode(collection, side, isCollectionBid, mixIn)));
+    function selectionSalt(address collection, uint256 mixIn) internal pure returns (uint256) {
+        return uint256(keccak256(abi.encode(collection, mixIn)));
     }
 
     /**
@@ -87,13 +77,12 @@ abstract contract MarketSim is Script {
      *      Bigger gap = fewer tokens selected.
      */
     function _selectTokens(
-        OrderModel.Side side,
-        bool isCollectionBid,
         address collection,
         uint256 scanLimit,
-        uint256 mixIn
+        uint256 mixIn,
+        address[] memory holders
     ) internal pure returns (uint256[] memory) {
-        uint256 seed = selectionSalt(side, isCollectionBid, collection, mixIn);
+        uint256 seed = selectionSalt(collection, mixIn);
         // forge-lint: disable-next-line(unsafe-typecast)
         uint8 gap = (uint8(seed) % 6) + 25; // pick 1 every 25..30 tokens
 
