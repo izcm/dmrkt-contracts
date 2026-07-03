@@ -164,7 +164,7 @@ contract BuildEpoch is MarketSim, SignOrder, EpochsJson, BaseDevScript, DevConfi
         );
         Selection[] memory selectionsBid = collect(
             collections,
-            participants(),
+            new address[](0),
             uint256(keccak256(abi.encode(OrderModel.Side.Bid, false, epoch, nonceSeed)))
         );
 

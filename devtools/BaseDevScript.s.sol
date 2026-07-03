@@ -99,10 +99,11 @@ abstract contract BaseDevScript is Script {
         address[] memory ps = participants();
         require(ps.length > 1, "Need at least 2 participants");
 
-        uint256 excludedIdx = _indexOfParticipant(excluded);
-        uint256 idx = uint256(keccak256(abi.encode(seed))) % (ps.length - 1);
+        uint256 idx = uint256(keccak256(abi.encode(seed))) % ps.length;
+        if (ps[idx] == excluded) {
+            idx = (idx + 1) % ps.length;
+        }
 
-        if (idx >= excludedIdx) idx++;
         return ps[idx];
     }
 

@@ -47,14 +47,14 @@ export MAX_PARTICIPANT_SIZE=5
 REALTIME_TIME_WINDOW  = 7776000 # 90 days, in seconds
 REALTIME_END_OFFSET   = 5184000 # 60 days from now, in seconds
 REALTIME_EXEC_RATE    = 10      # % of built orders to execute
-REALTIME_NONCE_SEED   = 1
+REALTIME_NONCE_SEED   = $(shell data +%s)
 
 
 # ───────────────────────────────────────────────
 #   LOGGING / VERBOSITY
 # ───────────────────────────────────────────────
 
-SILENT ?= 1
+SILENT ?= 0
 
 ifeq ($(SILENT),1)
 FORGE_SILENT = --silent

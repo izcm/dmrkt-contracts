@@ -7,6 +7,7 @@ import { Script } from "forge-std/Script.sol";
 import { OrderModel } from "orderbook/libs/OrderModel.sol";
 
 // interfaces
+import { IERC721 } from "@openzeppelin/interfaces/IERC721.sol";
 import { DNFT } from "dev/interfaces/DNFT.sol";
 
 // types
@@ -75,13 +76,14 @@ abstract contract MarketSim is Script {
      * @dev Derives a gap from the mixIn in range [25, 30], then scans token IDs 0..scanLimit
      *      including each with probability 1/gap. Returns roughly scanLimit/gap token IDs.
      *      Bigger gap = fewer tokens selected.
+     * @param holders   If not emty -> selected tokens have to be owned by one of these addresses.
      */
     function _selectTokens(
         address collection,
         uint256 scanLimit,
         uint256 mixIn,
         address[] memory holders
-    ) internal pure returns (uint256[] memory) {
+    ) internal view returns (uint256[] memory) {
         uint256 seed = selectionSalt(collection, mixIn);
         // forge-lint: disable-next-line(unsafe-typecast)
         uint8 gap = (uint8(seed) % 6) + 25; // pick 1 every 25..30 tokens
@@ -92,8 +94,21 @@ abstract contract MarketSim is Script {
 
         for (uint256 i = 0; i < scanLimit && count < targetCount; i++) {
             bytes32 h = keccak256(abi.encode(collection, seed, i));
-            if (uint256(h) % gap == 0) {
+            if (uint256(h) % gap != 0) continue;
+
+            // is holders is empty -> don't check ownership
+            if (holders.length == 0) {
                 ids[count++] = i;
+                continue;
+            }
+
+            // gap hit — scan forward a few slots for a valid holder before giving up on it
+            for (uint256 j = i; j < scanLimit && j < i + (gap - 1); j++) {
+                if (_isHolder(IERC721(collection).ownerOf(j), holders)) {
+                    ids[count++] = j;
+                    i = j; // resume outer scan from j, not i
+                    break;
+                }
             }
         }
 
@@ -102,5 +117,12 @@ abstract contract MarketSim is Script {
         }
 
         return ids;
+    }
+
+    function _isHolder(address owner, address[] memory holders) private pure returns (bool) {
+        for (uint256 i = 0; i < holders.length; i++) {
+            if (owner == holders[i]) return true;
+        }
+        return false;
     }
 }
