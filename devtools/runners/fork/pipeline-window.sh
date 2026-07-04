@@ -5,25 +5,49 @@ set -euo pipefail
 # Resolves the fork start block and pipeline timestamp window, then writes them to pipeline.toml.
 # Uses cast to find the block closest to <seconds_ago> from now on the source chain.
 #
-# Usage: pipeline-window.sh <seconds_ago> [pipeline_end_ts]
+# Usage: pipeline-window.sh --replay <seconds_ago> [pipeline_end_ts]
+#        pipeline-window.sh --realtime <time_window>
 # Env:   SOURCE_RPC  — RPC URL of the chain to fork (any provider, e.g. https://eth-mainnet.g.alchemy.com/v2/<key>)
 #        TOML         — path to pipeline.toml
+#
+# --replay:   find the historical block closest to (pipeline_end_ts - seconds_ago).
+#             Used for local-fork simulation, which replays history via time-warping.
+# --realtime: no fork/block concept — start = now - time_window/2, end = now + time_window/2.
+#             fork_start_block is written as -1 (unused on a live network).
 
 # === config ===
 
-: "${SOURCE_RPC:?🚨 SOURCE_RPC not set}"
 : "${CHAIN_ID:? 🚨 CHAIN_ID not set}"
 : "${TOML:?🚨 TOML not set}"
 
-SECONDS_AGO=${1:?🚨 pass seconds ago}
-PIPELINE_END_TS=${2:-$(date +%s)}
+MODE=${1:?🚨 pass --replay or --realtime}
+shift
 
 # === get timestamps ===
 
-TARGET_TS=$(("$PIPELINE_END_TS" - SECONDS_AGO))
-
-FORK_START_BLOCK=$(cast find-block "$TARGET_TS" --rpc-url "$SOURCE_RPC")
-PIPELINE_START_TS=$(cast block "$FORK_START_BLOCK" -f timestamp --rpc-url "$SOURCE_RPC")
+case "$MODE" in
+    --realtime)
+        TIME_WINDOW=${1:?🚨 pass time_window}
+        NOW=$(date +%s)
+        # "pipeline timestamps" is kind of misleading
+        # these timestamps are used when setting order.start / order.end values
+        PIPELINE_START_TS=$(( NOW - TIME_WINDOW / 2 ))
+        PIPELINE_END_TS=$(( NOW + TIME_WINDOW / 2 ))
+        FORK_START_BLOCK=0 # doesn't matter when --realtime
+        ;;
+    --replay)
+        : "${SOURCE_RPC:?🚨 SOURCE_RPC not set}"
+        SECONDS_AGO=${1:?🚨 pass seconds ago}
+        PIPELINE_END_TS=${2:-$(date +%s)}
+        TARGET_TS=$(("$PIPELINE_END_TS" - SECONDS_AGO))
+        FORK_START_BLOCK=$(cast find-block "$TARGET_TS" --rpc-url "$SOURCE_RPC")
+        PIPELINE_START_TS=$(cast block "$FORK_START_BLOCK" -f timestamp --rpc-url "$SOURCE_RPC")
+        ;;
+    *)
+        echo "🚨 unknown mode: $MODE (expected --replay or --realtime)"
+        exit 1
+        ;;
+esac
 
 # === write TOML ===
 

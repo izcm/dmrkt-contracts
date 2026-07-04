@@ -17,7 +17,7 @@ export TOML               := pipeline.toml
 #   PIPELINE CONTEXT
 # ───────────────────────────────────────────────
 
-MODE ?= sepolia
+MODE ?= anvil
 
 # EPOCH_COUNT is 1 since when simulating on sepolia
 # (since we aren't replaying past like on a local anvil fork)
@@ -36,7 +36,7 @@ export SOURCE_RPC RPC_URL RPC_HOST RPC_PORT CHAIN_ID ORDERS_EXPORT_URL DEPLOYER_
 
 export PIPELINE_STATE_DIR := data/$(CHAIN_ID)/state
 
-INITIAL_RUN ?= false
+INITIAL_RUN ?= true
 
 ifeq ($(MODE), sepolia)
 # if its the initial run -> set idx to 0 and size to max _size
@@ -44,12 +44,12 @@ ifeq ($(MODE), sepolia)
 # -> future runs only have to build + execute orders
 	ifeq ($(INITIAL_RUN), true)
 		PARTICIPANT_IDX_START=0
-		PARTICIPANT_SIZE=50
-		MAX_PARTICIPANT_SIZE=50
+		PARTICIPANT_SIZE=100
+		MAX_PARTICIPANT_SIZE=100
 	else
 		PARTICIPANT_IDX_START=0
-		PARTICIPANT_SIZE=15
-		MAX_PARTICIPANT_SIZE=15
+		PARTICIPANT_SIZE=1
+		MAX_PARTICIPANT_SIZE=30
 	endif
 else
 # use these for anvil mode 	
@@ -66,11 +66,12 @@ export PARTICIPANT_IDX_START PARTICIPANT_SIZE MAX_PARTICIPANT_SIZE
 EPOCH_COUNT = 1
 
 # realtime ctx (execute-realtime target)
-REALTIME_TIME_WINDOW  = 7776000 # 90 days, in seconds
-REALTIME_END_OFFSET   = 5184000 # 60 days from now, in seconds
-REALTIME_EXEC_RATE    = 50      # % of built orders to execute
+REALTIME_TIME_WINDOW  = 15552000 # 180 days, in seconds
+REALTIME_EXEC_RATE    = 100      # % of built orders to execute
 REALTIME_NONCE_SEED   = $(shell date +%s)
 
+# strip-participants: transfer all eth from participants to STRIP_DEST_ADDR  
+STRIP_DEST_ADDR=0x3e34BC287907E257e5BdbB909684ab3F52708f42
 
 # ───────────────────────────────────────────────
 #   LOGGING / VERBOSITY
@@ -121,7 +122,7 @@ execute-pipeline: start pipeline-separator run-epochs ## Run the full pipeline
 # timeWindow is 3 months with end_ts set to 60 days from time of writing
 execute-realtime: print-participants-simple
 	@echo "🔢 Finding block number and timestamps..."
-	@./$(RUNNERS_FORK)/pipeline-window.sh $(REALTIME_TIME_WINDOW) $$(($$(date +%s) + $(REALTIME_END_OFFSET)))
+	@./$(RUNNERS_FORK)/pipeline-window.sh --realtime $(REALTIME_TIME_WINDOW)
 	@echo "🌀 Running realtime simulation"
 	@./runners/run-realtime.sh $(REALTIME_EXEC_RATE) $(REALTIME_NONCE_SEED) --export
 
@@ -144,6 +145,8 @@ pipeline-separator:
 #   HIGH-LEVEL PIPELINES
 # ───────────────────────────────────────────────
 
+fund-approve-prepare: bootstrap-funds approve prepare
+
 start: prepare fork pipeline-setup ## Compute window, start fork, deploy, and bootstrap
 	@echo "🚀 Dev environment ready"
 
@@ -165,7 +168,7 @@ fork: ## Start the anvil fork
 
 prepare: ## Compute fork start block and pipeline window timestamps
 	@echo "🔢 Finding block number and timestamps..."
-	@./$(RUNNERS_FORK)/pipeline-window.sh 2419200
+	@./$(RUNNERS_FORK)/pipeline-window.sh --replay 2419200
 
 # ───────────────────────────────────────────────
 #   SETUP / GENESIS
@@ -217,9 +220,14 @@ approve: ## Grant NFT + WETH allowances to OrderEngine
 	@forge script $(BOOTSTRAP)/Approve.s.sol \
 		$(FORGE_COMMON_FLAGS)
 
-# for testnets 
+# primarily for testnets 
 distribute-eth: 
-	./runners/funding/distribute-eth.sh $(PARTICIPANT_SIZE) 1000000000000000000 \
+	./runners/funding/distribute-eth.sh $(PARTICIPANT_SIZE) \
+		--start-idx $(PARTICIPANT_IDX_START) \
+
+strip-participants:
+	./runners/funding/strip-eth.sh $(PARTICIPANT_SIZE) $(STRIP_DEST_ADDR) \
+		--rpc-url $(RPC_URL) \
 		--start-idx $(PARTICIPANT_IDX_START)
 
 # ───────────────────────────────────────────────
