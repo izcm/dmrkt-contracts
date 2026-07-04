@@ -20,6 +20,7 @@ import { SettlementValidation } from "./SettlementValidation.s.sol";
 // interfaces
 import { IERC20, SafeERC20 } from "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { ISettlementEngine } from "dev/interfaces/ISettlementEngine.sol";
+import { IWETH } from "periphery/interfaces/IWETH.sol";
 
 // types
 import { SignedOrder, Selection } from "../epochs/Types.sol";
@@ -89,6 +90,18 @@ contract ExecuteOrder is EpochsJson, FillBid, SettlementValidation, BaseDevScrip
         }
 
         OrderModel.Fill memory fill = _produceFill(order);
+
+        // check weth balance
+        IWETH wethToken = IWETH(readWeth());
+        uint256 price = order.price;
+
+        // ask -> fill.actor pays
+        if (
+            (order.isAsk() && wethToken.balanceOf(fill.actor) < price) ||
+            (order.isBid() && wethToken.balanceOf(order.actor) < price)
+        ) {
+            revert("NOT_ENOUGH_WETH");
+        }
 
         if (!validNftOwnership(fill, order)) {
             revert("INVALID_NFT_OWNERSHIP");

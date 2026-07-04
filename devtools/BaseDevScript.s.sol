@@ -55,7 +55,7 @@ abstract contract BaseDevScript is Script {
     }
 
     function defaultParticipantSize() internal pure returns (uint256) {
-        return 5;
+        return 10;
     }
 
     /**

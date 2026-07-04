@@ -17,7 +17,7 @@ export TOML               := pipeline.toml
 #   PIPELINE CONTEXT
 # ───────────────────────────────────────────────
 
-MODE ?= anvil
+MODE ?= sepolia
 
 # EPOCH_COUNT is 1 since when simulating on sepolia
 # (since we aren't replaying past like on a local anvil fork)
@@ -32,22 +32,44 @@ endif
 
 -include .env.rpcs
 
+export SOURCE_RPC RPC_URL RPC_HOST RPC_PORT CHAIN_ID ORDERS_EXPORT_URL DEPLOYER_PK PARTICIPANT_MNEMONIC SEPOLIA_RPC
+
 export PIPELINE_STATE_DIR := data/$(CHAIN_ID)/state
 
-export
+INITIAL_RUN ?= false
 
-EPOCH_COUNT = 1
-export PARTICIPANT_IDX_START=0
-export PARTICIPANT_SIZE=5
+ifeq ($(MODE), sepolia)
+# if its the initial run -> set idx to 0 and size to max _size
+# this executes all bootstrap steps for all participants until MAX_P_SZE
+# -> future runs only have to build + execute orders
+	ifeq ($(INITIAL_RUN), true)
+		PARTICIPANT_IDX_START=0
+		PARTICIPANT_SIZE=50
+		MAX_PARTICIPANT_SIZE=50
+	else
+		PARTICIPANT_IDX_START=0
+		PARTICIPANT_SIZE=15
+		MAX_PARTICIPANT_SIZE=15
+	endif
+else
+# use these for anvil mode 	
+	PARTICIPANT_IDX_START=10
+	PARTICIPANT_SIZE=30
+	MAX_PARTICIPANT_SIZE=50
+endif
+
 # if MAX is set to any value !== PARTICIPANT_SIZE
 # it is your responsibility to fund the users P_SIZE..MAX_P_SIZE
-export MAX_PARTICIPANT_SIZE=5
+export PARTICIPANT_IDX_START PARTICIPANT_SIZE MAX_PARTICIPANT_SIZE
+
+# epoch defs
+EPOCH_COUNT = 1
 
 # realtime ctx (execute-realtime target)
 REALTIME_TIME_WINDOW  = 7776000 # 90 days, in seconds
 REALTIME_END_OFFSET   = 5184000 # 60 days from now, in seconds
-REALTIME_EXEC_RATE    = 10      # % of built orders to execute
-REALTIME_NONCE_SEED   = $(shell data +%s)
+REALTIME_EXEC_RATE    = 50      # % of built orders to execute
+REALTIME_NONCE_SEED   = $(shell date +%s)
 
 
 # ───────────────────────────────────────────────
@@ -97,7 +119,7 @@ execute-pipeline: start pipeline-separator run-epochs ## Run the full pipeline
 
 # only time-window and build + execute orders (testnets)
 # timeWindow is 3 months with end_ts set to 60 days from time of writing
-execute-realtime: print-participants
+execute-realtime: print-participants-simple
 	@echo "🔢 Finding block number and timestamps..."
 	@./$(RUNNERS_FORK)/pipeline-window.sh $(REALTIME_TIME_WINDOW) $$(($$(date +%s) + $(REALTIME_END_OFFSET)))
 	@echo "🌀 Running realtime simulation"
@@ -197,7 +219,8 @@ approve: ## Grant NFT + WETH allowances to OrderEngine
 
 # for testnets 
 distribute-eth: 
-	./bootstrap/distribute-eth.sh 5 5000000000000000000
+	./runners/funding/distribute-eth.sh $(PARTICIPANT_SIZE) 1000000000000000000 \
+		--start-idx $(PARTICIPANT_IDX_START)
 
 # ───────────────────────────────────────────────
 #   STATE / SCENARIOS
@@ -226,7 +249,7 @@ kill-anvil: ## Kill the running anvil process
 MAINNET_WETH := 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2
 SEPOLIA_WETH := 0x5f207d42F869fd1c71d7f0f81a2A67Fc20FF7323
 
-WETH=SEPOLIA_WETH
+WETH=$(MAINNET_WETH)
 
 weth-balance: ## Read WETH balance for an address  (ADDR=0x...)
 	@if [ -z "$(ADDR)" ]; then \
@@ -251,6 +274,15 @@ token-owner: ## Read token owner  (COL=0x... ID=N)
 		$(ID) \
 		--rpc-url $(RPC_URL)
 
+START := $(PARTICIPANT_IDX_START)
+COUNT := $(PARTICIPANT_SIZE)
+
+print-participants-simple:
+	@seq $(START) $$(( $(START) + $(COUNT) - 1 )) | \
+	xargs -I{} cast wallet address \
+		--mnemonic $(PARTICIPANT_MNEMONIC) \
+		--mnemonic-index {}
+
 # ───────────────────────────────────────────────
 #   MISC
 # ───────────────────────────────────────────────
@@ -266,3 +298,4 @@ help: ## List available targets
 tree:
 	@if [ -z "$(DEPTH)" ]; then DEPTH=3; fi; \
 	tree -L $$DEPTH -I "out|lib|broadcast|cache|notes"
+

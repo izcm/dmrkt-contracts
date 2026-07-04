@@ -5,18 +5,17 @@
 # When running simulation on eg. Sepolia its likely that a superuser initially holds all funds.
 # This script distributes superuser's ETH evenly on participant group.
 
+# positional args
 USAGE_MSG="Usage: distribute-eth.sh <participant_count> <wei_per_participant> --rpc-url <url> [--start-idx <idx>]"
 : "${1:?"$USAGE_MSG"}"
 : "${2:?"$USAGE_MSG"}"
 
-# positional / flag args 
 P_COUNT=$1
 WEI_PER_USER=$2
 shift 2
 
 START_IDX=0
 
-# 
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --rpc-url) RPC_URL="$2"; shift 2 ;;
@@ -49,6 +48,9 @@ for ((i = START_IDX; i < START_IDX + P_COUNT; i++)); do
         --value "$WEI_PER_USER" \
         --private-key "$DEPLOYER_PK" \
         --rpc-url "$RPC_URL" \
-        --nonce "$nonce"
+        --nonce "$nonce" > /dev/null 2>&1 &
+    disown
     ((nonce++))
 done
+
+exit 0

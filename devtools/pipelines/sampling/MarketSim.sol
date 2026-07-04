@@ -24,12 +24,14 @@ abstract contract MarketSim is Script {
      * @notice For each collection, selects a subset of token IDs to generate orders for.
      * @param collections      Collection addresses to sample from.
      * @param participants     Owner scope. Only select tokens that are owned by these addresses.
+     * @param gapBase          Base gap for token-selection density (see `_selectTokens`).
      * @param mixIn            Mixed into the selection hash so different values produce different tokens.
      * @return selections      One Selection per collection, each containing the sampled token IDs.
      */
     function collect(
         address[] memory collections,
         address[] memory participants,
+        uint256 gapBase,
         uint256 mixIn
     ) internal view returns (Selection[] memory selections) {
         selections = new Selection[](collections.length);
@@ -40,6 +42,7 @@ abstract contract MarketSim is Script {
             uint256[] memory tokens = _selectTokens(
                 collection,
                 DNFT(collection).totalSupply(),
+                gapBase,
                 mixIn,
                 participants
             );
@@ -73,20 +76,22 @@ abstract contract MarketSim is Script {
     }
 
     /**
-     * @dev Derives a gap from the mixIn in range [25, 30], then scans token IDs 0..scanLimit
-     *      including each with probability 1/gap. Returns roughly scanLimit/gap token IDs.
-     *      Bigger gap = fewer tokens selected.
+     * @dev Derives a gap from the mixIn in range [gapBase, gapBase + 5], then scans token IDs
+     *      0..scanLimit including each with probability 1/gap. Returns roughly scanLimit/gap
+     *      token IDs. Bigger gap = fewer tokens selected.
+     * @param gapBase   Lower bound of the gap range (e.g. 25 gives a [25, 30] range as before).
      * @param holders   If not emty -> selected tokens have to be owned by one of these addresses.
      */
     function _selectTokens(
         address collection,
         uint256 scanLimit,
+        uint256 gapBase,
         uint256 mixIn,
         address[] memory holders
     ) internal view returns (uint256[] memory) {
         uint256 seed = selectionSalt(collection, mixIn);
         // forge-lint: disable-next-line(unsafe-typecast)
-        uint8 gap = (uint8(seed) % 6) + 25; // pick 1 every 25..30 tokens
+        uint8 gap = (uint8(seed) % 6) + uint8(gapBase); // pick 1 every gapBase..(gapBase+5) tokens
 
         uint256 count = 0;
         uint256 targetCount = scanLimit / gap;

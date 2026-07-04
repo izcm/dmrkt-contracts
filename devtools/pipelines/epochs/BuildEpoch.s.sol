@@ -38,6 +38,7 @@ contract BuildEpoch is MarketSim, SignOrder, EpochsJson, BaseDevScript, DevConfi
     // ctx
     uint256 private epoch;
     uint256 private timeWindow;
+    uint256 private gapBase;
     uint256 private nonceSeed;
 
     mapping(address => uint256) private actorNonceIdx; // per-actor nonce counter, carried over between epochs via nonces.json
@@ -52,11 +53,17 @@ contract BuildEpoch is MarketSim, SignOrder, EpochsJson, BaseDevScript, DevConfi
      * @param _timeWindow   Full pipeline delta in seconds. Passed as the full delta (not epoch slice)
      *                      so every order's end timestamp is guaranteed >= pipeline_end_ts,
      *                      keeping unsettled orders valid for demo users to settle manually.
+     * @param _gap          Base token-selection gap passed to MarketSim's sampler (density knob).
      * @param _nonceSeed    Added when extending to repeated builds without tracking nonce
      *                      Probably going to move away from the sequential nonce system all together.
      *                      Very little value for lot the added  complexity.
      */
-    function run(uint256 _epoch, uint256 _timeWindow, uint256 _nonceSeed) external {
+    function run(
+        uint256 _epoch,
+        uint256 _timeWindow,
+        uint256 _gap,
+        uint256 _nonceSeed
+    ) external {
         // --------------------------------
         // LOAD CONFIG & SETUP
         // --------------------------------
@@ -82,6 +89,7 @@ contract BuildEpoch is MarketSim, SignOrder, EpochsJson, BaseDevScript, DevConfi
 
         epoch = _epoch;
         timeWindow = _timeWindow;
+        gapBase = _gap;
         nonceSeed = _nonceSeed;
 
         address[] memory collections = readCollections();
@@ -157,14 +165,18 @@ contract BuildEpoch is MarketSim, SignOrder, EpochsJson, BaseDevScript, DevConfi
         address weth,
         address[] memory collections
     ) internal returns (OrderModel.Order[] memory orders) {
+        // ASK – participant is the SELLER; limit selected tokens to be owned by participants
         Selection[] memory selectionsAsk = collect(
             collections,
             participants(),
+            gapBase,
             uint256(keccak256(abi.encode(OrderModel.Side.Ask, false, epoch, nonceSeed)))
         );
+        // BID – participant is the BUYER; no need to scope by ownership
         Selection[] memory selectionsBid = collect(
             collections,
             new address[](0),
+            gapBase,
             uint256(keccak256(abi.encode(OrderModel.Side.Bid, false, epoch, nonceSeed)))
         );
 

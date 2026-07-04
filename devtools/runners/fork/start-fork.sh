@@ -26,9 +26,9 @@ anvil --fork-url "$SOURCE_RPC" \
   --host "$RPC_HOST" \
   --port "$RPC_PORT" \
   "${MNEMONIC_FLAG[@]}" \
-  --accounts 10 \
+  --accounts "${MAX_PARTICIPANT_SIZE:-10}" \
   --fork-block-number "${FORK_START_BLOCK:-0}" \
-  --silent &
+#   --silent &
 
 # Wait for Anvil to start
-sleep 2
+sleep 10
