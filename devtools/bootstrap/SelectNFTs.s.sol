@@ -9,10 +9,11 @@ import { DevConfig } from "dev/DevConfig.s.sol";
 import { DNFT } from "dev/interfaces/DNFT.sol";
 
 /**
- * @notice Mints all tokens from each deployed NFT collection to participants using a
- *         pseudo-random but deterministic distribution.
+ * @notice Computes a deterministic token-to-participant assignment for each deployed NFT
+ *         collection and writes the selection to JSON. Minting itself happens separately,
+ *         in bash (see runners/executors/exec-mints.sh), reading this JSON.
  */
-contract BootstrapNFTs is BaseDevScript, DevConfig {
+contract SelectNFTs is BaseDevScript, DevConfig {
     function run() external {
         // --------------------------------
         // LOAD CONFIG

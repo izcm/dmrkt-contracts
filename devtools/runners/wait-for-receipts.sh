@@ -9,6 +9,11 @@ USAGE_MSG="Usage: $(basename "$0") <tx_hashes_file>"
 
 tx_hashes=$1
 
+RED="\033[0;31m"
+GREEN="\033[0;32m"
+YELLOW="\033[0;33m"
+RESET="\033[0m"
+
 # blank lines = mints that failed before ever broadcasting (e.g. gas estimation revert)
 failed_count=$(grep -c '^$' "$tx_hashes")
 
@@ -40,4 +45,4 @@ while [[ ${#pending[@]} -gt 0 ]]; do
     [[ ${#pending[@]} -gt 0 ]] && sleep 1
 done
 
-echo "ok: $ok_count | reverted: $reverted_count | failed before broadcast: $failed_count"
+echo -e "${GREEN}ok: $ok_count${RESET} | ${RED}reverted: $reverted_count${RESET} | ${YELLOW}failed before broadcast: $failed_count${RESET}"

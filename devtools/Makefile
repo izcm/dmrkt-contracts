@@ -1,3 +1,5 @@
+SHELL := /bin/bash
+
 # ───────────────────────────────────────────────
 #   ROOTS
 # ───────────────────────────────────────────────
@@ -25,14 +27,16 @@ ifeq ($(MODE), sepolia)
 	include .env.sepolia
 	EPOCH_COUNT=1
 	CHAIN_ID=11155111
+	WETH=0x5f207d42F869fd1c71d7f0f81a2A67Fc20FF7323
 else
 	include .env
 	CHAIN_ID=31337
+	WETH=0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2
 endif
 
 -include .env.rpcs
 
-export SOURCE_RPC RPC_URL RPC_HOST RPC_PORT CHAIN_ID ORDERS_EXPORT_URL DEPLOYER_PK PARTICIPANT_MNEMONIC SEPOLIA_RPC
+export SOURCE_RPC SEPOLIA_RPC RPC_URL CHAIN_ID RPC_HOST RPC_PORT ORDERS_EXPORT_URL DEPLOYER_PK PARTICIPANT_MNEMONIC
 
 export PIPELINE_STATE_DIR := data/$(CHAIN_ID)/state
 export TOKENS_BY_P_IDX_DIR := data/$(CHAIN_ID)/state/cols-mint-per-idx
@@ -199,19 +203,26 @@ deploy-core: ## Deploy OrderEngine + NFT collections, write addresses to pipelin
 	@forge script DeployCore.s.sol \
 		$(FORGE_COMMON_FLAGS)
 
+bootstrap-nfts: select-nfts ## Mint tokens per participant from the JSON selection
+	@./$(RUNNERS)/bootstrap/bootstrap-nfts.sh $(P_SIZE) $(TOKENS_BY_P_IDX_DIR) --idx-start $(P_IDX_START) --out-file $(TX_OUT_MINT)
+	@./$(RUNNERS)/wait-for-receipts.sh $(TX_OUT_MINT)
+
 bootstrap-funds: ## Wrap ETH into WETH for all participants
 	@echo ""
 	@echo "💰 Funding WETH..."
 	@echo ""
-	@./$(RUNNERS)/executors/exec-per-idx.sh $(BOOTSTRAP)/BootstrapFunds.s.sol:BootstrapFunds $(P_IDX_START) $$(( $(P_IDX_START) + $(P_SIZE) - 1 )) $(FORGE_COMMON_FLAGS)
+	@./$(RUNNERS)/sequential/exec-per-idx.sh $(P_SIZE) $(BOOTSTRAP)/BootstrapFunds.s.sol:BootstrapFunds --start-idx $(P_IDX_START) $(FORGE_COMMON_FLAGS)
 
-
-bootstrap-nfts: ## Mint NFTs to all participants
+select-nfts: ## Compute deterministic token-to-participant selection for each NFT collection
 	@echo ""
-	@echo "👾 Minting NFTs..."
+	@echo "🎲 Selecting NFTs..."
 	@echo ""
-	@forge script $(BOOTSTRAP)/BootstrapNFTs.s.sol \
+	@forge script $(BOOTSTRAP)/SelectNFTs.s.sol \
 		$(FORGE_COMMON_FLAGS)
+
+# ───────────────────────────────────────────────
+#   APPROVALS
+# ───────────────────────────────────────────────
 
 approve: ## Grant NFT + WETH allowances to OrderEngine
 	@echo ""
@@ -221,10 +232,14 @@ approve: ## Grant NFT + WETH allowances to OrderEngine
 	@echo ""
 	@echo "✔ Executing approvals..."
 	@echo ""
-	@./$(RUNNERS)/executors/exec-per-idx.sh $(BOOTSTRAP)/Approve.s.sol:Approve $(P_IDX_START) $$(( $(P_IDX_START) + $(P_SIZE) - 1 )) $(FORGE_COMMON_FLAGS)
+	@source $(PIPELINE_STATE_DIR)/pipeline.env && \
+	./$(RUNNERS)/bootstrap/approvals.sh $(P_SIZE) --start-idx $(P_IDX_START) \
+		--nft-transfer-auth "$$ORDER_ENGINE" --token "$$WETH" --spender "$$ORDER_ENGINE" --collections "$$NFT_C_0"
 
-do-minting: ## Mint tokens per participant from the JSON selection
-	@./$(RUNNERS)/executors/exec-mints.sh $(P_SIZE) $(TOKENS_BY_P_IDX_DIR) --idx-start $(P_IDX_START) --out-file $(TX_OUT_MINT)
+
+# ───────────────────────────────────────────────
+#   FUNDING
+# ───────────────────────────────────────────────
 
 # primarily for testnets
 distribute-eth:

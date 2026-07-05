@@ -95,7 +95,7 @@ Skim these in order to build a mental model without reading everything:
 | ------------------ | ---------------------------------------------------------------------------- |
 | Sampling           | `MarketSim.sol`                                                              |
 | Order signing      | `SignOrder.s.sol`                                                            |
-| Bootstrap sequence | `DeployCore` → `BootstrapFunds` → `BootstrapNFTs` → `Approve` in that order. |
+| Bootstrap sequence | `DeployCore` → `BootstrapFunds` → `SelectNFTs` → `Approve` in that order. |
 
 The boostrap sequence is especially good for anyone new to foundry. They're very straight forward.
 
@@ -223,7 +223,7 @@ Many of the scripts are coupled to `OrderEngine.sol` and its EIP-712 definitions
 | ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
 | `DeployCore.s.sol`     | Deploys contracts and writes addresses to pipeline.toml. Adding more nft-collections is super simple, see script's doc comment for explanation. |
 | `BootstrapFunds.s.sol` | Wraps half of each participant's ETH into WETH                                                                                                  |
-| `BootstrapNFTs.s.sol`  | Iterates over the nft-collections in `pipeline.toml` and mints tokens to participants. Assumes collections implement the `DNFT` interface.      |
+| `SelectNFTs.s.sol`     | Computes a deterministic token-to-participant assignment for each nft-collection in `pipeline.toml` and writes it to JSON. Assumes collections implement the `DNFT` interface. Minting itself happens in bash (`runners/executors/exec-mints.sh`).      |
 | `Approve.s.sol`        | Grants NFT transfer auth + WETH allowance to OrderEngine                                                                                        |
 | `BaseDevScript.s.sol`  | Generates private keys from given mnemonic + participant access helpers and logging utilities                                                   |
 | `DevConfig.s.sol`      | Single source for reading `pipeline.toml`                                                                                                       |

@@ -13,7 +13,8 @@ import { DevConfig } from "dev/DevConfig.s.sol";
 
 /**
  * @notice Deploys `OrderEngine` and `DMrktLoot` to the local fork, then writes their
- *         addresses to `pipeline.toml` so downstream bootstrap and pipeline scripts can read them.
+ *         addresses to `pipeline.toml` (for Solidity scripts) and `data/{chainId}/state/pipeline.env`
+ *         (for bash scripts — a flat `KEY=value` file, source-able without a TOML parser).
  * @dev    To add a new collection: deploy it inside the broadcast block, log it with
  *         `logDeployment`, and write it with `config.set("nft_c_N", address(...))` incrementing N.
  *         Bump `NFT_COUNT` to match.
@@ -67,5 +68,29 @@ contract DeployCore is BaseDevScript, DevConfig {
         config.set("nft_c_0", address(inventory));
 
         config.set("nft_c_count", NFT_COUNT);
+
+        // --------------------------------
+        // WRITE FLAT ENV FILE (for bash scripts — avoids needing a TOML parser there)
+        // --------------------------------
+
+        string memory envDir = string.concat("./data/", vm.toString(block.chainid), "/state/");
+        vm.createDir(envDir, true);
+
+        string memory envContent = string.concat(
+            "WETH=",
+            vm.toString(weth),
+            "\n",
+            "ORDER_ENGINE=",
+            vm.toString(address(orderEngine)),
+            "\n",
+            "NFT_C_0=",
+            vm.toString(address(inventory)),
+            "\n",
+            "NFT_C_COUNT=",
+            vm.toString(NFT_COUNT),
+            "\n"
+        );
+
+        vm.writeFile(string.concat(envDir, "pipeline.env"), envContent);
     }
 }
