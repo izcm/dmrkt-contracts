@@ -1,6 +1,5 @@
 #!/bin/bash
-# Usage: $(basename "$0") <script_path> <idx_start> <idx_end> [extra forge args...]
-#
+# Usage: exec-mints.sh <p_size> <tokenids_dir> [--idx-start N] [--out-file FILE]
 #
 # In order to run mints in parallell, we have written the selected tokenIds per participants to json.
 # This script parses the selection using jq, and then runs every participants mints in parallell.
@@ -12,25 +11,27 @@
 # (one at a time), so at most 5 mint requests are in flight at once — comfortably
 # under the 25 req/s limit.
 
-USAGE_MSG="Usage: $(basename "$0") <idx_start> <idx_end> <tokenids_dir>"
+USAGE_MSG="Usage: $(basename "$0") <p_size> <tokenids_dir> [--idx-start N] [--out-file FILE]"
 
 : "${1:?$USAGE_MSG}"
 : "${2:?$USAGE_MSG}"
-: "${3:?$USAGE_MSG}"
 
-# COL=0xa1E25aef7feDD5dc15619769111ffa31897b8459
+P_SIZE=$1
+JSON_DIR=$2
+shift 2
 
-# we might wanna limit the participant count since mint stage does much more rpc calls than rest of pipeline.
-# let users pass as positional args instead of only reading .env
+IDX_START=0
+OUT_FILE=""
 
-IDX_START=$1
-P_SIZE=$2
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --idx-start) IDX_START="$2"; shift 2 ;;
+        --out-file) OUT_FILE="$2"; shift 2 ;;
+        *) echo "Unknown flag: $1"; exit 1 ;;
+    esac
+done
 
-# directory contains zero / more <col>.json with object:
-# "<p_idx>": [x, y, z] tokenids to mint per participant
-JSON_DIR=$3
-
-# if no <col>.json 
+# if no <col>.json
 c_count=$(find "$JSON_DIR" -maxdepth 1 -type f -name "0x*.json" | wc -l)
 
 if [[ "$c_count" -eq 0 ]]; then
@@ -40,12 +41,15 @@ fi
 
 PHRASE="$PARTICIPANT_MNEMONIC"
 
+[[ -n "$OUT_FILE" ]] && > "$OUT_FILE"
+
 # every participant runs mint calls in own shell
 # each participant run all mints async with a 1 second wait
 run_one_idx() {
     local idx=$1
     local in_file=$2
-    
+    local out_file=$3
+
     collection=$(basename "$in_file" .json)
 
     p_key=$(cast wallet private-key "${PHRASE//\"/}" $idx)
@@ -63,17 +67,25 @@ run_one_idx() {
             --nonce "$nonce"
         )
 
-        sleep 1
+        if [[ -n "$out_file" ]]; then
+            echo "$tx_hash" >> "$out_file"
+        fi
+
+        sleep 0.2
     }
 
     export p_key
 
     nonce=$(cast nonce "$p_addr" --rpc-url "$RPC_URL")
 
+    local mint_count=0
     for tokenId in $(jq --arg idx "$idx" '.[$idx][]' "$in_file"); do
-        run_one_mint $tokenId $nonce
+        run_one_mint "$tokenId" "$nonce"
         ((nonce++))
+        ((mint_count++))
     done
+
+    echo "[idx $idx] sent $mint_count mints for $collection, tx hashes written to $out_file"
 }
 
 # export to sub processes
@@ -81,5 +93,5 @@ export -f run_one_idx
 export PHRASE
 
 for file in "$JSON_DIR"/0x*.json; do
-    seq "$IDX_START" $((IDX_START + P_SIZE - 1)) | xargs -P 5 -I{} bash -c 'run_one_idx "$0" "$1"' {} "$file"
+    seq "$IDX_START" $((IDX_START + P_SIZE - 1)) | xargs -P 5 -I{} bash -c 'run_one_idx "$0" "$1" "$2"' {} "$file" "$OUT_FILE"
 done

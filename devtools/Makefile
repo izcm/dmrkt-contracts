@@ -37,6 +37,9 @@ export SOURCE_RPC RPC_URL RPC_HOST RPC_PORT CHAIN_ID ORDERS_EXPORT_URL DEPLOYER_
 export PIPELINE_STATE_DIR := data/$(CHAIN_ID)/state
 export TOKENS_BY_P_IDX_DIR := data/$(CHAIN_ID)/state/cols-mint-per-idx
 
+# output files for tx hashes 
+export TX_OUT_MINT := data/$(CHAIN_ID)/state/tx_mint.txt
+
 INITIAL_RUN ?= false
 
 ifeq ($(MODE), sepolia)
@@ -220,8 +223,8 @@ approve: ## Grant NFT + WETH allowances to OrderEngine
 	@echo ""
 	@./$(RUNNERS)/executors/exec-per-idx.sh $(BOOTSTRAP)/Approve.s.sol:Approve $(P_IDX_START) $$(( $(P_IDX_START) + $(P_SIZE) - 1 )) $(FORGE_COMMON_FLAGS)
 
-do-minting: ## Mint tokens per participant from the JSON selection (testing: idx 1..2)
-	@./$(RUNNERS)/executors/exec-mints.sh 0 10 $(TOKENS_BY_P_IDX_DIR)
+do-minting: ## Mint tokens per participant from the JSON selection
+	@./$(RUNNERS)/executors/exec-mints.sh $(P_SIZE) $(TOKENS_BY_P_IDX_DIR) --idx-start $(P_IDX_START) --out-file $(TX_OUT_MINT)
 
 # primarily for testnets
 distribute-eth:
