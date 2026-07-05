@@ -44,6 +44,8 @@ IFS=',' read -ra COLLECTION_ARR <<< "$COLLECTIONS"
 
 export PHRASE NFT_TRANSFER_AUTH TOKEN SPENDER
 
+[[ -n "$OUT_FILE" ]] && > "$OUT_FILE"
+
 run_one() {
     local idx=$1
     local out_file=$2

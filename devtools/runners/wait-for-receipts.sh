@@ -30,7 +30,7 @@ while [[ ${#pending[@]} -gt 0 ]]; do
         [[ -z "$tx_hash" ]] && continue
 
         status=$(cast receipt "$tx_hash" status --async --rpc-url "$RPC_URL" 2>/dev/null)
-
+        echo $status
         if [[ -z "$status" ]]; then
             remaining+=("$tx_hash")   # not mined yet, keep polling
         elif [[ "$status" == "true" ]]; then

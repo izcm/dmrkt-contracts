@@ -41,8 +41,10 @@ export SOURCE_RPC SEPOLIA_RPC RPC_URL CHAIN_ID RPC_HOST RPC_PORT ORDERS_EXPORT_U
 export PIPELINE_STATE_DIR := data/$(CHAIN_ID)/state
 export TOKENS_BY_P_IDX_DIR := data/$(CHAIN_ID)/state/cols-mint-per-idx
 
-# output files for tx hashes 
+# output files for tx hashes
 export TX_OUT_MINT := data/$(CHAIN_ID)/state/tx_mint.txt
+export TX_OUT_APPROVE := data/$(CHAIN_ID)/state/tx_approve.txt
+export TX_OUT_WETH_DEPOSIT := data/$(CHAIN_ID)/state/tx_weth_deposit.txt
 
 INITIAL_RUN ?= false
 
@@ -153,7 +155,7 @@ pipeline-separator:
 #   HIGH-LEVEL PIPELINES
 # ───────────────────────────────────────────────
 
-fund-approve-prepare: bootstrap-funds approve prepare
+fund-approve-prepare: fund-weth approve prepare
 
 start: prepare fork pipeline-setup ## Compute window, start fork, deploy, and bootstrap
 	@echo "🚀 Dev environment ready"
@@ -161,8 +163,7 @@ start: prepare fork pipeline-setup ## Compute window, start fork, deploy, and bo
 reset: kill-anvil start ## Kill anvil and restart from scratch
 	@echo "🔄 Dev reset complete"
 
-#pipeline-setup: deploy-core print-participants bootstrap-funds bootstrap-nfts
-pipeline-setup: deploy-core print-participants bootstrap-funds
+pipeline-setup: deploy-core print-participants fund-weth bootstrap-nfts
 	@echo "✅ Core deployed and participants bootstrapped"
 	$(MAKE) approve
 	@echo "✅ OrderEngine fully authorized"
@@ -189,8 +190,7 @@ print-participants: ## Print pipeline participants
 	@echo "PARTICIPANTS"
 	@echo "───────────────────────────────────────────────"
 	@echo ""
-	@forge script $(BOOTSTRAP)/PrintParticipants.s.sol \
-		--rpc-url $(RPC_URL)
+	@./$(RUNNERS)/print-participants.sh $(P_SIZE) --start-idx $(P_IDX_START)
 
 deploy-core: ## Deploy OrderEngine + NFT collections, write addresses to pipeline.toml
 	@echo ""
@@ -207,11 +207,12 @@ bootstrap-nfts: select-nfts ## Mint tokens per participant from the JSON selecti
 	@./$(RUNNERS)/bootstrap/bootstrap-nfts.sh $(P_SIZE) $(TOKENS_BY_P_IDX_DIR) --idx-start $(P_IDX_START) --out-file $(TX_OUT_MINT)
 	@./$(RUNNERS)/wait-for-receipts.sh $(TX_OUT_MINT)
 
-bootstrap-funds: ## Wrap ETH into WETH for all participants
+fund-weth: ## Wrap ETH into WETH for all participants
 	@echo ""
 	@echo "💰 Funding WETH..."
 	@echo ""
-	@./$(RUNNERS)/sequential/exec-per-idx.sh $(P_SIZE) $(BOOTSTRAP)/BootstrapFunds.s.sol:BootstrapFunds --start-idx $(P_IDX_START) $(FORGE_COMMON_FLAGS)
+	@./$(RUNNERS)/bootstrap/wrap-weth.sh $(P_SIZE) --token $(WETH) --start-idx $(P_IDX_START) --out-file $(TX_OUT_WETH_DEPOSIT)
+	@./$(RUNNERS)/wait-for-receipts.sh $(TX_OUT_WETH_DEPOSIT)
 
 select-nfts: ## Compute deterministic token-to-participant selection for each NFT collection
 	@echo ""
@@ -234,7 +235,9 @@ approve: ## Grant NFT + WETH allowances to OrderEngine
 	@echo ""
 	@source $(PIPELINE_STATE_DIR)/pipeline.env && \
 	./$(RUNNERS)/bootstrap/approvals.sh $(P_SIZE) --start-idx $(P_IDX_START) \
-		--nft-transfer-auth "$$ORDER_ENGINE" --token "$$WETH" --spender "$$ORDER_ENGINE" --collections "$$NFT_C_0"
+		--nft-transfer-auth "$$ORDER_ENGINE" --token "$$WETH" --spender "$$ORDER_ENGINE" --collections "$$NFT_C_0" \
+		--out-file $(TX_OUT_APPROVE)
+	@./$(RUNNERS)/wait-for-receipts.sh $(TX_OUT_APPROVE)
 
 
 # ───────────────────────────────────────────────

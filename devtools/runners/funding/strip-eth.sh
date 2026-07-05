@@ -3,7 +3,7 @@
 # Strip eth from the PARTICIPANT_GROUP
 # Iterate from start_index to p_count and transfer wei_per_p to destination address. 
 #
-USAGE_MSG="Usage: strip-eth.sh <from_count> <destination_address> --rpc-url <url> [--start-idx <idx>] [--amount <wei>] [--sync]"
+USAGE_MSG="Usage: strip-eth.sh <from_count> <destination_address> --rpc-url <url> [--start-idx <idx>] [--amount <wei>] [--sync] [--no-gas-reserve]"
 
 # positional / flag args
 : ${1:?"$USAGE_MSG"}
@@ -18,6 +18,7 @@ START_IDX=0
 WEI_PER_RECIPIENT="" # empty -> strip full balance (minus gas)
 GAS_LIMIT=21000
 ASYNC_FLAG="--async" # --sync (used by rotate-eth.sh) drops this so callers can wait for confirmation
+NO_GAS_RESERVE=0 # --no-gas-reserve sends the full balance with nothing held back for gas
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -25,6 +26,7 @@ while [[ $# -gt 0 ]]; do
         --start-idx) START_IDX="$2"; shift 2 ;;
         --amount) WEI_PER_RECIPIENT="$2"; shift 2 ;;
         --sync) ASYNC_FLAG=""; shift ;;
+        --no-gas-reserve) NO_GAS_RESERVE=1; shift ;;
         *) echo "Unknown flag: $1"; exit 1 ;;
     esac
 done
@@ -48,14 +50,18 @@ for ((i = START_IDX; i < START_IDX + FROM_COUNT; i++)); do
         balance=$(cast balance "$p_addr" --rpc-url "$RPC_URL")
         [[ "$balance" == "0" ]] && continue
 
-        gas_price=$(cast gas-price --rpc-url "$RPC_URL")
-        gas_units=$(cast estimate "$DEST_ADDR" --value "$balance" --rpc-url "$RPC_URL")
-        gas_cost=$(echo "$gas_price * 2 * $gas_units" | bc)
-        send_amount=$(echo "$balance - $gas_cost" | bc)
+        if [[ "$NO_GAS_RESERVE" -eq 1 ]]; then
+            send_amount="$balance"
+        else
+            gas_price=$(cast gas-price --rpc-url "$RPC_URL")
+            gas_units=$(cast estimate "$DEST_ADDR" --value "$balance" --rpc-url "$RPC_URL")
+            gas_cost=$(echo "$gas_price * 2 * $gas_units" | bc)
+            send_amount=$(echo "$balance - $gas_cost" | bc)
 
-        if (( $(echo "$send_amount <= 0" | bc) )); then
-            echo "[$i] $p_addr balance too low to cover gas — skipping"
-            continue
+            if (( $(echo "$send_amount <= 0" | bc) )); then
+                echo "[$i] $p_addr balance too low to cover gas — skipping"
+                continue
+            fi
         fi
     fi
 
