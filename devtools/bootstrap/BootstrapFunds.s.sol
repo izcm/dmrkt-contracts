@@ -9,40 +9,33 @@ import { console } from "forge-std/console.sol";
 // interfaces
 import { IWETH } from "periphery/interfaces/IWETH.sol";
 
-/**
- * @notice Wraps half of each participant's ETH balance into WETH so they have
- *         liquid bid collateral for the pipeline.
- * @dev    Participants are funded with ETH at fork startup via Anvil's `--mnemonic` flag.
- *         This script runs after fork start and before `Approve`.
- */
 contract BootstrapFunds is BaseDevScript, DevConfig {
-    function run() external {
+    /**
+     * @notice Wraps half of a single participant's ETH balance into WETH. Run one process
+     *         per participant in parallel (each passing its own `participantIdx` via `--sig`)
+     *         instead of looping over every participant sequentially in-process.
+     * @param participantIdx Raw mnemonic index of the participant.
+     */
+    function run(uint256 participantIdx) external {
         // --------------------------------
         // LOAD CONFIG
         // --------------------------------
 
         address weth = readWeth();
-        uint256[] memory participantPks = generateKeys();
-        uint256 participantCount = participantPks.length;
+        uint256 participantPk = pkAtMnemonicIndex(participantIdx);
+        address a = addrOf(participantPk);
 
         // --------------------------------
         // WRAP ETH
         // --------------------------------
 
-        logSection("WRAP ETH => WETH");
-
         IWETH wethToken = IWETH(weth);
 
-        for (uint256 i = 0; i < participantCount; i++) {
-            address a = addrOf(participantPks[i]);
-            console.log("PRE  | P%s | balance: %s", i + 1, wethToken.balanceOf(a));
+        vm.startBroadcast(participantPk);
+        uint256 wethWrapAmount = a.balance / 2; // wraps half of eth balance to weth
+        wethToken.deposit{ value: wethWrapAmount }();
+        vm.stopBroadcast();
 
-            vm.startBroadcast(participantPks[i]);
-            uint256 wethWrapAmount = a.balance / 2; // wraps half of eth balance to weth
-            wethToken.deposit{ value: wethWrapAmount }();
-            vm.stopBroadcast();
-
-            console.log("POST | P%s | balance: %s", i + 1, wethToken.balanceOf(a));
-        }
+        console.log("wrapped %s wei => weth balance: %s", wethWrapAmount, wethToken.balanceOf(a));
     }
 }

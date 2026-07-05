@@ -19,7 +19,7 @@ contract DMrktLoot is DNFT, ERC721 {
         Shield
     }
 
-    uint256 private _nextTokenId;
+    uint256 private _totalMinted;
 
     mapping(uint256 => ItemType) private _tokenType;
 
@@ -30,16 +30,16 @@ contract DMrktLoot is DNFT, ERC721 {
     }
 
     // DNFT interface — auto-derives item type from tokenId
-    function mint(address to) external {
-        require(_nextTokenId < MAX_SUPPLY(), "Max supply reached");
-        uint256 tokenId = _nextTokenId++;
+    function mint(address to, uint256 tokenId) external {
+        require(tokenId < MAX_SUPPLY(), "Max supply reached");
         ItemType itemType = ItemType(tokenId % DMrktMathConfig.itemTypeCount());
         _tokenType[tokenId] = itemType;
-        _safeMint(to, tokenId);
+        _safeMint(to, tokenId); // reverts if tokenId is already minted
+        _totalMinted++;
     }
 
     function totalSupply() external view returns (uint256) {
-        return _nextTokenId;
+        return _totalMinted;
     }
 
     function itemTypeOf(uint256 tokenId) external view returns (ItemType) {

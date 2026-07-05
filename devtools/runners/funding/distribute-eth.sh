@@ -38,7 +38,7 @@ if [[ -z "$WEI_PER_RECIPIENT" ]]; then
     # equal shares, so the deployer itself keeps one share too
     balance=$(cast balance "$DEPLOYER_ADDR" --rpc-url "$RPC_URL")
     WEI_PER_RECIPIENT=$(echo "$balance / ($TO_COUNT + 1)" | bc) # +1 part part with funder
-    (( WEI_PER_RECIPIENT <= 0 )) && { echo "deployer balance too low to distribute"; exit 1; }
+    (( $(echo "$WEI_PER_RECIPIENT <= 0" | bc) )) && { echo "deployer balance too low to distribute"; exit 1; }
 fi
 
 # deployer nonce

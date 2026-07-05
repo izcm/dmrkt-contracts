@@ -36,31 +36,31 @@ export SOURCE_RPC RPC_URL RPC_HOST RPC_PORT CHAIN_ID ORDERS_EXPORT_URL DEPLOYER_
 
 export PIPELINE_STATE_DIR := data/$(CHAIN_ID)/state
 
-INITIAL_RUN ?= true
+INITIAL_RUN ?= false
 
 ifeq ($(MODE), sepolia)
 # if its the initial run -> set idx to 0 and size to max _size
 # this executes all bootstrap steps for all participants until MAX_P_SZE
 # -> future runs only have to build + execute orders
 	ifeq ($(INITIAL_RUN), true)
-		PARTICIPANT_IDX_START=0
-		PARTICIPANT_SIZE=100
-		MAX_PARTICIPANT_SIZE=100
+		P_IDX_START=0
+		P_SIZE=100
+		MAX_P_SIZE=100
 	else
-		PARTICIPANT_IDX_START=0
-		PARTICIPANT_SIZE=1
-		MAX_PARTICIPANT_SIZE=30
+		P_IDX_START=5
+		P_SIZE=4
+		MAX_P_SIZE=30
 	endif
 else
 # use these for anvil mode 	
-	PARTICIPANT_IDX_START=10
-	PARTICIPANT_SIZE=30
-	MAX_PARTICIPANT_SIZE=50
+	P_IDX_START=0
+	P_SIZE=10
+	MAX_P_SIZE=10
 endif
 
-# if MAX is set to any value !== PARTICIPANT_SIZE
+# if MAX is set to any value !== P_SIZE
 # it is your responsibility to fund the users P_SIZE..MAX_P_SIZE
-export PARTICIPANT_IDX_START PARTICIPANT_SIZE MAX_PARTICIPANT_SIZE
+export P_IDX_START P_SIZE MAX_P_SIZE
 
 # epoch defs
 EPOCH_COUNT = 1
@@ -153,7 +153,8 @@ start: prepare fork pipeline-setup ## Compute window, start fork, deploy, and bo
 reset: kill-anvil start ## Kill anvil and restart from scratch
 	@echo "🔄 Dev reset complete"
 
-pipeline-setup: deploy-core print-participants bootstrap-funds bootstrap-nfts
+#pipeline-setup: deploy-core print-participants bootstrap-funds bootstrap-nfts
+pipeline-setup: deploy-core print-participants bootstrap-funds
 	@echo "✅ Core deployed and participants bootstrapped"
 	$(MAKE) approve
 	@echo "✅ OrderEngine fully authorized"
@@ -198,8 +199,7 @@ bootstrap-funds: ## Wrap ETH into WETH for all participants
 	@echo ""
 	@echo "💰 Funding WETH..."
 	@echo ""
-	@forge script $(BOOTSTRAP)/BootstrapFunds.s.sol \
-		$(FORGE_COMMON_FLAGS)
+	@./$(RUNNERS)/executors/exec-per-idx.sh $(BOOTSTRAP)/BootstrapFunds.s.sol:BootstrapFunds $(P_IDX_START) $$(( $(P_IDX_START) + $(P_SIZE) - 1 )) $(FORGE_COMMON_FLAGS)
 
 
 bootstrap-nfts: ## Mint NFTs to all participants
@@ -217,18 +217,20 @@ approve: ## Grant NFT + WETH allowances to OrderEngine
 	@echo ""
 	@echo "✔ Executing approvals..."
 	@echo ""
-	@forge script $(BOOTSTRAP)/Approve.s.sol \
-		$(FORGE_COMMON_FLAGS)
+	@./$(RUNNERS)/executors/exec-per-idx.sh $(BOOTSTRAP)/Approve.s.sol:Approve $(P_IDX_START) $$(( $(P_IDX_START) + $(P_SIZE) - 1 )) $(FORGE_COMMON_FLAGS)
 
-# primarily for testnets 
-distribute-eth: 
-	./runners/funding/distribute-eth.sh $(PARTICIPANT_SIZE) \
-		--start-idx $(PARTICIPANT_IDX_START) \
+do-minting: ## Mint tokens per participant from the JSON selection (testing: idx 1..2)
+	@./$(RUNNERS)/executors/exec-mints.sh 0 10
+
+# primarily for testnets
+distribute-eth:
+	./runners/funding/distribute-eth.sh $(P_SIZE) \
+		--start-idx $(P_IDX_START) \
 
 strip-participants:
-	./runners/funding/strip-eth.sh $(PARTICIPANT_SIZE) $(STRIP_DEST_ADDR) \
+	./runners/funding/strip-eth.sh $(P_SIZE) $(STRIP_DEST_ADDR) \
 		--rpc-url $(RPC_URL) \
-		--start-idx $(PARTICIPANT_IDX_START)
+		--start-idx $(P_IDX_START)
 
 # ───────────────────────────────────────────────
 #   STATE / SCENARIOS
@@ -282,8 +284,8 @@ token-owner: ## Read token owner  (COL=0x... ID=N)
 		$(ID) \
 		--rpc-url $(RPC_URL)
 
-START := $(PARTICIPANT_IDX_START)
-COUNT := $(PARTICIPANT_SIZE)
+START := $(P_IDX_START)
+COUNT := $(P_SIZE)
 
 print-participants-simple:
 	@seq $(START) $$(( $(START) + $(COUNT) - 1 )) | \

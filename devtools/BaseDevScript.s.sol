@@ -16,13 +16,13 @@ abstract contract BaseDevScript is Script {
      * @notice Populates the internal participants list and pk lookup map.
      *         Call this before using `participant()` or `pkOf()`. Scripts that only
      *         need to broadcast can skip this and call `generateKeys()` directly.
-     * @dev    Reads `PARTICIPANT_SIZE` (default 5) and `PARTICIPANT_IDX_START` (default 0)
+     * @dev    Reads `P_SIZE` (default 5) and `P_IDX_START` (default 0)
      *         from env so the participant range can be changed between pipeline runs
      *         without threading params through every script's `run()`.
      */
     function loadParticipants() internal {
-        uint256 keyCount = vm.envOr("PARTICIPANT_SIZE", defaultParticipantSize());
-        uint256 startIndex = vm.envOr("PARTICIPANT_IDX_START", uint256(0));
+        uint256 keyCount = vm.envOr("P_SIZE", defaultParticipantSize());
+        uint256 startIndex = vm.envOr("P_IDX_START", uint256(0));
 
         loadParticipants(keyCount, startIndex);
     }
@@ -48,8 +48,8 @@ abstract contract BaseDevScript is Script {
     }
 
     function generateKeys() internal view returns (uint256[] memory) {
-        uint256 keyCount = vm.envOr("PARTICIPANT_SIZE", defaultParticipantSize());
-        uint256 startIndex = vm.envOr("PARTICIPANT_IDX_START", uint256(0));
+        uint256 keyCount = vm.envOr("P_SIZE", defaultParticipantSize());
+        uint256 startIndex = vm.envOr("P_IDX_START", uint256(0));
 
         return _generateKeys(keyCount, startIndex);
     }
@@ -116,9 +116,21 @@ abstract contract BaseDevScript is Script {
         return vm.addr(pk);
     }
 
-    // === PRIVATE FUNCTIONS ===
+    /**
+     * @notice Derives the private key at a raw mnemonic index, bypassing `P_IDX_START`/`P_SIZE`
+     *         batching. Use this when the index passed to a script already refers to the real
+     *         mnemonic index (e.g. passed directly via `--sig`).
+     */
+    function pkAtMnemonicIndex(uint256 idx) internal view returns (uint256) {
+        string memory mnemonic = vm.envOr(
+            "PARTICIPANT_MNEMONIC",
+            string("test test test test test test test test test test test junk")
+        );
+        return vm.deriveKey(mnemonic, uint32(idx));
+    }
 
-    function _indexOfParticipant(address a) internal view returns (uint256) {
+    // TODO: this needs to return the mnemonic index of participant
+    function mnemonicIndexOfParticipant(address a) internal view returns (uint256) {
         address[] memory parts = participants();
         for (uint256 i = 0; i < parts.length; i++) {
             if (parts[i] == a) return i;

@@ -17,7 +17,13 @@ import { IERC20 } from "@openzeppelin/interfaces/IERC20.sol";
  *         `setApprovalForAll` on every NFT collection and max WETH allowance for the allowance spender.
  */
 contract Approve is BaseDevScript, DevConfig {
-    function run() external {
+    /**
+     * @notice Approves NFT transfer auth + WETH allowance spender for a single participant.
+     *         Run one process per participant in parallel (each passing its own `participantIdx`
+     *         via `--sig`) instead of looping over every participant sequentially in-process.
+     * @param participantIdx Raw mnemonic index of the participant.
+     */
+    function run(uint256 participantIdx) external {
         // --------------------------------
         // LOAD CONFIG
         // --------------------------------
@@ -29,54 +35,27 @@ contract Approve is BaseDevScript, DevConfig {
 
         address[] memory collections = readCollections();
 
-        uint256[] memory participantPks = generateKeys();
-        uint256 participantCount = participantPks.length;
+        uint256 participantPk = pkAtMnemonicIndex(participantIdx);
+        address owner = addrOf(participantPk);
 
         // --------------------------------
-        // NFT TRANSFER AUTH
+        // BROADCAST
         // --------------------------------
 
-        logSection("APPROVE NFT TRANSFER AUTH");
+        vm.startBroadcast(participantPk);
 
         for (uint256 i = 0; i < collections.length; i++) {
-            IERC721 collectionToken = IERC721(collections[i]);
-            string memory name = IERC721Metadata(collections[i]).name();
-
-            console.log("COLLECTION | %s | setApprovalForAll()", name);
-
-            for (uint256 j = 0; j < participantCount; j++) {
-                address owner = addrOf(participantPks[j]);
-
-                vm.startBroadcast(participantPks[j]);
-                collectionToken.setApprovalForAll(nftTransferAuth, true);
-                vm.stopBroadcast();
-
-                console.log(
-                    "[nft-approve] P%s | approved: %s",
-                    j + 1,
-                    collectionToken.isApprovedForAll(owner, nftTransferAuth)
-                );
-            }
+            IERC721(collections[i]).setApprovalForAll(nftTransferAuth, true);
         }
 
-        printSpace();
+        IERC20(weth).approve(allowanceSpender, type(uint256).max);
 
-        // --------------------------------
-        // WETH ALLOWANCE
-        // --------------------------------
+        vm.stopBroadcast();
 
-        logSection("APPROVE TOKEN SPENDER");
-        console.log("TOKEN | WETH | approve()");
-
-        IERC20 wethToken = IERC20(weth);
-        uint256 allowance = type(uint256).max;
-
-        for (uint256 i = 0; i < participantCount; i++) {
-            vm.startBroadcast(participantPks[i]);
-            wethToken.approve(allowanceSpender, allowance);
-            vm.stopBroadcast();
-
-            console.log("[weth-approve] P%s | allowance: unlimited", i + 1);
-        }
+        console.log(
+            "owner %s | approved %s collections | weth allowance: unlimited",
+            owner,
+            collections.length
+        );
     }
 }
