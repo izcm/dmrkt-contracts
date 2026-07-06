@@ -45,6 +45,7 @@ export TOKENS_BY_P_IDX_DIR := data/$(CHAIN_ID)/state/cols-mint-per-idx
 export TX_OUT_MINT := data/$(CHAIN_ID)/state/tx_mint.txt
 export TX_OUT_APPROVE := data/$(CHAIN_ID)/state/tx_approve.txt
 export TX_OUT_WETH_DEPOSIT := data/$(CHAIN_ID)/state/tx_weth_deposit.txt
+export TX_OUT_STRIP_WETH := data/$(CHAIN_ID)/state/tx_strip_weth.txt
 
 INITIAL_RUN ?= false
 
@@ -57,8 +58,8 @@ ifeq ($(MODE), sepolia)
 		P_SIZE=100
 		MAX_P_SIZE=100
 	else
-		P_IDX_START=5
-		P_SIZE=4
+		P_IDX_START=0
+		P_SIZE=30
 		MAX_P_SIZE=30
 	endif
 else
@@ -80,7 +81,7 @@ REALTIME_TIME_WINDOW  = 15552000 # 180 days, in seconds
 REALTIME_EXEC_RATE    = 100      # % of built orders to execute
 REALTIME_NONCE_SEED   = $(shell date +%s)
 
-# strip-participants: transfer all eth from participants to STRIP_DEST_ADDR  
+# strip-eth: transfer all eth from participants to STRIP_DEST_ADDR  
 STRIP_DEST_ADDR=0x3e34BC287907E257e5BdbB909684ab3F52708f42
 
 # ───────────────────────────────────────────────
@@ -169,7 +170,7 @@ pipeline-setup: deploy-core print-participants fund-weth bootstrap-nfts
 	@echo "✅ OrderEngine fully authorized"
 
 # ───────────────────────────────────────────────
-#   ENVIRONMENT BOOT
+#   ENVIRO  xsxzxsxssssssss
 # ───────────────────────────────────────────────
 
 fork: ## Start the anvil fork
@@ -244,15 +245,25 @@ approve: ## Grant NFT + WETH allowances to OrderEngine
 #   FUNDING
 # ───────────────────────────────────────────────
 
+# P_SIZE here is participant size, the scripts get private keys from 
+# a .env mnemonic. Would be nice to make them more "standalone".
+
 # primarily for testnets
 distribute-eth:
-	./runners/funding/distribute-eth.sh $(P_SIZE) \
+	@./runners/funding/distribute-eth.sh $(P_SIZE) \
 		--start-idx $(P_IDX_START) \
 
-strip-participants:
-	./runners/funding/strip-eth.sh $(P_SIZE) $(STRIP_DEST_ADDR) \
+strip-eth:
+	@./runners/funding/strip-eth.sh $(P_SIZE) $(STRIP_DEST_ADDR) \
 		--rpc-url $(RPC_URL) \
 		--start-idx $(P_IDX_START)
+
+strip-weth:
+	@./runners/funding/strip-erc20.sh $(P_SIZE) $(STRIP_DEST_ADDR) $(WETH) \
+		--rpc-url $(RPC_URL) \
+		--start-idx $(P_IDX_START) \
+		--out-file $(TX_OUT_STRIP_WETH)
+	@./$(RUNNERS)/wait-for-receipts.sh $(TX_OUT_STRIP_WETH)
 
 # ───────────────────────────────────────────────
 #   STATE / SCENARIOS
