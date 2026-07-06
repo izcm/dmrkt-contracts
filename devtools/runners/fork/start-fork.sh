@@ -31,4 +31,4 @@ anvil --fork-url "$SOURCE_RPC" \
   --silent &
 
 # Wait for Anvil to start
-sleep 2
+sleep 15

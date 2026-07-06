@@ -1,14 +1,14 @@
 #!/bin/bash
 
-USAGE_MSG="Usage: strip-erc20.sh <from_count> <destination_address> <token_address> --rpc-url <url> [--start-idx <idx>] [--amount <wei>] [--sync]"
+USAGE_MSG="Usage: strip-erc20.sh <token_address> <destination_address> <from_count> --rpc-url <url> [--start-idx <idx>] [--amount <wei>] [--sync]"
 
 : ${1:?"$USAGE_MSG"}
 : ${2:?"$USAGE_MSG"}
 : ${3:?"$USAGE_MSG"}
 
-FROM_COUNT=$1
+TOKEN_ADDR=$1
 DEST_ADDR=$2
-TOKEN_ADDR=$3
+FROM_COUNT=$3
 
 shift 3
 
@@ -21,7 +21,7 @@ ASYNC_FLAG="--async"
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --rpc-url) RPC_URL="$2"; shift 2 ;;
-        --start-idx) RPC_URL="$2" shift 2 ;;
+        --start-idx) START_IDX="$2"; shift 2 ;;
         --amount) TOKENS_PER_SENDER="$2" shift 2 ;;
         --out-file) OUT_FILE="$2"; shift 2 ;;
         --sync) ASYNC_FLAG=""; shift ;;
@@ -40,6 +40,7 @@ TOKEN_SYMBOL="${TOKEN_SYMBOL:-UNKNOWN}"
 
 echo "Start $TOKEN_SYMBOL strip"
 echo "$DEST_ADDR is the destination address"
+echo "$TOKEN_ADDR"
 
 # loop through each participant, use mnemonic index to find their keys and address
 for ((i = START_IDX; i < START_IDX + FROM_COUNT; i++)); do
@@ -51,6 +52,7 @@ for ((i = START_IDX; i < START_IDX + FROM_COUNT; i++)); do
 
     # no --amount flag ?? strip all tokens 
     send_amount="$TOKENS_PER_SENDER"
+
     if [[ -z "$send_amount" ]]; then
         balance=$(
             cast erc20-token balance "$TOKEN_ADDR" "$p_addr" --rpc-url "$RPC_URL" | awk '{ print $1 }'

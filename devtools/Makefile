@@ -46,27 +46,31 @@ export TX_OUT_MINT := data/$(CHAIN_ID)/state/tx_mint.txt
 export TX_OUT_APPROVE := data/$(CHAIN_ID)/state/tx_approve.txt
 export TX_OUT_WETH_DEPOSIT := data/$(CHAIN_ID)/state/tx_weth_deposit.txt
 export TX_OUT_STRIP_WETH := data/$(CHAIN_ID)/state/tx_strip_weth.txt
+export TX_OUT_DISTRIBUTE_WETH := data/$(CHAIN_ID)/state/tx_distribute_weth.txt
 
-INITIAL_RUN ?= false
+INITIAL_RUN ?= true
 
 ifeq ($(MODE), sepolia)
 # if its the initial run -> set idx to 0 and size to max _size
 # this executes all bootstrap steps for all participants until MAX_P_SZE
+# note that MAX_P_SIZE represents the POSSIBLE NFT HOLDERS do not make it smaller
+# than the pool of previous buyers / minters unless u know what ure doing
+
 # -> future runs only have to build + execute orders
 	ifeq ($(INITIAL_RUN), true)
 		P_IDX_START=0
-		P_SIZE=100
+		P_SIZE=25
 		MAX_P_SIZE=100
 	else
 		P_IDX_START=0
-		P_SIZE=30
-		MAX_P_SIZE=30
+		P_SIZE=25
+		MAX_P_SIZE=100
 	endif
 else
 # use these for anvil mode 	
 	P_IDX_START=0
-	P_SIZE=10
-	MAX_P_SIZE=10
+	P_SIZE=5
+	MAX_P_SIZE=50
 endif
 
 # if MAX is set to any value !== P_SIZE
@@ -82,7 +86,7 @@ REALTIME_EXEC_RATE    = 100      # % of built orders to execute
 REALTIME_NONCE_SEED   = $(shell date +%s)
 
 # strip-eth: transfer all eth from participants to STRIP_DEST_ADDR  
-STRIP_DEST_ADDR=0x3e34BC287907E257e5BdbB909684ab3F52708f42
+STRIP_DEST_ADDR=0xd11dAA327728b1a9B03332c6F96Aa0f73AD75320
 
 # ───────────────────────────────────────────────
 #   LOGGING / VERBOSITY
@@ -259,11 +263,30 @@ strip-eth:
 		--start-idx $(P_IDX_START)
 
 strip-weth:
-	@./runners/funding/strip-erc20.sh $(P_SIZE) $(STRIP_DEST_ADDR) $(WETH) \
+	@./runners/funding/erc20/strip-erc20.sh $(WETH) $(STRIP_DEST_ADDR) $(P_SIZE) \
 		--rpc-url $(RPC_URL) \
 		--start-idx $(P_IDX_START) \
 		--out-file $(TX_OUT_STRIP_WETH)
 	@./$(RUNNERS)/wait-for-receipts.sh $(TX_OUT_STRIP_WETH)
+
+distribute-weth:
+	@./runners/funding/erc20/distribute-erc20.sh $(WETH) $(P_SIZE) \
+		--rpc-url $(RPC_URL) \
+		--start-idx $(P_IDX_START) \
+		--out-file $(TX_OUT_DISTRIBUTE_WETH)
+	@./$(RUNNERS)/wait-for-receipts.sh $(TX_OUT_DISTRIBUTE_WETH)
+
+# GROUP_IDX selects which P_SIZE-sized group to rotate out of: 0 rotates
+# group 0 -> group 1, 1 rotates group 1 -> group 2, etc. Bump this alone to
+# advance rotate-weth to the next pair of groups.
+GROUP_IDX ?= 0 # this should not be larger than p_size / p_max_size
+
+rotate-weth:
+	@./runners/funding/erc20/rotate-erc20.sh $(WETH) $(P_SIZE) $$(($(P_IDX_START) + $(GROUP_IDX) * $(P_SIZE))) $(P_SIZE) $$(($(P_IDX_START) + ($(GROUP_IDX) + 1) * $(P_SIZE))) \
+		--rpc-url $(RPC_URL) \
+		--strip-out-file $(TX_OUT_STRIP_WETH) \
+		--distribute-out-file $(TX_OUT_DISTRIBUTE_WETH)
+	@./$(RUNNERS)/wait-for-receipts.sh $(TX_OUT_DISTRIBUTE_WETH)
 
 # ───────────────────────────────────────────────
 #   STATE / SCENARIOS
@@ -287,12 +310,6 @@ kill-anvil: ## Kill the running anvil process
 # ───────────────────────────────────────────────
 #   CHAIN READ HELPERS
 # ───────────────────────────────────────────────
-
-# chain
-MAINNET_WETH := 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2
-SEPOLIA_WETH := 0x5f207d42F869fd1c71d7f0f81a2A67Fc20FF7323
-
-WETH=$(MAINNET_WETH)
 
 weth-balance: ## Read WETH balance for an address  (ADDR=0x...)
 	@if [ -z "$(ADDR)" ]; then \
