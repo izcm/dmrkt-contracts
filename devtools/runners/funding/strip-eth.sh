@@ -4,7 +4,7 @@
 # Iterate from start_index to p_count and transfer wei_per_p to destination address. 
 #
 
-USAGE_MSG="Usage: strip-eth.sh <from_count> <destination_address> --rpc-url <url> [--start-idx <idx>] [--amount <wei>] [--sync] [--no-gas-reserve]"
+USAGE_MSG="Usage: strip-eth.sh <from_count> <destination_address> --rpc-url <url> [--start-idx <idx>] [--amount <wei>] [--sync] [--no-gas-reserve] [--out-file <file>]"
 
 # positional
 : ${1:?"$USAGE_MSG"}
@@ -20,6 +20,7 @@ WEI_PER_SENDER="" # empty -> strip full balance (minus gas)
 GAS_LIMIT=21000
 ASYNC_FLAG="--async" # --sync (used by rotate-eth.sh) drops this so callers can wait for confirmation
 NO_GAS_RESERVE=0 # --no-gas-reserve sends the full balance with nothing held back for gas
+OUT_FILE=""
 
 # flags
 while [[ $# -gt 0 ]]; do
@@ -29,9 +30,12 @@ while [[ $# -gt 0 ]]; do
         --amount) WEI_PER_SENDER="$2"; shift 2 ;;
         --sync) ASYNC_FLAG=""; shift ;;
         --no-gas-reserve) NO_GAS_RESERVE=1; shift ;;
+        --out-file) OUT_FILE="$2"; shift 2 ;;
         *) echo "Unknown flag: $1"; exit 1 ;;
     esac
 done
+
+[[ -n "$OUT_FILE" ]] && > "$OUT_FILE"
 
 : "${RPC_URL:?$USAGE_MSG}"
 : "${PARTICIPANT_MNEMONIC:?PHRASE not set}"
@@ -69,10 +73,12 @@ for ((i = START_IDX; i < START_IDX + FROM_COUNT; i++)); do
 
     echo "[$i] sending $send_amount wei from $p_addr"
 
-    cast send "$DEST_ADDR" \
+    tx_hash=$(cast send "$DEST_ADDR" \
         $ASYNC_FLAG \
         --value "$send_amount" \
         --private-key "$p_key" \
         --rpc-url "$RPC_URL" \
-        --gas-limit "$GAS_LIMIT"
+        --gas-limit "$GAS_LIMIT")
+
+    [[ -n "$OUT_FILE" ]] && echo "$tx_hash" >> "$OUT_FILE"
 done

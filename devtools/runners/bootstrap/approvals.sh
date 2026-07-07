@@ -79,6 +79,8 @@ run_one() {
 
     echo "[idx $idx] sent transfer approval tx (to $NFT_TRANSFER_AUTH) on ${#collections[@]} collection(s)"
     echo "[idx $idx] sent max $TOKEN allowance tx to $SPENDER"
+
+    sleep 1
 }
 export -f run_one
 

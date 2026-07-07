@@ -19,7 +19,7 @@ export TOML               := pipeline.toml
 #   PIPELINE CONTEXT
 # ───────────────────────────────────────────────
 
-MODE ?= anvil
+MODE ?= sepolia
 
 # EPOCH_COUNT is 1 since when simulating on sepolia
 # (since we aren't replaying past like on a local anvil fork)
@@ -47,8 +47,10 @@ export TX_OUT_APPROVE := data/$(CHAIN_ID)/state/tx_approve.txt
 export TX_OUT_WETH_DEPOSIT := data/$(CHAIN_ID)/state/tx_weth_deposit.txt
 export TX_OUT_STRIP_WETH := data/$(CHAIN_ID)/state/tx_strip_weth.txt
 export TX_OUT_DISTRIBUTE_WETH := data/$(CHAIN_ID)/state/tx_distribute_weth.txt
+export TX_OUT_DISTRIBUTE_ETH := data/$(CHAIN_ID)/state/tx_distribute_eth.txt
+export TX_OUT_STRIP_ETH := data/$(CHAIN_ID)/state/tx_strip_eth.txt
 
-INITIAL_RUN ?= true
+APPROVALS_ROUND=false
 
 ifeq ($(MODE), sepolia)
 # if its the initial run -> set idx to 0 and size to max _size
@@ -57,15 +59,15 @@ ifeq ($(MODE), sepolia)
 # than the pool of previous buyers / minters unless u know what ure doing
 
 # -> future runs only have to build + execute orders
-	ifeq ($(INITIAL_RUN), true)
-		P_IDX_START=0
-		P_SIZE=25
-		MAX_P_SIZE=100
-	else
-		P_IDX_START=0
-		P_SIZE=25
-		MAX_P_SIZE=100
-	endif
+ifeq ($(APPROVALS_ROUND), true)
+	P_IDX_START=0
+	P_SIZE=100
+	MAX_P_SIZE=100
+else
+	P_IDX_START=0
+	P_SIZE=25
+	MAX_P_SIZE=25
+endif
 else
 # use these for anvil mode 	
 	P_IDX_START=0
@@ -86,7 +88,7 @@ REALTIME_EXEC_RATE    = 100      # % of built orders to execute
 REALTIME_NONCE_SEED   = $(shell date +%s)
 
 # strip-eth: transfer all eth from participants to STRIP_DEST_ADDR  
-STRIP_DEST_ADDR=0xd11dAA327728b1a9B03332c6F96Aa0f73AD75320
+STRIP_DEST_ADDR=0x3E7e3418De6e2c39d6DD6D81b7A42f148E4262eD
 
 # ───────────────────────────────────────────────
 #   LOGGING / VERBOSITY
@@ -256,11 +258,15 @@ approve: ## Grant NFT + WETH allowances to OrderEngine
 distribute-eth:
 	@./runners/funding/distribute-eth.sh $(P_SIZE) \
 		--start-idx $(P_IDX_START) \
+		--out-file $(TX_OUT_DISTRIBUTE_ETH)
+	@./$(RUNNERS)/wait-for-receipts.sh $(TX_OUT_DISTRIBUTE_ETH)
 
 strip-eth:
 	@./runners/funding/strip-eth.sh $(P_SIZE) $(STRIP_DEST_ADDR) \
 		--rpc-url $(RPC_URL) \
-		--start-idx $(P_IDX_START)
+		--start-idx $(P_IDX_START) \
+		--out-file $(TX_OUT_STRIP_ETH)
+	@./$(RUNNERS)/wait-for-receipts.sh $(TX_OUT_STRIP_ETH)
 
 strip-weth:
 	@./runners/funding/erc20/strip-erc20.sh $(WETH) $(STRIP_DEST_ADDR) $(P_SIZE) \

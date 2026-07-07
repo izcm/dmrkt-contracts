@@ -61,9 +61,9 @@ for ((i = START_IDX; i < START_IDX + TO_COUNT; i++)); do
         --private-key "$DEPLOYER_PK" \
         --rpc-url "$RPC_URL" \
         --nonce "$nonce")
-
-    [[ -n "$OUT_FILE" ]] && echo "$tx_hash" >> "$OUT_FILE"
     ((nonce++))
+    
+    [[ -n "$OUT_FILE" ]] && echo "$tx_hash" >> "$OUT_FILE"
 done
 
 exit 0
