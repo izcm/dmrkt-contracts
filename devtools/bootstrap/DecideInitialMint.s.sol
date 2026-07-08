@@ -13,7 +13,7 @@ import { DNFT } from "dev/interfaces/DNFT.sol";
  *         collection and writes the selection to JSON. Minting itself happens separately,
  *         in bash (see runners/executors/exec-mints.sh), reading this JSON.
  */
-contract SelectNFTs is BaseDevScript, DevConfig {
+contract DecideInitialMint is BaseDevScript, DevConfig {
     function run() external {
         // --------------------------------
         // LOAD CONFIG

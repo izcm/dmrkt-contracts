@@ -1,0 +1,1 @@
+[{"type":"eth-transfer","from":{"kind":"participant","idx":1},"to":{"kind":"participant","idx":0},"value":"1249999969810662500000","txHash":"0x9087a2e2c29752290b759d51cc03fb43da3e2a9ff3bd412f3c4b278c54b64e7e"}]

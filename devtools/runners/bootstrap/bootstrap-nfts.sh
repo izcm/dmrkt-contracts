@@ -111,19 +111,41 @@ run_one_idx() {
 
         sleep 2
 
-        tx_hash=$(
-            cast send "$collection" "mint(address,uint256)" "$p_addr" "$tokenId" \
-            --async \
-            --private-key "$p_key" \
-            --rpc-url "$RPC_URL" \
-            --nonce "$nonce" \
-            --gas-price "$boosted_gas_price" 2>&1
-        )
+        send_attempt=1
+        send_max_attempts=5
+        while true; do
+            tx_hash=$(
+                cast send "$collection" "mint(address,uint256)" "$p_addr" "$tokenId" \
+                --async \
+                --private-key "$p_key" \
+                --rpc-url "$RPC_URL" \
+                --nonce "$nonce" \
+                --gas-price "$boosted_gas_price" 2>&1
+            )
 
-        if [[ "$tx_hash" == *"ERC721InvalidSender"* ]]; then
-            echo "[idx $idx] tokenId $tokenId already minted (race), skipping"
-            return 1
-        fi
+            if [[ "$tx_hash" == *"ERC721InvalidSender"* ]]; then
+                echo "[idx $idx] tokenId $tokenId already minted (race), skipping"
+                return 1
+            fi
+
+            if [[ "$tx_hash" == *"nonce too low"* ]]; then
+                echo "[idx $idx] tokenId $tokenId: nonce too low, giving up: $tx_hash"
+                return 1
+            fi
+
+            if [[ "$tx_hash" =~ ^0x[0-9a-fA-F]{64}$ ]]; then
+                break
+            fi
+
+            if (( send_attempt >= send_max_attempts )); then
+                echo "[idx $idx] tokenId $tokenId: cast send failed after $send_max_attempts attempts, skipping this round"
+                return 1
+            fi
+
+            echo "[idx $idx] tokenId $tokenId: cast send returned non-txhash output, retrying ($send_attempt/$send_max_attempts): $tx_hash"
+            sleep 3
+            ((send_attempt++))
+        done
 
         if [[ -n "$out_file" ]]; then
             echo "$tx_hash" >> "$out_file"
@@ -134,10 +156,10 @@ run_one_idx() {
 
     export p_key
 
-    nonce=$(with_retry cast nonce "$p_addr" --rpc-url "$RPC_URL") || { echo "[idx $idx] giving up: could not fetch nonce"; return 1; }
+    nonce=$(with_retry cast nonce "$p_addr" --rpc-url "$RPC_URL" -B pending) || { echo "[idx $idx] giving up: could not fetch nonce"; return 1; }
 
     gas_price=$(with_retry cast gas-price --rpc-url "$RPC_URL") || { echo "[idx $idx] giving up: could not fetch gas price"; return 1; }
-    boosted_gas_price=$(echo "$gas_price * 5" | bc)
+    boosted_gas_price=$(echo "$gas_price * 2" | bc)
 
     local mint_count=0
     for tokenId in $(jq --arg idx "$idx" '.[$idx][]' "$in_file"); do

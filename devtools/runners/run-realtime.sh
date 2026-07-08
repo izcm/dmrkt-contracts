@@ -32,7 +32,7 @@ NONCE_SEED="$2"
 shift 2
 
 EXPORT_ORDERS=false
-GAP=25
+GAP=100
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -49,8 +49,8 @@ echo "order_percentage=$EXEC_RATE nonce_seed=$NONCE_SEED gap=$GAP export=$EXPORT
 : "${TOML:?TOML not set}"
 
 
-if ! [[ "$EXEC_RATE" =~ ^[1-9][0-9]?$|^100$ ]] ; then
-    echo "error: <order_percantage_to_execute> must be a number between 1-100"
+if ! [[ "$EXEC_RATE" =~ ^[0-9][0-9]?$|^100$ ]] ; then
+    echo "error: <order_percantage_to_execute> must be a number between 0-100"
     echo "$USAGE_MSG"
     exit 1
 fi
@@ -101,7 +101,6 @@ forge script "$PIPELINE_EPOCHS"/BuildEpoch.s.sol \
     --sender "$DEPLOYER_ADDR" \
     --private-key "$DEPLOYER_PK" \
     --sig "run(uint256,uint256,uint256,uint256)" \
-    -vvvv \
     0 $DELTA $GAP $NONCE_SEED
 
 # count orders
@@ -110,7 +109,6 @@ order_count=$(find "$ORDER_OUT" -maxdepth 1 -name "order_*" -printf '.' | wc -m)
 
 # count orders to execute
 EXEC_LIMIT=$(( order_count * EXEC_RATE / 100 ))
-(( EXEC_LIMIT )) || { echo "no orders to execute when rate is $EXEC_RATE"; exit 1; }
 
 #--------------------------
 # PHASE 2: EXPORT ORDERS IF --EXPORT FLAG
@@ -138,7 +136,7 @@ fail=0
 
 # later: ADD ASYNC FLAG
 for((i = 0; i < EXEC_LIMIT; i++)); do
-    if "$(dirname "$0")"/executors/exec-order.sh 0 "$i" \
+    if "$(dirname "$0")"/sequential/exec-order.sh 0 "$i" \
         --rpc-url "$RPC_URL" \
         --sender "$DEPLOYER_ADDR" \
         --private-key "$DEPLOYER_PK"

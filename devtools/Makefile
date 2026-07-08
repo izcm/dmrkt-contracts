@@ -19,7 +19,7 @@ export TOML               := pipeline.toml
 #   PIPELINE CONTEXT
 # ───────────────────────────────────────────────
 
-MODE ?= sepolia
+MODE ?= anvil
 
 # EPOCH_COUNT is 1 since when simulating on sepolia
 # (since we aren't replaying past like on a local anvil fork)
@@ -61,18 +61,18 @@ ifeq ($(MODE), sepolia)
 # -> future runs only have to build + execute orders
 ifeq ($(APPROVALS_ROUND), true)
 	P_IDX_START=0
-	P_SIZE=100
-	MAX_P_SIZE=100
+	P_SIZE=75
+	MAX_P_SIZE=75
 else
-	P_IDX_START=0
+	P_IDX_START=25
 	P_SIZE=25
-	MAX_P_SIZE=25
+	MAX_P_SIZE=50
 endif
 else
 # use these for anvil mode 	
 	P_IDX_START=0
-	P_SIZE=5
-	MAX_P_SIZE=50
+	P_SIZE=10
+	MAX_P_SIZE=10
 endif
 
 # if MAX is set to any value !== P_SIZE
@@ -124,7 +124,7 @@ endif
 # ───────────────────────────────────────────────
 
 # This entrypoint is used by another repo that has its own fork prepare pipeline
-compose-entrypoint: EXPORT_FLAG = --export
+# compose-entrypoint: EXPORT_FLAG = --export
 compose-entrypoint: wait pipeline-setup pipeline-separator run-epochs ## Docker Compose entrypoint — assumes fork + pipeline.toml are provided externally
 	
 # ───────────────────────────────────────────────
@@ -197,7 +197,7 @@ print-participants: ## Print pipeline participants
 	@echo "PARTICIPANTS"
 	@echo "───────────────────────────────────────────────"
 	@echo ""
-	@./$(RUNNERS)/print-participants.sh $(P_SIZE) --start-idx $(P_IDX_START)
+	@./$(RUNNERS)/printers/print-participants.sh $(P_SIZE) --start-idx $(P_IDX_START)
 
 deploy-core: ## Deploy OrderEngine + NFT collections, write addresses to pipeline.toml
 	@echo ""
@@ -215,18 +215,23 @@ bootstrap-nfts: select-nfts ## Mint tokens per participant from the JSON selecti
 	@./$(RUNNERS)/wait-for-receipts.sh $(TX_OUT_MINT)
 
 fund-weth: ## Wrap ETH into WETH for all participants
-	@echo ""
 	@echo "💰 Funding WETH..."
-	@echo ""
 	@./$(RUNNERS)/bootstrap/wrap-weth.sh $(P_SIZE) --token $(WETH) --start-idx $(P_IDX_START) --out-file $(TX_OUT_WETH_DEPOSIT)
 	@./$(RUNNERS)/wait-for-receipts.sh $(TX_OUT_WETH_DEPOSIT)
 
 select-nfts: ## Compute deterministic token-to-participant selection for each NFT collection
-	@echo ""
 	@echo "🎲 Selecting NFTs..."
-	@echo ""
-	@forge script $(BOOTSTRAP)/SelectNFTs.s.sol \
+	@forge script $(BOOTSTRAP)/DecideInitialMint.s.sol \
 		$(FORGE_COMMON_FLAGS)
+
+# ───────────────────────────────────────────────
+#   TX MANAGE
+# ───────────────────────────────────────────────
+
+new-distribute-eth:
+	@echo "Distributing eth..."
+	@./$(RUNNERS)/latest/funding/distribute-eth.sh 1 1 tx-out.json
+	@ npx tsx ./$(RUNNERS)/latest/tx-manager.ts tx-out.json
 
 # ───────────────────────────────────────────────
 #   APPROVALS
@@ -244,7 +249,7 @@ approve: ## Grant NFT + WETH allowances to OrderEngine
 	./$(RUNNERS)/bootstrap/approvals.sh $(P_SIZE) --start-idx $(P_IDX_START) \
 		--nft-transfer-auth "$$ORDER_ENGINE" --token "$$WETH" --spender "$$ORDER_ENGINE" --collections "$$NFT_C_0" \
 		--out-file $(TX_OUT_APPROVE)
-	@./$(RUNNERS)/wait-for-receipts.sh $(TX_OUT_APPROVE)
+	@./$(RUNNERS)/latest/wait-for-receipts.sh $(TX_OUT_APPROVE)
 
 
 # ───────────────────────────────────────────────
