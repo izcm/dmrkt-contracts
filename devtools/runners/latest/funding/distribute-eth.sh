@@ -47,21 +47,6 @@ if [[ -z "$WEI_PER_RECIPIENT" ]]; then
     (( $(echo "$WEI_PER_RECIPIENT <= 0" | bc) )) && { echo "deployer balance too low to distribute"; exit 1; }
 fi
 
-
-# {
-#   "type": "eth-transfer",
-#   "participantIdx": 3,
-#   "to": {
-#     "kind": "participantAddress",
-#     "idx": 0
-#   },
-#   "value": "1000000000000000000",
-#   "nonce": null,
-#   "gasPrice": null,
-#   "txHash": null,
-#   "error": null
-# }
-
 # - write a tx json object for each idx from decided start / end
 # - this .json file will be fed into the tx-manager which is the centralized point for tx executons 
 

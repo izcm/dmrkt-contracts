@@ -27,7 +27,29 @@ done
 : "${CHAIN_ID:?$USAGE_MSG}"
 : "${EXPORT_URL:?$USAGE_MSG}"
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+export_order() {
+    local in_file_path="$1"
+    local max_retries=3
+    local retry_delay=0.2
+    local attempt=1
+
+    while true; do
+        if curl -X POST -f -s -S -o /dev/null \
+            --connect-timeout 3 \
+            -H "Content-Type: application/json" \
+            -H "X-Chain-Id: $CHAIN_ID" \
+            --data-binary @"$in_file_path" \
+            "$EXPORT_URL"
+        then
+            return 0
+        fi
+        if ((attempt >= max_retries)); then
+            return 1
+        fi
+        ((attempt++))
+        sleep "$retry_delay"
+    done
+}
 
 for ((i = 0; i < ORDER_COUNT; i++)); do
     f="$ORDERS_DIR/order_$i.json"
@@ -37,10 +59,7 @@ done
 
 export_errors=0
 for ((i = 0; i < ORDER_COUNT; i++)); do
-    "$SCRIPT_DIR/export-order.sh" "$ORDERS_DIR/order_$i.json" \
-        --chain-id "$CHAIN_ID" \
-        --export-url "$EXPORT_URL" \
-        || ((export_errors++))
+    export_order "$ORDERS_DIR/order_$i.json" || ((export_errors++))
 done
 
 if ((export_errors == 0)); then
