@@ -7,7 +7,7 @@ const participant = z.object({
 
 const BaseEnvelopeSchema = z.object({
   status: z
-    .enum(["success", "pending", "failure", "assume dropped"])
+    .enum(["success", "pending", "reverted", "failure", "assume dropped"])
     .optional(),
   txHash: z.string().optional(),
   errMsg: z.string().optional(),

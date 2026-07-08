@@ -3,6 +3,7 @@ import {
   Hex,
   HttpRequestError,
   PublicClient,
+  TransactionReceiptNotFoundError,
   Transport,
   WalletClient,
 } from "viem";
@@ -16,36 +17,66 @@ export async function initNonces(
   nonceTracker: Map<Hex, number>,
   fromIdxs: number[],
 ) {
-  fromIdxs.forEach(async (idx) => {
-    const address = accountAtIndex(idx).address;
-    const nonce = await publicClient.getTransactionCount({
-      address,
-      blockTag: "pending",
-    });
-    nonceTracker.set(address, nonce);
-  });
+  await Promise.all(
+    fromIdxs.map(async (idx) => {
+      const address = accountAtIndex(idx).address;
+      const nonce = await publicClient.getTransactionCount({
+        address,
+        blockTag: "pending",
+      });
+      nonceTracker.set(address, nonce);
+    }),
+  );
 }
 
-// --- tx manager ---
-
-export async function processTxEnvelopes(
-  walletClient: WalletClient<Transport, Chain>,
-  nonceTracker: Map<Hex, number>,
+// poll transaction receipts
+export async function pollReceipts(
+  publicClient: PublicClient<Transport, Chain>,
   txEnvelopes: TxEnvelope[],
   onEnvelopeUpdate: (txEnvelopes: TxEnvelope[]) => void,
 ) {
   const pending = txEnvelopes.filter(
     (tx) => tx.status !== "success" && tx.status !== "failure",
   );
-  // poll transaction receipts
 
   for (const tx of pending) {
+    // skip if tx is unsent
+    if (tx.txHash === undefined) continue;
+
     try {
-      if (tx.txHash !== undefined) {
-        // already sent before, do not resend
+      const receipt = await publicClient.getTransactionReceipt({
+        hash: tx.txHash as Hex,
+      });
+
+      tx.status = receipt.status;
+
+      console.log(
+        `  <- receipt from=${tx.from.idx} status=${receipt.status} hash=${tx.txHash}`,
+      );
+
+      onEnvelopeUpdate(txEnvelopes);
+    } catch (err) {
+      if (err instanceof TransactionReceiptNotFoundError) {
+        // no tx receipt found -> continue
         continue;
       }
 
+      throw err;
+    }
+  }
+}
+
+// process pending
+export async function processUnsentEnvelopes(
+  walletClient: WalletClient<Transport, Chain>,
+  nonceTracker: Map<Hex, number>,
+  txEnvelopes: TxEnvelope[],
+  onEnvelopeUpdate: (txEnvelopes: TxEnvelope[]) => void,
+) {
+  const unsent = txEnvelopes.filter((tx) => tx.status === undefined);
+
+  for (const tx of unsent) {
+    try {
       const { nonce, hash: txHash } = await sendTx(
         tx,
         walletClient,
@@ -55,6 +86,10 @@ export async function processTxEnvelopes(
       tx.status = "pending";
       tx.nonce = nonce;
       tx.txHash = txHash;
+
+      console.log(
+        `  -> sent from=${tx.from.idx} nonce=${nonce} hash=${txHash}`,
+      );
 
       onEnvelopeUpdate(txEnvelopes);
     } catch (err) {

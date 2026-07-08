@@ -16,7 +16,6 @@ USAGE_MSG="Usage: distribute-eth.sh <funder_idx> <to_count> <tx-json-out-file> -
 FUNDER_IDX=$1
 TO_COUNT=$2
 OUT_FILE=$3
-
 shift 3
 
 START_IDX=0

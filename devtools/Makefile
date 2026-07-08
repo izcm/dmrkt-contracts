@@ -89,6 +89,7 @@ REALTIME_NONCE_SEED   = $(shell date +%s)
 
 # strip-eth: transfer all eth from participants to STRIP_DEST_ADDR  
 STRIP_DEST_ADDR=0x3E7e3418De6e2c39d6DD6D81b7A42f148E4262eD
+FUNDER_IDX=0 # we wanna strip to idx 0 treating it as funder and distributor
 
 # ───────────────────────────────────────────────
 #   LOGGING / VERBOSITY
@@ -230,8 +231,13 @@ select-nfts: ## Compute deterministic token-to-participant selection for each NF
 
 new-distribute-eth:
 	@echo "Distributing eth..."
-	@./$(RUNNERS)/latest/funding/distribute-eth.sh 1 1 tx-out.json
-	@ npx tsx ./$(RUNNERS)/latest/tx-manager.ts tx-out.json
+	@./$(RUNNERS)/latest/funding/distribute-eth.sh $(FUNDER_IDX) $(P_SIZE) tx-out.json
+	@ npx tsx ./$(RUNNERS)/latest/tx-manager/main.ts tx-out.json 60
+
+new-strip-eth:
+	@echo "Stripping eth..."
+	@./$(RUNNERS)/latest/funding/strip-eth.sh 10 0 tx-out.json --amount 1
+	@ npx tsx ./$(RUNNERS)/latest/tx-manager/main.ts tx-out.json 60
 
 # ───────────────────────────────────────────────
 #   APPROVALS
@@ -258,20 +264,6 @@ approve: ## Grant NFT + WETH allowances to OrderEngine
 
 # P_SIZE here is participant size, the scripts get private keys from 
 # a .env mnemonic. Would be nice to make them more "standalone".
-
-# primarily for testnets
-distribute-eth:
-	@./runners/funding/distribute-eth.sh $(P_SIZE) \
-		--start-idx $(P_IDX_START) \
-		--out-file $(TX_OUT_DISTRIBUTE_ETH)
-	@./$(RUNNERS)/wait-for-receipts.sh $(TX_OUT_DISTRIBUTE_ETH)
-
-strip-eth:
-	@./runners/funding/strip-eth.sh $(P_SIZE) $(STRIP_DEST_ADDR) \
-		--rpc-url $(RPC_URL) \
-		--start-idx $(P_IDX_START) \
-		--out-file $(TX_OUT_STRIP_ETH)
-	@./$(RUNNERS)/wait-for-receipts.sh $(TX_OUT_STRIP_ETH)
 
 strip-weth:
 	@./runners/funding/erc20/strip-erc20.sh $(WETH) $(STRIP_DEST_ADDR) $(P_SIZE) \
