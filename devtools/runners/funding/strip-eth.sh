@@ -1,26 +1,26 @@
 #!/bin/bash
 #
 # Strip eth from the PARTICIPANT_GROUP
-# Iterate from start_index to p_count and transfer wei_per_p to destination address. 
+# Iterate from start_index to p_count and write an eth-transfer tx envelope
+# for wei_per_p from each participant to the destination participant.
 #
+# - this .json file will be fed into the tx-manager which is the centralized point for tx executons
 
-USAGE_MSG="Usage: strip-eth.sh <from_count> <destination_address> --rpc-url <url> [--start-idx <idx>] [--amount <wei>] [--sync] [--no-gas-reserve] [--out-file <file>]"
+USAGE_MSG="Usage: strip-eth.sh <destination_idx> <from_count>  <tx-json-out-file> --rpc-url <url> [--start-idx <idx>] [--amount <wei>] [--gas-reserve <wei>]"
 
 # positional
 : ${1:?"$USAGE_MSG"}
 : ${2:?"$USAGE_MSG"}
+: ${3:?"$USAGE_MSG"}
 
-FROM_COUNT=$1
-DEST_ADDR=$2
-
-shift 2
+DEST_IDX=$1
+FROM_COUNT=$2
+OUT_FILE=$3
+shift 3
 
 START_IDX=0
-WEI_PER_SENDER="" # empty -> strip full balance (minus gas)
-GAS_LIMIT=21000
-ASYNC_FLAG="--async" # --sync (used by rotate-eth.sh) drops this so callers can wait for confirmation
-NO_GAS_RESERVE=0 # --no-gas-reserve sends the full balance with nothing held back for gas
-OUT_FILE=""
+WEI_PER_SENDER="" # empty -> strip full balance (minus gas reserve)
+GAS_RESERVE_WEI=1000000000000000 # 0.001 ETH flat buffer, covers this tx's own gas regardless of price at send time
 
 # flags
 while [[ $# -gt 0 ]]; do
@@ -28,27 +28,23 @@ while [[ $# -gt 0 ]]; do
         --rpc-url) RPC_URL="$2"; shift 2 ;;
         --start-idx) START_IDX="$2"; shift 2 ;;
         --amount) WEI_PER_SENDER="$2"; shift 2 ;;
-        --sync) ASYNC_FLAG=""; shift ;;
-        --no-gas-reserve) NO_GAS_RESERVE=1; shift ;;
-        --out-file) OUT_FILE="$2"; shift 2 ;;
+        --gas-reserve) GAS_RESERVE_WEI="$2"; shift 2 ;;
         *) echo "Unknown flag: $1"; exit 1 ;;
     esac
 done
 
-[[ -n "$OUT_FILE" ]] && > "$OUT_FILE"
-
 : "${RPC_URL:?$USAGE_MSG}"
 : "${PARTICIPANT_MNEMONIC:?PHRASE not set}"
-PHRASE="$PARTICIPANT_MNEMONIC"
+PHRASE="${PARTICIPANT_MNEMONIC//\"/}"
 
-echo "Start eth strip"
-echo "$DEST_ADDR is the destination address"
+DEST_ADDR=$(cast wallet address --mnemonic "$PHRASE" --mnemonic-index "$DEST_IDX")
+
+envelopes=()
 
 for ((i = START_IDX; i < START_IDX + FROM_COUNT; i++)); do
-    p_key=$(cast wallet private-key --mnemonic "${PHRASE//\"/}" --mnemonic-index "$i")
-    p_addr=$(cast wallet address --private-key "$p_key")
+    [[ "$i" -eq "$DEST_IDX" ]] && continue
 
-    [[ "$p_addr" == "$DEST_ADDR" ]] && continue
+    p_addr=$(cast wallet address --mnemonic "$PHRASE" --mnemonic-index "$i")
 
     send_amount="$WEI_PER_SENDER"
     if [[ -z "$send_amount" ]]; then
@@ -56,29 +52,27 @@ for ((i = START_IDX; i < START_IDX + FROM_COUNT; i++)); do
         balance=$(cast balance "$p_addr" --rpc-url "$RPC_URL")
         [[ "$balance" == "0" ]] && continue
 
-        if [[ "$NO_GAS_RESERVE" -eq 1 ]]; then
-            send_amount="$balance"
-        else
-            gas_price=$(cast gas-price --rpc-url "$RPC_URL")
-            gas_units=$(cast estimate "$DEST_ADDR" --value "$balance" --rpc-url "$RPC_URL")
-            gas_cost=$(echo "$gas_price * 2 * $gas_units" | bc)
-            send_amount=$(echo "$balance - $gas_cost" | bc)
+        send_amount=$(echo "$balance - $GAS_RESERVE_WEI" | bc)
 
-            if (( $(echo "$send_amount <= 0" | bc) )); then
-                echo "[$i] $p_addr balance too low to cover gas — skipping"
-                continue
-            fi
+        if (( $(echo "$send_amount <= 0" | bc) )); then
+            echo "[$i] $p_addr balance too low to cover gas — skipping"
+            continue
         fi
     fi
 
-    echo "[$i] sending $send_amount wei from $p_addr"
+    echo "[$i] queuing $send_amount wei from $p_addr"
 
-    tx_hash=$(cast send "$DEST_ADDR" \
-        $ASYNC_FLAG \
-        --value "$send_amount" \
-        --private-key "$p_key" \
-        --rpc-url "$RPC_URL" \
-        --gas-limit "$GAS_LIMIT")
-
-    [[ -n "$OUT_FILE" ]] && echo "$tx_hash" >> "$OUT_FILE"
+    envelopes+=("$(jq -cn \
+        --argjson fromIdx "$i" \
+        --argjson toIdx "$DEST_IDX" \
+        --arg value "$send_amount" '
+    {
+      type: "eth-transfer",
+      from: { kind: "participant", idx: $fromIdx },
+      to: { kind: "participant", idx: $toIdx },
+      value: $value
+    }
+    ')")
 done
+
+printf '%s\n' "${envelopes[@]}" | jq -cs '.' > "$OUT_FILE"

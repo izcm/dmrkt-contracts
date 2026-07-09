@@ -136,6 +136,8 @@ async function sendTx(
     });
   }
 
+  nonceTracker.set(from.address, nonce + 1);
+
   return { nonce, hash };
 }
 

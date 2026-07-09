@@ -4,65 +4,71 @@
 # Mirrors distribute-eth.sh, but for a given token instead of native ETH.
 
 # positional args
-USAGE_MSG="Usage: distribute-erc20.sh <token_address> <to_count> --rpc-url <url> [--start-idx <idx>] [--amount <tokens>] [--out-file <file>]"
+USAGE_MSG="Usage: distribute-erc20.sh <funder_idx> <to_count> <token_address> <tx-json-out-file> [--rpc-url <url>] [--start-idx <idx>] [--amount <tokens>]"
 : "${1:?"$USAGE_MSG"}"
 : "${2:?"$USAGE_MSG"}"
+: "${3:?"$USAGE_MSG"}"
+: "${4:?"$USAGE_MSG"}"
 
-TOKEN_ADDR=$1
+FUNDER_IDX=$1
 TO_COUNT=$2
-shift 2
+TOKEN_ADDR=$3
+OUT_FILE=$4
+shift 4
 
 START_IDX=0
+RPC_URL="http://localhost:8545" # default anvil
 TOKENS_PER_RECIPIENT="" # empty -> split deployer's balance evenly, deployer keeps a 1/(TO_COUNT+1) share
-OUT_FILE=""
+
+PHRASE=${PARTICIPANT_MNEMONIC//\"/}
+
+# todo: make it default to test test test .. junk
+: "${PHRASE:?"Expected participant mnemonic as environment variable, exiting."}"
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --rpc-url) RPC_URL="$2"; shift 2 ;;
         --start-idx) START_IDX="$2"; shift 2 ;;
         --amount) TOKENS_PER_RECIPIENT="$2"; shift 2 ;;
-        --out-file) OUT_FILE="$2"; shift 2 ;;
         *) echo "Unknown flag: $1"; exit 1 ;;
     esac
 done
 
-[[ -n "$OUT_FILE" ]] && > "$OUT_FILE"
-
-: "${RPC_URL:?$USAGE_MSG}"
-
-# env
-: "${DEPLOYER_PK:?DEPLOYER_PK not set}"
-: "${PARTICIPANT_MNEMONIC:?PHRASE not set}"
-
-PHRASE="$PARTICIPANT_MNEMONIC"
-DEPLOYER_ADDR=$(cast wallet address "$DEPLOYER_PK")
-
 if [[ -z "$TOKENS_PER_RECIPIENT" ]]; then
     # no fixed amount -> split the deployer's current balance into TO_COUNT+1
     # equal shares, so the deployer itself keeps one share too
-    balance=$(cast erc20-token balance "$TOKEN_ADDR" "$DEPLOYER_ADDR" --rpc-url "$RPC_URL" | awk '{ print $1 }')
+    funder_addr=$(cast wallet address --mnemonic "$PHRASE" --mnemonic-index "$FUNDER_IDX")
+    balance=$(cast erc20-token balance "$TOKEN_ADDR" "$funder_addr" --rpc-url "$RPC_URL" | awk '{ print $1 }')
     TOKENS_PER_RECIPIENT=$(echo "$balance / ($TO_COUNT + 1)" | bc) # +1 part with funder
     (( $(echo "$TOKENS_PER_RECIPIENT <= 0" | bc) )) && { echo "deployer balance too low to distribute"; exit 1; }
 fi
 
-# deployer nonce
-nonce=$(cast nonce "$DEPLOYER_ADDR" --rpc-url "$RPC_URL")
+# - write a tx json object for each idx from decided start / end
+# - this .json file will be fed into the tx-manager which is the centralized point for tx executons 
 
-for ((i = START_IDX; i < START_IDX + TO_COUNT; i++)); do
-    # receiver
-    p=$(cast wallet address --mnemonic "${PHRASE//\"/}" --mnemonic-index "$i")
+# function transfer(address _to, uint256 _value) public returns (bool success)
 
-    [[ "$p" == "$DEPLOYER_ADDR" ]] && continue
-
-    echo "[$i] sending $TOKENS_PER_RECIPIENT tokens to $p"
-    tx_hash=$(cast erc20-token transfer "$TOKEN_ADDR" "$p" "$TOKENS_PER_RECIPIENT" \
-        --async \
-        --private-key "$DEPLOYER_PK" \
-        --rpc-url "$RPC_URL" \
-        --nonce "$nonce")
-
-    [[ -n "$OUT_FILE" ]] && echo "$tx_hash" >> "$OUT_FILE"
-    ((nonce++))
-done
-
-exit 0
+jq -cn \
+    --argjson start "$START_IDX" \
+    --argjson count "$TO_COUNT" \
+    --argjson fromIdx "$FUNDER_IDX" \
+    --arg contract "$TOKEN_ADDR" \
+    --arg tokens "$TOKENS_PER_RECIPIENT" '
+[
+  range($start; $start + $count) as $i
+  | select($i != $fromIdx)
+  | {
+      type: "contract-call",
+      from: {
+        kind: "participant",
+        idx: $fromIdx
+      },
+      to: $contract,
+      sig: "transfer(address, uint256)",
+      args: [
+        { kind: "participant", idx: $i },
+        $tokens
+      ]
+    }
+]
+' > "$OUT_FILE"

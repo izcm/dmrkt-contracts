@@ -9,7 +9,7 @@ PIPELINES       := pipelines
 RUNNERS         := runners
 
 export RUNNERS_FORK        := $(RUNNERS)/fork
-export RUNNERS_EXPORTERS   := $(RUNNERS)/exporters
+export RUNNERS_EXPORTERS   := $(RUNNERS)/orders
 export PIPELINE_EPOCHS    := $(PIPELINES)/epochs
 export PIPELINE_EXECUTION := $(PIPELINES)/execution
 
@@ -42,13 +42,11 @@ export PIPELINE_STATE_DIR := data/$(CHAIN_ID)/state
 export TOKENS_BY_P_IDX_DIR := data/$(CHAIN_ID)/state/cols-mint-per-idx
 
 # output files for tx hashes
-export TX_OUT_MINT := data/$(CHAIN_ID)/state/tx_mint.txt
-export TX_OUT_APPROVE := data/$(CHAIN_ID)/state/tx_approve.txt
-export TX_OUT_WETH_DEPOSIT := data/$(CHAIN_ID)/state/tx_weth_deposit.txt
-export TX_OUT_STRIP_WETH := data/$(CHAIN_ID)/state/tx_strip_weth.txt
-export TX_OUT_DISTRIBUTE_WETH := data/$(CHAIN_ID)/state/tx_distribute_weth.txt
-export TX_OUT_DISTRIBUTE_ETH := data/$(CHAIN_ID)/state/tx_distribute_eth.txt
-export TX_OUT_STRIP_ETH := data/$(CHAIN_ID)/state/tx_strip_eth.txt
+export TX_OUT_DIR = data/$(CHAIN_ID)/state/tx-out
+
+# legacy cast-send-style targets (fund-weth, bootstrap-nfts, approve) — deleting soon
+export LEGACY_TX_OUT_DIR = data/$(CHAIN_ID)/state/legacy-tx-out
+$(shell mkdir -p $(LEGACY_TX_OUT_DIR))
 
 APPROVALS_ROUND=false
 
@@ -136,9 +134,15 @@ compose-entrypoint: wait pipeline-setup pipeline-separator run-epochs ## Docker 
 execute-pipeline: start pipeline-separator run-epochs ## Run the full pipeline
 	@echo "🚀 Dev environment ready"
 
+run-epochs: ## Generate, sign, export, and settle orders across all epochs
+	@echo ""
+	@echo "📊 Building orders..."
+	@echo ""
+	@./$(RUNNERS)/run-epochs.sh $(EPOCH_COUNT) $(EXPORT_FLAG)
+
 # only time-window and build + execute orders (testnets)
 # timeWindow is 3 months with end_ts set to 60 days from time of writing
-execute-realtime: print-participants-simple
+execute-realtime: print-participants
 	@echo "🔢 Finding block number and timestamps..."
 	@./$(RUNNERS_FORK)/pipeline-window.sh --realtime $(REALTIME_TIME_WINDOW)
 	@echo "🌀 Running realtime simulation"
@@ -177,7 +181,7 @@ pipeline-setup: deploy-core print-participants fund-weth bootstrap-nfts
 	@echo "✅ OrderEngine fully authorized"
 
 # ───────────────────────────────────────────────
-#   ENVIRO  xsxzxsxssssssss
+#   FORK PREPARE & START
 # ───────────────────────────────────────────────
 
 fork: ## Start the anvil fork
@@ -192,14 +196,6 @@ prepare: ## Compute fork start block and pipeline window timestamps
 #   SETUP / GENESIS
 # ───────────────────────────────────────────────
 
-print-participants: ## Print pipeline participants
-	@echo ""
-	@echo "───────────────────────────────────────────────"
-	@echo "PARTICIPANTS"
-	@echo "───────────────────────────────────────────────"
-	@echo ""
-	@./$(RUNNERS)/printers/print-participants.sh $(P_SIZE) --start-idx $(P_IDX_START)
-
 deploy-core: ## Deploy OrderEngine + NFT collections, write addresses to pipeline.toml
 	@echo ""
 	@echo "───────────────────────────────────────────────"
@@ -211,59 +207,42 @@ deploy-core: ## Deploy OrderEngine + NFT collections, write addresses to pipelin
 	@forge script DeployCore.s.sol \
 		$(FORGE_COMMON_FLAGS)
 
-bootstrap-nfts: select-nfts ## Mint tokens per participant from the JSON selection
-	@./$(RUNNERS)/bootstrap/bootstrap-nfts.sh $(P_SIZE) $(TOKENS_BY_P_IDX_DIR) --idx-start $(P_IDX_START) --out-file $(TX_OUT_MINT)
-	@./$(RUNNERS)/wait-for-receipts.sh $(TX_OUT_MINT)
+# ───────────────────────────────────────────────
+#   ETH FUNDING
+# ───────────────────────────────────────────────
+
+distribute-eth:
+	@echo "Distributing eth..."
+	@./$(RUNNERS)/funding/distribute-eth.sh $(FUNDER_IDX) $(P_SIZE) $(TX_OUT_DIR)/distribute-eth.json
+	@ npx tsx ./$(RUNNERS)/tx-manager/main.ts $(TX_OUT_DIR)/distribute-eth.json 60
+
+strip-eth:
+	@echo "Stripping eth..."
+	@./$(RUNNERS)/funding/strip-eth.sh $(FUNDER_IDX) $(P_SIZE) $(TX_OUT_DIR)/strip-eth.json
+	@ npx tsx ./$(RUNNERS)/tx-manager/main.ts $(TX_OUT_DIR)/strip-eth.json 60
+
+# GROUP_IDX selects which P_SIZE-sized group to rotate out of: 0 rotates
+# group 0 -> group 1, 1 rotates group 1 -> group 2, etc. Bump this alone to
+# advance rotate-weth to the next pair of groups.
+GROUP_IDX ?= 0 # this should not be larger than p_size / p_max_size
+
+rotate-eth:
+	@echo "Rotating eth..."
+	@./$(RUNNERS)/funding/strip-eth.sh $(FUNDER_IDX) $(P_SIZE) $(TX_OUT_DIR)/strip-eth.json \
+		--start-idx $$(($(P_IDX_START) + $(GROUP_IDX) * $(P_SIZE)))
+	@ npx tsx ./$(RUNNERS)/tx-manager/main.ts $(TX_OUT_DIR)/strip-eth.json 60
+	@./$(RUNNERS)/funding/distribute-eth.sh $(FUNDER_IDX) $(P_SIZE) $(TX_OUT_DIR)/distribute-eth.json \
+		--start-idx $$(($(P_IDX_START) + ($(GROUP_IDX) + 1) * $(P_SIZE)))
+	@ npx tsx ./$(RUNNERS)/tx-manager/main.ts $(TX_OUT_DIR)/distribute-eth.json 60
+
+# ───────────────────────────────────────────────
+#   ERC20 FUNDING
+# ───────────────────────────────────────────────
 
 fund-weth: ## Wrap ETH into WETH for all participants
 	@echo "💰 Funding WETH..."
-	@./$(RUNNERS)/bootstrap/wrap-weth.sh $(P_SIZE) --token $(WETH) --start-idx $(P_IDX_START) --out-file $(TX_OUT_WETH_DEPOSIT)
-	@./$(RUNNERS)/wait-for-receipts.sh $(TX_OUT_WETH_DEPOSIT)
-
-select-nfts: ## Compute deterministic token-to-participant selection for each NFT collection
-	@echo "🎲 Selecting NFTs..."
-	@forge script $(BOOTSTRAP)/DecideInitialMint.s.sol \
-		$(FORGE_COMMON_FLAGS)
-
-# ───────────────────────────────────────────────
-#   TX MANAGE
-# ───────────────────────────────────────────────
-
-new-distribute-eth:
-	@echo "Distributing eth..."
-	@./$(RUNNERS)/latest/funding/distribute-eth.sh $(FUNDER_IDX) $(P_SIZE) tx-out.json
-	@ npx tsx ./$(RUNNERS)/latest/tx-manager/main.ts tx-out.json 60
-
-new-strip-eth:
-	@echo "Stripping eth..."
-	@./$(RUNNERS)/latest/funding/strip-eth.sh 10 0 tx-out.json --amount 1
-	@ npx tsx ./$(RUNNERS)/latest/tx-manager/main.ts tx-out.json 60
-
-# ───────────────────────────────────────────────
-#   APPROVALS
-# ───────────────────────────────────────────────
-
-approve: ## Grant NFT + WETH allowances to OrderEngine
-	@echo ""
-	@echo "───────────────────────────────────────────────"
-	@echo "APPROVALS"
-	@echo "───────────────────────────────────────────────"
-	@echo ""
-	@echo "✔ Executing approvals..."
-	@echo ""
-	@source $(PIPELINE_STATE_DIR)/pipeline.env && \
-	./$(RUNNERS)/bootstrap/approvals.sh $(P_SIZE) --start-idx $(P_IDX_START) \
-		--nft-transfer-auth "$$ORDER_ENGINE" --token "$$WETH" --spender "$$ORDER_ENGINE" --collections "$$NFT_C_0" \
-		--out-file $(TX_OUT_APPROVE)
-	@./$(RUNNERS)/latest/wait-for-receipts.sh $(TX_OUT_APPROVE)
-
-
-# ───────────────────────────────────────────────
-#   FUNDING
-# ───────────────────────────────────────────────
-
-# P_SIZE here is participant size, the scripts get private keys from 
-# a .env mnemonic. Would be nice to make them more "standalone".
+	@./$(RUNNERS)/bootstrap/wrap-weth.sh $(P_SIZE) --token $(WETH) --start-idx $(P_IDX_START) --out-file $(LEGACY_TX_OUT_DIR)/wrap-eth.txt
+	@./$(RUNNERS)/wait-for-receipts.sh $(LEGACY_TX_OUT_DIR)/wrap-eth.txt
 
 strip-weth:
 	@./runners/funding/erc20/strip-erc20.sh $(WETH) $(STRIP_DEST_ADDR) $(P_SIZE) \
@@ -292,23 +271,36 @@ rotate-weth:
 	@./$(RUNNERS)/wait-for-receipts.sh $(TX_OUT_DISTRIBUTE_WETH)
 
 # ───────────────────────────────────────────────
-#   STATE / SCENARIOS
+#   NFT SELECT & BOOTSTRAP
 # ───────────────────────────────────────────────
 
-run-epochs: ## Generate, sign, export, and settle orders across all epochs
+bootstrap-nfts: select-nfts ## Mint tokens per participant from the JSON selection
+	@./$(RUNNERS)/bootstrap/bootstrap-nfts.sh $(P_SIZE) $(TOKENS_BY_P_IDX_DIR) --idx-start $(P_IDX_START) --out-file $(LEGACY_TX_OUT_DIR)/mint.txt
+	@./$(RUNNERS)/wait-for-receipts.sh $(LEGACY_TX_OUT_DIR)/mint.txt
+
+select-nfts: ## Compute deterministic token-to-participant selection for each NFT collection
+	@echo "🎲 Selecting NFTs..."
+	@forge script $(BOOTSTRAP)/DecideInitialMint.s.sol \
+		$(FORGE_COMMON_FLAGS)
+
+# ───────────────────────────────────────────────
+#   APPROVALS
+# ───────────────────────────────────────────────
+
+approve: ## Grant NFT + WETH allowances to OrderEngine
 	@echo ""
-	@echo "📊 Building orders..."
+	@echo "───────────────────────────────────────────────"
+	@echo "APPROVALS"
+	@echo "───────────────────────────────────────────────"
 	@echo ""
-	@./$(RUNNERS)/run-epochs.sh $(EPOCH_COUNT) $(EXPORT_FLAG)
+	@echo "✔ Executing approvals..."
+	@echo ""
+	@source $(PIPELINE_STATE_DIR)/pipeline.env && \
+	./$(RUNNERS)/bootstrap/approvals.sh $(P_SIZE) --start-idx $(P_IDX_START) \
+		--nft-transfer-auth "$$ORDER_ENGINE" --token "$$WETH" --spender "$$ORDER_ENGINE" --collections "$$NFT_C_0" \
+		--out-file $(LEGACY_TX_OUT_DIR)/approve.txt
+	@./$(RUNNERS)/wait-for-receipts.sh $(LEGACY_TX_OUT_DIR)/approve.txt
 
-
-# ───────────────────────────────────────────────
-#   RESET / PROCESS CONTROL
-# ───────────────────────────────────────────────
-
-kill-anvil: ## Kill the running anvil process
-	@echo "💀 Killing anvil..."
-	pkill anvil 2>/dev/null || true
 
 # ───────────────────────────────────────────────
 #   CHAIN READ HELPERS
@@ -340,12 +332,6 @@ token-owner: ## Read token owner  (COL=0x... ID=N)
 START := $(P_IDX_START)
 COUNT := $(P_SIZE)
 
-print-participants-simple:
-	@seq $(START) $$(( $(START) + $(COUNT) - 1 )) | \
-	xargs -I{} cast wallet address \
-		--mnemonic $(PARTICIPANT_MNEMONIC) \
-		--mnemonic-index {}
-
 # ───────────────────────────────────────────────
 #   MISC
 # ───────────────────────────────────────────────
@@ -362,3 +348,11 @@ tree:
 	@if [ -z "$(DEPTH)" ]; then DEPTH=3; fi; \
 	tree -L $$DEPTH -I "out|lib|broadcast|cache|notes"
 
+kill-anvil: ## Kill the running anvil process
+	@echo "💀 Killing anvil..."
+	pkill anvil 2>/dev/null || true
+
+print-participants: ## Print pipeline participants
+	@ echo ""
+	@./$(RUNNERS)/printers/print-participants.sh $(P_SIZE) --start-idx $(P_IDX_START)
+	@ echo ""

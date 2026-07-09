@@ -6,64 +6,67 @@
 # This script distributes superuser's ETH evenly on participant group.
 
 # positional args
-USAGE_MSG="Usage: distribute-eth.sh <to_count> --rpc-url <url> [--start-idx <idx>] [--amount <wei>] [--out-file <file>]"
-: "${1:?"$USAGE_MSG"}"
 
-TO_COUNT=$1
-shift 1
+#todo: make localhost:8545 default rpc so --rpc-url isnt mandatory
+USAGE_MSG="Usage: distribute-eth.sh <funder_idx> <to_count> <tx-json-out-file> [--rpc-url <url>] [--start-idx <idx>] [--amount <wei>]"
+: "${1:?"$USAGE_MSG"}"
+: "${2:?"$USAGE_MSG"}"
+: "${3:?"$USAGE_MSG"}"
+
+FUNDER_IDX=$1
+TO_COUNT=$2
+OUT_FILE=$3
+shift 3
 
 START_IDX=0
+RPC_URL="http://localhost:8545" # default anvil
 WEI_PER_RECIPIENT="" # empty -> split deployer's balance evenly, deployer keeps a 1/(TO_COUNT+1) share
-OUT_FILE=""
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --rpc-url) RPC_URL="$2"; shift 2 ;;
         --start-idx) START_IDX="$2"; shift 2 ;;
         --amount) WEI_PER_RECIPIENT="$2"; shift 2 ;;
-        --out-file) OUT_FILE="$2"; shift 2 ;;
         *) echo "Unknown flag: $1"; exit 1 ;;
     esac
 done
 
-[[ -n "$OUT_FILE" ]] && > "$OUT_FILE"
+PHRASE=${PARTICIPANT_MNEMONIC//\"/}
 
-: "${RPC_URL:?$USAGE_MSG}"
-
-# env
-: "${DEPLOYER_PK:?DEPLOYER_PK not set}"
-: "${PARTICIPANT_MNEMONIC:?PHRASE not set}"
-
-PHRASE="$PARTICIPANT_MNEMONIC"
-DEPLOYER_ADDR=$(cast wallet address "$DEPLOYER_PK")
+# todo: make it default to test test test .. junk
+: "${PHRASE:?"Expected participant mnemonic as environment variable, exiting."}"
 
 if [[ -z "$WEI_PER_RECIPIENT" ]]; then
     # no fixed amount -> split the deployer's current balance into TO_COUNT+1
     # equal shares, so the deployer itself keeps one share too
-    balance=$(cast balance "$DEPLOYER_ADDR" --rpc-url "$RPC_URL")
+    funder_addr=$(cast wallet address --mnemonic "$PHRASE" --mnemonic-index "$FUNDER_IDX")
+    balance=$(cast balance "$funder_addr" --rpc-url "$RPC_URL")
     WEI_PER_RECIPIENT=$(echo "$balance / ($TO_COUNT + 1)" | bc) # +1 part part with funder
     (( $(echo "$WEI_PER_RECIPIENT <= 0" | bc) )) && { echo "deployer balance too low to distribute"; exit 1; }
 fi
 
-# deployer nonce
-nonce=$(cast nonce "$DEPLOYER_ADDR" --rpc-url "$RPC_URL")
+# - write a tx json object for each idx from decided start / end
+# - this .json file will be fed into the tx-manager which is the centralized point for tx executons 
 
-for ((i = START_IDX; i < START_IDX + TO_COUNT; i++)); do
-    # participant
-    p=$(cast wallet address --mnemonic "${PHRASE//\"/}" --mnemonic-index "$i")
-
-    [[ "$p" == "$DEPLOYER_ADDR" ]] && continue
-
-    echo "[$i] sending $WEI_PER_RECIPIENT wei to $p"
-    tx_hash=$(cast send "$p" \
-        --async \
-        --value "$WEI_PER_RECIPIENT" \
-        --private-key "$DEPLOYER_PK" \
-        --rpc-url "$RPC_URL" \
-        --nonce "$nonce")
-    ((nonce++))
-    
-    [[ -n "$OUT_FILE" ]] && echo "$tx_hash" >> "$OUT_FILE"
-done
-
-exit 0
+jq -cn \
+    --argjson start "$START_IDX" \
+    --argjson count "$TO_COUNT" \
+    --argjson fromIdx "$FUNDER_IDX" \
+    --arg value "$WEI_PER_RECIPIENT" '
+[
+  range($start; $start + $count) as $i
+  | select($i != $fromIdx)
+  | {
+      type: "eth-transfer",
+      from: {
+        kind: "participant",
+        idx: $fromIdx
+      },
+      to: {
+        kind: "participant",
+        idx: $i
+      },
+      value: $value
+    }
+]
+' > "$OUT_FILE"

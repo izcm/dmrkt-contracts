@@ -136,7 +136,7 @@ fail=0
 
 # later: ADD ASYNC FLAG
 for((i = 0; i < EXEC_LIMIT; i++)); do
-    if "$(dirname "$0")"/sequential/exec-order.sh 0 "$i" \
+    if "$(dirname "$0")"/orders/exec-order.sh 0 "$i" \
         --rpc-url "$RPC_URL" \
         --sender "$DEPLOYER_ADDR" \
         --private-key "$DEPLOYER_PK"

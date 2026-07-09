@@ -29,7 +29,6 @@ const ContractCallSchema = BaseEnvelopeSchema.extend({
   to: z.string().regex(/^0x[a-fA-F0-9]{40}$/),
   sig: z.string(),
   args: z.array(z.union([participant, z.string()])),
-  value: z.string(),
 });
 
 export const TxEnvelopeSchema = z.discriminatedUnion("type", [
