@@ -25,7 +25,6 @@ MODE ?= anvil
 # (since we aren't replaying past like on a local anvil fork)
 ifeq ($(MODE), sepolia)
 	include .env.sepolia
-	EPOCH_COUNT=1
 	CHAIN_ID=11155111
 	WETH=0x5f207d42F869fd1c71d7f0f81a2A67Fc20FF7323
 else
@@ -44,10 +43,6 @@ export TOKENS_BY_P_IDX_DIR := data/$(CHAIN_ID)/state/cols-mint-per-idx
 # output files for tx hashes
 export TX_OUT_DIR = data/$(CHAIN_ID)/state/tx-out
 
-# legacy cast-send-style targets (fund-weth, bootstrap-nfts, approve) — deleting soon
-export LEGACY_TX_OUT_DIR = data/$(CHAIN_ID)/state/legacy-tx-out
-$(shell mkdir -p $(LEGACY_TX_OUT_DIR))
-
 APPROVALS_ROUND=false # if approvals round -> include all participants
 
 ifeq ($(MODE), sepolia)
@@ -63,7 +58,7 @@ GROUP_IDX ?= 0 # this should not be larger than p_size / p_max_size
 # than the pool of previous buyers / minters unless u know what ure doing
 
 # -> future runs only have to build + execute orders
-ifeq ($(APPROVALS_ROUND), true)
+ifeq ($(MODE)-$(APPROVALS_ROUND), sepolia-true)
 	P_IDX_START=0
 	P_SIZE=100
 	MAX_P_SIZE=100
@@ -226,15 +221,17 @@ deploy-core: ## Deploy OrderEngine + NFT collections, write addresses to pipelin
 
 distribute-eth:
 	@echo "Distributing eth..."
-	@./$(RUNNERS)/funding/distribute-eth.sh $(FUNDER_IDX) $(P_SIZE) $(TX_OUT_DIR)/distribute-eth.json \
-		--start-idx $$(($(P_IDX_START) + $(GROUP_IDX) * $(P_SIZE)))
-	@ npx tsx ./$(RUNNERS)/tx-manager/main.ts $(TX_OUT_DIR)/distribute-eth.json $(TX_MANAGER_TIMESPAN)
+	@TX_FILE=$(TX_OUT_DIR)/distribute-eth.json && \
+	./$(RUNNERS)/funding/distribute-eth.sh $(FUNDER_IDX) $(P_SIZE) $$TX_FILE \
+		--start-idx $$(($(P_IDX_START) + $(GROUP_IDX) * $(P_SIZE))) && \
+	npx tsx ./$(RUNNERS)/tx-manager/main.ts $$TX_FILE $(TX_MANAGER_TIMESPAN)
 
 strip-eth:
 	@echo "Stripping eth..."
-	@./$(RUNNERS)/funding/strip-eth.sh $(FUNDER_IDX) $(P_SIZE) $(TX_OUT_DIR)/strip-eth.json \
-		--start-idx $$(($(P_IDX_START) + $(GROUP_IDX) * $(P_SIZE)))
-	@ npx tsx ./$(RUNNERS)/tx-manager/main.ts $(TX_OUT_DIR)/strip-eth.json $(TX_MANAGER_TIMESPAN)
+	@TX_FILE=$(TX_OUT_DIR)/strip-eth.json && \
+	./$(RUNNERS)/funding/strip-eth.sh $(FUNDER_IDX) $(P_SIZE) $$TX_FILE \
+		--start-idx $$(($(P_IDX_START) + $(GROUP_IDX) * $(P_SIZE))) && \
+	npx tsx ./$(RUNNERS)/tx-manager/main.ts $$TX_FILE $(TX_MANAGER_TIMESPAN)
 
 rotate-eth:
 	@$(MAKE) strip-eth
@@ -245,21 +242,24 @@ rotate-eth:
 # ───────────────────────────────────────────────
 
 wrap-weth: ## Wrap ETH into WETH for all participants
-	@echo "💰 Funding WETH..."
-	@./$(RUNNERS)/bootstrap/wrap-weth.sh $(P_SIZE) --token $(WETH) --start-idx $(P_IDX_START) --out-file $(LEGACY_TX_OUT_DIR)/wrap-eth.txt
-	@./$(RUNNERS)/wait-for-receipts.sh $(LEGACY_TX_OUT_DIR)/wrap-eth.txt
+	@echo "💰 Wrapping WETH..."
+	@TX_FILE=$(TX_OUT_DIR)/wrap-weth.json && \
+	./$(RUNNERS)/bootstrap/wrap-weth.sh $(WETH) $(P_SIZE) $$TX_FILE --start-idx $(P_IDX_START) && \
+	npx tsx ./$(RUNNERS)/tx-manager/main.ts $$TX_FILE $(TX_MANAGER_TIMESPAN)
 
 distribute-weth:
 	@echo "Distributing weth..."
-	@./$(RUNNERS)/funding/erc20/distribute-erc20.sh $(WETH) $(FUNDER_IDX) $(P_SIZE) $(TX_OUT_DIR)/distribute-weth.json \
-		--start-idx $$(($(P_IDX_START) + $(GROUP_IDX) * $(P_SIZE)))
-	@ npx tsx ./$(RUNNERS)/tx-manager/main.ts $(TX_OUT_DIR)/distribute-weth.json $(TX_MANAGER_TIMESPAN)
+	@TX_FILE=$(TX_OUT_DIR)/distribute-weth.json && \
+	./$(RUNNERS)/funding/erc20/distribute-erc20.sh $(WETH) $(FUNDER_IDX) $(P_SIZE) $$TX_FILE \
+		--start-idx $$(($(P_IDX_START) + $(GROUP_IDX) * $(P_SIZE))) && \
+	npx tsx ./$(RUNNERS)/tx-manager/main.ts $$TX_FILE $(TX_MANAGER_TIMESPAN)
 
 strip-weth:
 	@echo "Stripping weth..."
-	@./$(RUNNERS)/funding/erc20/strip-erc20.sh $(WETH) $(FUNDER_IDX) $(P_SIZE) $(TX_OUT_DIR)/strip-weth.json \
-		--start-idx $$(($(P_IDX_START) + $(GROUP_IDX) * $(P_SIZE)))
-	@ npx tsx ./$(RUNNERS)/tx-manager/main.ts $(TX_OUT_DIR)/strip-weth.json $(TX_MANAGER_TIMESPAN)
+	@TX_FILE=$(TX_OUT_DIR)/strip-weth.json && \
+	./$(RUNNERS)/funding/erc20/strip-erc20.sh $(WETH) $(FUNDER_IDX) $(P_SIZE) $$TX_FILE \
+		--start-idx $$(($(P_IDX_START) + $(GROUP_IDX) * $(P_SIZE))) && \
+	npx tsx ./$(RUNNERS)/tx-manager/main.ts $$TX_FILE $(TX_MANAGER_TIMESPAN)
 
 rotate-weth:
 	@$(MAKE) strip-weth
@@ -270,8 +270,9 @@ rotate-weth:
 # ───────────────────────────────────────────────
 
 bootstrap-nfts: select-nfts ## Mint tokens per participant from the JSON selection
-	@./$(RUNNERS)/bootstrap/bootstrap-nfts.sh $(P_SIZE) $(TOKENS_BY_P_IDX_DIR) --idx-start $(P_IDX_START) --out-file $(LEGACY_TX_OUT_DIR)/mint.txt
-	@./$(RUNNERS)/wait-for-receipts.sh $(LEGACY_TX_OUT_DIR)/mint.txt
+	@TX_FILE=$(TX_OUT_DIR)/bootstrap-nfts.json && \
+	./$(RUNNERS)/bootstrap/bootstrap-nfts.sh $(TOKENS_BY_P_IDX_DIR) $$TX_FILE && \
+	npx tsx ./$(RUNNERS)/tx-manager/main.ts $$TX_FILE $(TX_MANAGER_TIMESPAN)
 
 select-nfts: ## Compute deterministic token-to-participant selection for each NFT collection
 	@echo "🎲 Selecting NFTs..."
@@ -282,19 +283,26 @@ select-nfts: ## Compute deterministic token-to-participant selection for each NF
 #   APPROVALS
 # ───────────────────────────────────────────────
 
-approve: ## Grant NFT + WETH allowances to OrderEngine
-	@echo ""
-	@echo "───────────────────────────────────────────────"
-	@echo "APPROVALS"
-	@echo "───────────────────────────────────────────────"
-	@echo ""
-	@echo "✔ Executing approvals..."
-	@echo ""
+approve: approve-nft-transfer approve-allowances ## Grant NFT + WETH allowances to OrderEngine
+	@echo "✅ Approvals complete"
+
+approve-nft-transfer:
+	@echo "Approving NFT transfers..."
 	@source $(PIPELINE_STATE_DIR)/pipeline.env && \
-	./$(RUNNERS)/bootstrap/approvals.sh $(P_SIZE) --start-idx $(P_IDX_START) \
-		--nft-transfer-auth "$$ORDER_ENGINE" --token "$$WETH" --spender "$$ORDER_ENGINE" --collections "$$NFT_C_0" \
-		--out-file $(LEGACY_TX_OUT_DIR)/approve.txt
-	@./$(RUNNERS)/wait-for-receipts.sh $(LEGACY_TX_OUT_DIR)/approve.txt
+	for i in $$(seq 0 $$(($$NFT_C_COUNT - 1))); do \
+		col_var="NFT_C_$$i"; \
+		collection=$${!col_var}; \
+		echo "  collection $$i: $$collection"; \
+		./$(RUNNERS)/bootstrap/approve-nft-transfer.sh "$$ORDER_ENGINE" "$$collection" $(P_SIZE) $(TX_OUT_DIR)/approve-nft-$$i.json --start-idx $(P_IDX_START); \
+		npx tsx ./$(RUNNERS)/tx-manager/main.ts $(TX_OUT_DIR)/approve-nft-$$i.json $(TX_MANAGER_TIMESPAN); \
+	done
+
+approve-allowances:
+	@echo "Approving WETH allowance..."
+	@TX_FILE=$(TX_OUT_DIR)/approve-allowances.json && \
+	source $(PIPELINE_STATE_DIR)/pipeline.env && \
+	./$(RUNNERS)/bootstrap/approve-allowances.sh "$$ORDER_ENGINE" "$$WETH" $(P_SIZE) $$TX_FILE --start-idx $(P_IDX_START) && \
+	npx tsx ./$(RUNNERS)/tx-manager/main.ts $$TX_FILE $(TX_MANAGER_TIMESPAN)
 
 
 # ───────────────────────────────────────────────

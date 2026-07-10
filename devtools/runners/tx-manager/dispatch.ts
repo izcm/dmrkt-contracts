@@ -1,14 +1,14 @@
 import {
   Chain,
   Hex,
-  HttpRequestError,
   PublicClient,
   TransactionReceiptNotFoundError,
   Transport,
   WalletClient,
 } from "viem";
-import { mnemonicToAccount } from "viem/accounts";
 
+import { accountAtIndex } from "./logic/account-at-idx.js";
+import { isRetryable } from "./logic/is-retryable.js";
 import { TxEnvelope } from "./schemas.js";
 
 // gets nonce with any eventual pending
@@ -139,41 +139,4 @@ async function sendTx(
   nonceTracker.set(from.address, nonce + 1);
 
   return { nonce, hash };
-}
-
-// --- error handling ---
-
-function isRetryable(err: unknown): boolean {
-  if (err instanceof HttpRequestError && err.status) {
-    return [403, 408, 413, 429, 500, 502, 503, 504].includes(err.status);
-  }
-  if (
-    err &&
-    typeof err === "object" &&
-    "code" in err &&
-    typeof err.code === "number"
-  ) {
-    return (
-      err.code === -1 ||
-      err.code === -32603 ||
-      err.code === -32005 ||
-      err.code === 429
-    );
-  }
-  // only retry known transient network failures; anything else (bugs,
-  // validation errors, unrecognized failures) is treated as permanent
-  if (err instanceof Error) {
-    return /ECONNRESET|ENOTFOUND|EAI_AGAIN|ETIMEDOUT|ECONNREFUSED|fetch failed/i.test(
-      err.message,
-    );
-  }
-  return false;
-}
-
-// --- helpers ---
-
-function accountAtIndex(idx: number) {
-  const mnemonic =
-    "test test test test test test test test test test test junk";
-  return mnemonicToAccount(mnemonic, { addressIndex: idx });
 }

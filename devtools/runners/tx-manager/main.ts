@@ -3,7 +3,11 @@ import { anvil } from "viem/chains";
 
 import { readFileSync, writeFileSync } from "node:fs";
 
-import { initNonces, pollReceipts, processUnsentEnvelopes } from "./logic.js";
+import {
+  initNonces,
+  pollReceipts,
+  processUnsentEnvelopes,
+} from "./dispatch.js";
 import { TxEnvelope, TxEnvelopeSchema } from "./schemas.js";
 
 async function main() {

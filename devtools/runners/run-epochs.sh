@@ -65,32 +65,6 @@ p0=0.9      # probability of execution epoch 0
 pMin=0.5    # min probability
 k=0.2       # rate constant
 
-# --- helpers ---
-
-ensure_json() {
-    local file=$1
-    local c_addr=$2
-
-    if [ ! -f "$file" ]; then
-        jq -n --arg "c_addr" "$c_addr" '{collection:$c_addr, tokenIds:[]}' > "$file"
-    fi
-}
-
-add_token() {
-    local file="$1"
-    local col="$2"
-    local tid="$3"
-
-    ensure_json "$file" "$col"
-
-    tmpfile=$(mktemp)
-
-    jq --argjson tid "$tid" ' 
-        if (.tokenIds | index($tid)) == null then
-            .tokenIds += [$tid] else . end ' \
-            "$file" > "$tmpfile" && mv "$tmpfile" "$file"
-}
-
 for ((epoch=0; epoch < epoch_count; epoch++));
 do
     # We'll use full delta instead of epoch_slice as BuildEpoch.TIME_WINDOW

@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-const participant = z.object({
+export const ParticipantSchema = z.object({
   kind: z.literal("participant"),
   idx: z.number(),
 });
@@ -18,17 +18,17 @@ const BaseEnvelopeSchema = z.object({
 
 const EthTransferSchema = BaseEnvelopeSchema.extend({
   type: z.literal("eth-transfer"),
-  from: participant,
-  to: participant,
+  from: ParticipantSchema,
+  to: ParticipantSchema,
   value: z.string(),
 });
 
 const ContractCallSchema = BaseEnvelopeSchema.extend({
   type: z.literal("contract-call"),
-  from: participant,
+  from: ParticipantSchema,
   to: z.string().regex(/^0x[a-fA-F0-9]{40}$/),
   sig: z.string(),
-  args: z.array(z.union([participant, z.string()])),
+  args: z.array(z.union([ParticipantSchema, z.string()])),
 });
 
 export const TxEnvelopeSchema = z.discriminatedUnion("type", [
