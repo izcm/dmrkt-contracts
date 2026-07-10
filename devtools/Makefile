@@ -48,9 +48,15 @@ export TX_OUT_DIR = data/$(CHAIN_ID)/state/tx-out
 export LEGACY_TX_OUT_DIR = data/$(CHAIN_ID)/state/legacy-tx-out
 $(shell mkdir -p $(LEGACY_TX_OUT_DIR))
 
-APPROVALS_ROUND=false
+APPROVALS_ROUND=false # if approvals round -> include all participants
 
 ifeq ($(MODE), sepolia)
+
+# GROUP_IDX selects which P_SIZE-sized group to rotate out of: 0 rotates
+# group 0 -> group 1, 1 rotates group 1 -> group 2, etc. Bump this alone to
+# advance rotate-weth to the next pair of groups.
+GROUP_IDX ?= 0 # this should not be larger than p_size / p_max_size
+
 # if its the initial run -> set idx to 0 and size to max _size
 # this executes all bootstrap steps for all participants until MAX_P_SZE
 # note that MAX_P_SIZE represents the POSSIBLE NFT HOLDERS do not make it smaller
@@ -59,8 +65,8 @@ ifeq ($(MODE), sepolia)
 # -> future runs only have to build + execute orders
 ifeq ($(APPROVALS_ROUND), true)
 	P_IDX_START=0
-	P_SIZE=75
-	MAX_P_SIZE=75
+	P_SIZE=100
+	MAX_P_SIZE=100
 else
 	P_IDX_START=25
 	P_SIZE=25
@@ -89,6 +95,7 @@ REALTIME_NONCE_SEED   = $(shell date +%s)
 STRIP_DEST_ADDR=0x3E7e3418De6e2c39d6DD6D81b7A42f148E4262eD
 FUNDER_IDX=0 # we wanna strip to idx 0 treating it as funder and distributor
 
+TX_MANAGER_TIMESPAN=600
 # ───────────────────────────────────────────────
 #   LOGGING / VERBOSITY
 # ───────────────────────────────────────────────
@@ -147,6 +154,12 @@ execute-realtime: print-participants
 	@./$(RUNNERS_FORK)/pipeline-window.sh --realtime $(REALTIME_TIME_WINDOW)
 	@echo "🌀 Running realtime simulation"
 	@./runners/run-realtime.sh $(REALTIME_EXEC_RATE) $(REALTIME_NONCE_SEED) --export
+
+rotate-all-weth:
+	@for i in $$(seq 0 $$(($(MAX_P_SIZE) / $(P_SIZE) - 1))); do \
+		echo "── rotating group $$i ──"; \
+		$(MAKE) rotate-weth GROUP_IDX=$$i; \
+	done
 
 # ───────────────────────────────────────────────
 #   SEMANTIC HELPERS
@@ -213,62 +226,44 @@ deploy-core: ## Deploy OrderEngine + NFT collections, write addresses to pipelin
 
 distribute-eth:
 	@echo "Distributing eth..."
-	@./$(RUNNERS)/funding/distribute-eth.sh $(FUNDER_IDX) $(P_SIZE) $(TX_OUT_DIR)/distribute-eth.json
-	@ npx tsx ./$(RUNNERS)/tx-manager/main.ts $(TX_OUT_DIR)/distribute-eth.json 60
+	@./$(RUNNERS)/funding/distribute-eth.sh $(FUNDER_IDX) $(P_SIZE) $(TX_OUT_DIR)/distribute-eth.json \
+		--start-idx $$(($(P_IDX_START) + $(GROUP_IDX) * $(P_SIZE)))
+	@ npx tsx ./$(RUNNERS)/tx-manager/main.ts $(TX_OUT_DIR)/distribute-eth.json $(TX_MANAGER_TIMESPAN)
 
 strip-eth:
 	@echo "Stripping eth..."
-	@./$(RUNNERS)/funding/strip-eth.sh $(FUNDER_IDX) $(P_SIZE) $(TX_OUT_DIR)/strip-eth.json
-	@ npx tsx ./$(RUNNERS)/tx-manager/main.ts $(TX_OUT_DIR)/strip-eth.json 60
-
-# GROUP_IDX selects which P_SIZE-sized group to rotate out of: 0 rotates
-# group 0 -> group 1, 1 rotates group 1 -> group 2, etc. Bump this alone to
-# advance rotate-weth to the next pair of groups.
-GROUP_IDX ?= 0 # this should not be larger than p_size / p_max_size
-
-rotate-eth:
-	@echo "Rotating eth..."
 	@./$(RUNNERS)/funding/strip-eth.sh $(FUNDER_IDX) $(P_SIZE) $(TX_OUT_DIR)/strip-eth.json \
 		--start-idx $$(($(P_IDX_START) + $(GROUP_IDX) * $(P_SIZE)))
-	@ npx tsx ./$(RUNNERS)/tx-manager/main.ts $(TX_OUT_DIR)/strip-eth.json 60
-	@./$(RUNNERS)/funding/distribute-eth.sh $(FUNDER_IDX) $(P_SIZE) $(TX_OUT_DIR)/distribute-eth.json \
-		--start-idx $$(($(P_IDX_START) + ($(GROUP_IDX) + 1) * $(P_SIZE)))
-	@ npx tsx ./$(RUNNERS)/tx-manager/main.ts $(TX_OUT_DIR)/distribute-eth.json 60
+	@ npx tsx ./$(RUNNERS)/tx-manager/main.ts $(TX_OUT_DIR)/strip-eth.json $(TX_MANAGER_TIMESPAN)
+
+rotate-eth:
+	@$(MAKE) strip-eth
+	@$(MAKE) distribute-eth GROUP_IDX=$$(($(GROUP_IDX)+1))
 
 # ───────────────────────────────────────────────
 #   ERC20 FUNDING
 # ───────────────────────────────────────────────
 
-fund-weth: ## Wrap ETH into WETH for all participants
+wrap-weth: ## Wrap ETH into WETH for all participants
 	@echo "💰 Funding WETH..."
 	@./$(RUNNERS)/bootstrap/wrap-weth.sh $(P_SIZE) --token $(WETH) --start-idx $(P_IDX_START) --out-file $(LEGACY_TX_OUT_DIR)/wrap-eth.txt
 	@./$(RUNNERS)/wait-for-receipts.sh $(LEGACY_TX_OUT_DIR)/wrap-eth.txt
 
-strip-weth:
-	@./runners/funding/erc20/strip-erc20.sh $(WETH) $(STRIP_DEST_ADDR) $(P_SIZE) \
-		--rpc-url $(RPC_URL) \
-		--start-idx $(P_IDX_START) \
-		--out-file $(TX_OUT_STRIP_WETH)
-	@./$(RUNNERS)/wait-for-receipts.sh $(TX_OUT_STRIP_WETH)
-
 distribute-weth:
-	@./runners/funding/erc20/distribute-erc20.sh $(WETH) $(P_SIZE) \
-		--rpc-url $(RPC_URL) \
-		--start-idx $(P_IDX_START) \
-		--out-file $(TX_OUT_DISTRIBUTE_WETH)
-	@./$(RUNNERS)/wait-for-receipts.sh $(TX_OUT_DISTRIBUTE_WETH)
+	@echo "Distributing weth..."
+	@./$(RUNNERS)/funding/erc20/distribute-erc20.sh $(WETH) $(FUNDER_IDX) $(P_SIZE) $(TX_OUT_DIR)/distribute-weth.json \
+		--start-idx $$(($(P_IDX_START) + $(GROUP_IDX) * $(P_SIZE)))
+	@ npx tsx ./$(RUNNERS)/tx-manager/main.ts $(TX_OUT_DIR)/distribute-weth.json $(TX_MANAGER_TIMESPAN)
 
-# GROUP_IDX selects which P_SIZE-sized group to rotate out of: 0 rotates
-# group 0 -> group 1, 1 rotates group 1 -> group 2, etc. Bump this alone to
-# advance rotate-weth to the next pair of groups.
-GROUP_IDX ?= 0 # this should not be larger than p_size / p_max_size
+strip-weth:
+	@echo "Stripping weth..."
+	@./$(RUNNERS)/funding/erc20/strip-erc20.sh $(WETH) $(FUNDER_IDX) $(P_SIZE) $(TX_OUT_DIR)/strip-weth.json \
+		--start-idx $$(($(P_IDX_START) + $(GROUP_IDX) * $(P_SIZE)))
+	@ npx tsx ./$(RUNNERS)/tx-manager/main.ts $(TX_OUT_DIR)/strip-weth.json $(TX_MANAGER_TIMESPAN)
 
 rotate-weth:
-	@./runners/funding/erc20/rotate-erc20.sh $(WETH) $(P_SIZE) $$(($(P_IDX_START) + $(GROUP_IDX) * $(P_SIZE))) $(P_SIZE) $$(($(P_IDX_START) + ($(GROUP_IDX) + 1) * $(P_SIZE))) \
-		--rpc-url $(RPC_URL) \
-		--strip-out-file $(TX_OUT_STRIP_WETH) \
-		--distribute-out-file $(TX_OUT_DISTRIBUTE_WETH)
-	@./$(RUNNERS)/wait-for-receipts.sh $(TX_OUT_DISTRIBUTE_WETH)
+	@$(MAKE) strip-weth
+	@$(MAKE) distribute-weth GROUP_IDX=$$(($(GROUP_IDX)+1))
 
 # ───────────────────────────────────────────────
 #   NFT SELECT & BOOTSTRAP

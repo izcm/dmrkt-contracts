@@ -19,7 +19,7 @@ OUT_FILE=$3
 shift 3
 
 START_IDX=0
-RPC_URL="http://localhost:8545" # default anvil
+RPC_URL="${RPC_URL:-http://localhost:8545}" # default anvil
 WEI_PER_SENDER="" # empty -> strip full balance (minus gas reserve)
 GAS_RESERVE_WEI=1000000000000000 # 0.001 ETH flat buffer, covers this tx's own gas regardless of price at send time
 
@@ -35,7 +35,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 PHRASE="${PARTICIPANT_MNEMONIC//\"/}"
-: "${PHRASE:?"Expected participant mnemonic as environment variable, exiting."}"
+: "${PHRASE:?"Expected PARTICIPANT_MNEMONIC as environment variable, exiting."}"
 
 DEST_ADDR=$(cast wallet address --mnemonic "$PHRASE" --mnemonic-index "$DEST_IDX")
 

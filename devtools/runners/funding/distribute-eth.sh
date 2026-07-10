@@ -19,7 +19,7 @@ OUT_FILE=$3
 shift 3
 
 START_IDX=0
-RPC_URL="http://localhost:8545" # default anvil
+RPC_URL="${RPC_URL:-http://localhost:8545}" # default anvil
 WEI_PER_RECIPIENT="" # empty -> split deployer's balance evenly, deployer keeps a 1/(TO_COUNT+1) share
 
 while [[ $# -gt 0 ]]; do
@@ -31,8 +31,9 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-PHRASE=${PARTICIPANT_MNEMONIC//\"/}
-: "${PHRASE:?"Expected participant mnemonic as environment variable, exiting."}"
+
+PHRASE="${PARTICIPANT_MNEMONIC//\"/}"
+: "${PHRASE:?"Expected PARTICIPANT_MNEMONIC as environment variable, exiting."}"
 
 if [[ -z "$WEI_PER_RECIPIENT" ]]; then
     # no fixed amount -> split the deployer's current balance into TO_COUNT+1

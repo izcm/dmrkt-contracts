@@ -17,7 +17,7 @@ OUT_FILE=$4
 shift 4
 
 START_IDX=0
-RPC_URL="http://localhost:8545" # default anvil
+RPC_URL="${RPC_URL:-http://localhost:8545}" # default anvil
 TOKENS_PER_RECIPIENT="" # empty -> split deployer's balance evenly, deployer keeps a 1/(TO_COUNT+1) share
 
 PHRASE=${PARTICIPANT_MNEMONIC//\"/}

@@ -17,7 +17,7 @@ OUT_FILE=$4
 shift 4
 
 START_IDX=0
-RPC_URL="http://localhost:8545" # default anvil
+RPC_URL="${RPC_URL:-http://localhost:8545}" # default anvil
 WEI_PER_SENDER="" # empty -> strip full balance (minus gas)
 NO_GAS_RESERVE=0 # --no-gas-reserve sends the full balance with nothing held back for gas
 
@@ -32,8 +32,9 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-: "${PARTICIPANT_MNEMONIC:?PHRASE not set}"
-PHRASE="$PARTICIPANT_MNEMONIC"
+PHRASE="${PARTICIPANT_MNEMONIC//\"/}"
+: "${PHRASE:?"Expected PARTICIPANT_MNEMONIC as environment variable, exiting."}"
+
 
 TOKEN_SYMBOL=$(cast call "$TOKEN_ADDR" "symbol()(string)" 2>/dev/null) 
 TOKEN_SYMBOL="${TOKEN_SYMBOL//\"/}"
