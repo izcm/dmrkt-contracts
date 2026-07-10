@@ -4,16 +4,16 @@
 # Mirrors distribute-eth.sh, but for a given token instead of native ETH.
 
 # positional args
-USAGE_MSG="Usage: distribute-erc20.sh <funder_idx> <to_count> <token_address> <tx-json-out-file> [--rpc-url <url>] [--start-idx <idx>] [--amount <tokens>]"
-: "${1:?"$USAGE_MSG"}"
-: "${2:?"$USAGE_MSG"}"
-: "${3:?"$USAGE_MSG"}"
-: "${4:?"$USAGE_MSG"}"
+USAGE_MSG="Usage: distribute-erc20.sh <token_address> <funder_idx> <to_count> <tx-json-out-file> [--rpc-url <url>] [--start-idx <idx>] [--amount <tokens>]"
 
-FUNDER_IDX=$1
-TO_COUNT=$2
-TOKEN_ADDR=$3
+# positional
+: "${1:?"$USAGE_MSG"}" "${2:?"$USAGE_MSG"}" "${3:?"$USAGE_MSG"}" "${4:?"$USAGE_MSG"}"
+
+TOKEN_ADDR=$1
+FUNDER_IDX=$2
+TO_COUNT=$3
 OUT_FILE=$4
+
 shift 4
 
 START_IDX=0
@@ -21,8 +21,6 @@ RPC_URL="http://localhost:8545" # default anvil
 TOKENS_PER_RECIPIENT="" # empty -> split deployer's balance evenly, deployer keeps a 1/(TO_COUNT+1) share
 
 PHRASE=${PARTICIPANT_MNEMONIC//\"/}
-
-# todo: make it default to test test test .. junk
 : "${PHRASE:?"Expected participant mnemonic as environment variable, exiting."}"
 
 while [[ $# -gt 0 ]]; do

@@ -6,7 +6,7 @@
 #
 # - this .json file will be fed into the tx-manager which is the centralized point for tx executons
 
-USAGE_MSG="Usage: strip-eth.sh <destination_idx> <from_count>  <tx-json-out-file> --rpc-url <url> [--start-idx <idx>] [--amount <wei>] [--gas-reserve <wei>]"
+USAGE_MSG="Usage: strip-eth.sh <destination_idx> <from_count> <tx-json-out-file> --rpc-url <url> [--start-idx <idx>] [--amount <wei>] [--gas-reserve <wei>]"
 
 # positional
 : ${1:?"$USAGE_MSG"}
@@ -19,6 +19,7 @@ OUT_FILE=$3
 shift 3
 
 START_IDX=0
+RPC_URL="http://localhost:8545" # default anvil
 WEI_PER_SENDER="" # empty -> strip full balance (minus gas reserve)
 GAS_RESERVE_WEI=1000000000000000 # 0.001 ETH flat buffer, covers this tx's own gas regardless of price at send time
 
@@ -33,9 +34,8 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-: "${RPC_URL:?$USAGE_MSG}"
-: "${PARTICIPANT_MNEMONIC:?PHRASE not set}"
 PHRASE="${PARTICIPANT_MNEMONIC//\"/}"
+: "${PHRASE:?"Expected participant mnemonic as environment variable, exiting."}"
 
 DEST_ADDR=$(cast wallet address --mnemonic "$PHRASE" --mnemonic-index "$DEST_IDX")
 
@@ -47,8 +47,9 @@ for ((i = START_IDX; i < START_IDX + FROM_COUNT; i++)); do
     p_addr=$(cast wallet address --mnemonic "$PHRASE" --mnemonic-index "$i")
 
     send_amount="$WEI_PER_SENDER"
+
+    # no fixed amount -> drain the full balance, minus enough to cover this tx's own gas
     if [[ -z "$send_amount" ]]; then
-        # no fixed amount -> drain the full balance, minus enough to cover this tx's own gas
         balance=$(cast balance "$p_addr" --rpc-url "$RPC_URL")
         [[ "$balance" == "0" ]] && continue
 

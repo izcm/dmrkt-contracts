@@ -12,7 +12,6 @@ USAGE_MSG="Usage: strip-eth.sh <from_count> <destination_address> --rpc-url <url
 
 FROM_COUNT=$1
 DEST_ADDR=$2
-
 shift 2
 
 START_IDX=0

@@ -32,8 +32,6 @@ while [[ $# -gt 0 ]]; do
 done
 
 PHRASE=${PARTICIPANT_MNEMONIC//\"/}
-
-# todo: make it default to test test test .. junk
 : "${PHRASE:?"Expected participant mnemonic as environment variable, exiting."}"
 
 if [[ -z "$WEI_PER_RECIPIENT" ]]; then
