@@ -46,21 +46,20 @@ describe("encodeCall", () => {
     const expected =
       "0x136713870000000000000000000000000000000000000000000000000000000000000001";
 
-    it("converts a number arg to BigInt for uint types", () => {
-      expect(encodeCall(sig, [Number(arg)])).toBe(expected);
-    });
-
-    it("converts a string arg to BigInt for uint types", () => {
-      expect(encodeCall(sig, [arg.toString()])).toBe(expected);
-    });
-    it("accepts a bigint arg as-is for uint types", () => {
-      expect(encodeCall(sig, [arg])).toBe(expected);
+    it.each([
+      ["number", Number(arg)],
+      ["string", arg.toString()],
+      ["bigint", arg],
+    ])("converts a %s arg to BigInt for uint types", (_kind, value) => {
+      expect(encodeCall(sig, [value])).toBe(expected);
     });
   });
 
   describe("object args", () => {
     it("parses participant arg", () => {
-      vi.mocked(accountAtIndex).mockReturnValueOnce({ address: someAddr } as any);
+      vi.mocked(accountAtIndex).mockReturnValueOnce({
+        address: someAddr,
+      } as any);
       encodeCall("sig(address)", [{ kind: "participant", idx: 1 }]);
       expect(accountAtIndex).toHaveBeenCalledWith(1);
     });
