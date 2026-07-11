@@ -47,7 +47,7 @@ for ((i = START_IDX; i < START_IDX + P_SIZE; i++)); do
         },
         to: $collection,
         sig: "setApprovalForAll(address,bool)",
-        args: [$operator, "true"]
+        args: [$operator, true]
     }
     ')")
 done

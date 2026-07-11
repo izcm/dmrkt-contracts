@@ -28,7 +28,7 @@ const ContractCallSchema = BaseEnvelopeSchema.extend({
   from: ParticipantSchema,
   to: z.string().regex(/^0x[a-fA-F0-9]{40}$/),
   sig: z.string(),
-  args: z.array(z.union([ParticipantSchema, z.string()])),
+  args: z.array(z.union([ParticipantSchema, z.string(), z.boolean()])),
   value: z.string().optional(),
 });
 
