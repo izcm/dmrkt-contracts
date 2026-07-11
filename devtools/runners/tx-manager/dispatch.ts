@@ -1,15 +1,16 @@
 import {
-  Chain,
-  Hex,
+  type Chain,
+  type Hex,
+  type Transport,
   PublicClient,
   TransactionReceiptNotFoundError,
-  Transport,
   WalletClient,
 } from "viem";
 
 import { accountAtIndex } from "./logic/account-at-idx.js";
 import { isRetryable } from "./logic/is-retryable.js";
 import { TxEnvelope } from "./schemas.js";
+import { encodeCall } from "./logic/encode-call.js";
 
 // gets nonce with any eventual pending
 export async function initNonces(
@@ -132,7 +133,9 @@ async function sendTx(
     hash = await walletClient.sendTransaction({
       account: from,
       to: tx.to as Hex,
+      data: encodeCall(tx.sig, tx.args),
       nonce,
+      ...(tx.value !== undefined && { value: BigInt(tx.value) }),
     });
   }
 

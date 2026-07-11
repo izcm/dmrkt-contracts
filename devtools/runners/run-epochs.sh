@@ -18,12 +18,8 @@ RESET="\033[0m"
 : "${TOML:?TOML not set}"
 : "${1:?Usage: run-epochs.sh <epoch_count> [--export]}"
 
-if [[ -z "${PARTICIPANT_MNEMONIC:-}" ]]; then
-    echo "⚠️  PARTICIPANT_MNEMONIC not set -> using anvil default accounts"
-    PHRASE="test test test test test test test test test test test junk"
-else
-    PHRASE="${PARTICIPANT_MNEMONIC//\"/}"
-fi
+PHRASE="${PARTICIPANT_MNEMONIC//\"/}"
+: "${PHRASE:?"Expected PARTICIPANT_MNEMONIC as environment variable, exiting."}"
 
 epoch_count=$1
 export_orders=false

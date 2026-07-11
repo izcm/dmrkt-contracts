@@ -7,55 +7,53 @@
 # This script parses each <collection>.json in tokenids_dir and writes
 # mint envelopes to the provided <tx-json-out-file> for the tx-manager.
 #
-# Usage: bootstrap-nfts.sh <tokenids_dir> <tx-json-out-file>
+# Usage: bootstrap-nfts.sh <tokenids_dir> <tx-json-out-file> <collection_addr>
 
-USAGE_MSG="Usage: bootstrap-nfts.sh <tokenids_dir> <tx-json-out-file>"
+USAGE_MSG="Usage: bootstrap-nfts.sh <tokenids_dir> <tx-json-out-file> <collection_addr>"
 
-: "${1:?$USAGE_MSG}" "${2:?$USAGE_MSG}"
+: "${1:?$USAGE_MSG}" "${2:?$USAGE_MSG}" "${3:?$USAGE_MSG}"
 
 JSON_DIR=$1
 OUT_FILE=$2
+COLLECTION=$3
 
-# if no <col>.json
-c_count=$(find "$JSON_DIR" -maxdepth 1 -type f -name "0x*.json" | wc -l)
-
-if [[ "$c_count" -eq 0 ]]; then
-    echo "No <collection>.json files found in $JSON_DIR"
-    exit 1
-fi
-
-PHRASE="$PARTICIPANT_MNEMONIC"
+PHRASE="${PARTICIPANT_MNEMONIC//\"/}"
+: "${PHRASE:?"Expected PARTICIPANT_MNEMONIC as environment variable, exiting."}"
 
 envelopes=()
 
-for file in "$JSON_DIR"/0x*.json; do
-    collection=$(basename "$file" .json)
+file="$JSON_DIR/$COLLECTION.json"
 
-    for idx in $(jq -r 'keys[]' "$file"); do
-        p_addr=$(cast wallet address --mnemonic "${PHRASE//\"/}" --mnemonic-index "$idx")
+if [[ ! -f "$file" ]]; then
+    echo "No selection file found for collection $COLLECTION at $file"
+    exit 1
+fi
 
-        for tokenId in $(jq --arg idx "$idx" '.[$idx][]' "$file"); do
-            echo "[$idx] queuing mint of tokenId $tokenId on $collection for $p_addr"
+for idx in $(jq -r 'keys[]' "$file"); do
+    p_addr=$(cast wallet address --mnemonic "${PHRASE//\"/}" --mnemonic-index "$idx")
+    token_count=$(jq --arg idx "$idx" '.[$idx] | length' "$file")
 
-            envelopes+=("$(jq -cn \
-                --argjson idx "$idx" \
-                --arg collection "$collection" \
-                --arg tokenId "$tokenId" '
-            {
-                type: "contract-call",
-                from: {
-                    kind: "participant",
-                    idx: $idx
-                },
-                to: $collection,
-                sig: "mint(address,uint256)",
-                args: [
-                    { kind: "participant", idx: $idx },
-                    $tokenId
-                ]
-            }
-            ')")
-        done
+    echo "[$idx] queuing mint of $token_count token(s) on $COLLECTION for $p_addr"
+
+    for tokenId in $(jq --arg idx "$idx" '.[$idx][]' "$file"); do
+        envelopes+=("$(jq -cn \
+            --argjson idx "$idx" \
+            --arg collection "$COLLECTION" \
+            --arg tokenId "$tokenId" '
+        {
+            type: "contract-call",
+            from: {
+                kind: "participant",
+                idx: $idx
+            },
+            to: $collection,
+            sig: "mint(address,uint256)",
+            args: [
+                { kind: "participant", idx: $idx },
+                $tokenId
+            ]
+        }
+        ')")
     done
 done
 

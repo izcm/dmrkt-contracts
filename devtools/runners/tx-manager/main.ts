@@ -50,6 +50,10 @@ async function main() {
 
     logProgress(txEnvelopes);
 
+    if (txEnvelopes.every((tx) => tx.status === "success" || tx.status === "failure")) {
+      break;
+    }
+
     await new Promise((res) => setTimeout(res, 5000));
   }
 }

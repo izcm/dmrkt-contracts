@@ -27,13 +27,17 @@ ifeq ($(MODE), sepolia)
 	include .env.sepolia
 	CHAIN_ID=11155111
 	WETH=0x5f207d42F869fd1c71d7f0f81a2A67Fc20FF7323
+	EPOCH_COUNT = 1
 else
 	include .env
 	CHAIN_ID=31337
 	WETH=0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2
+	EPOCH_COUNT = 1
 endif
 
 -include .env.rpcs
+
+PARTICIPANT_MNEMONIC := $(subst ",,$(PARTICIPANT_MNEMONIC))
 
 export SOURCE_RPC SEPOLIA_RPC RPC_URL CHAIN_ID RPC_HOST RPC_PORT ORDERS_EXPORT_URL DEPLOYER_PK PARTICIPANT_MNEMONIC
 
@@ -78,21 +82,17 @@ endif
 # it is your responsibility to fund the users P_SIZE..MAX_P_SIZE
 export P_IDX_START P_SIZE MAX_P_SIZE
 
-# epoch defs
-EPOCH_COUNT = 1
-
 # realtime ctx (execute-realtime target)
 REALTIME_TIME_WINDOW  = 15552000 # 180 days, in seconds
 REALTIME_EXEC_RATE    = 100      # % of built orders to execute
-REALTIME_NONCE_SEED   = $(shell date +%s)
+REALTIME_NONCE_SEED   = $(shell date +%s) # non-static since realtime wants new dataset
 
-# strip-eth: transfer all eth from participants to STRIP_DEST_ADDR  
-STRIP_DEST_ADDR=0x3E7e3418De6e2c39d6DD6D81b7A42f148E4262eD
-FUNDER_IDX=0 # we wanna strip to idx 0 treating it as funder and distributor
+FUNDER_IDX=0 # strip receiver / distributor of eth and erc20 tokens
 
 TX_MANAGER_TIMESPAN=600
+
 # ───────────────────────────────────────────────
-#   LOGGING / VERBOSITY
+#   FLAGS
 # ───────────────────────────────────────────────
 
 SILENT ?= 0
@@ -101,18 +101,10 @@ ifeq ($(SILENT),1)
 FORGE_SILENT = --silent
 endif
 
-# ───────────────────────────────────────────────
-#   FORGE FLAGS
-# ───────────────────────────────────────────────
-
 FORGE_COMMON_FLAGS = \
 	--rpc-url $(RPC_URL) \
 	--broadcast \
 	$(FORGE_SILENT)
-
-# ───────────────────────────────────────────────
-#   ETC. FLAGS
-# ───────────────────────────────────────────────
 
 EXPORT ?= 0
 
@@ -126,20 +118,22 @@ endif
 
 # This entrypoint is used by another repo that has its own fork prepare pipeline
 # compose-entrypoint: EXPORT_FLAG = --export
-compose-entrypoint: wait pipeline-setup pipeline-separator run-epochs ## Docker Compose entrypoint — assumes fork + pipeline.toml are provided externally
-	
+compose-entrypoint: wait pipeline-setup run-epochs ## Docker Compose entrypoint — assumes fork + pipeline.toml are provided externally
+
+wait:
+	@forge clean
+	@sleep 4
+
 # ───────────────────────────────────────────────
 #   ENTRYPOINTSs
 # ───────────────────────────────────────────────
 
 # time warping (RPC_URL must point to a local fork)
-execute-pipeline: start pipeline-separator run-epochs ## Run the full pipeline
+execute-pipeline: start pipeline-setup approve run-epochs ## Run the full pipeline
 	@echo "🚀 Dev environment ready"
 
 run-epochs: ## Generate, sign, export, and settle orders across all epochs
-	@echo ""
 	@echo "📊 Building orders..."
-	@echo ""
 	@./$(RUNNERS)/run-epochs.sh $(EPOCH_COUNT) $(EXPORT_FLAG)
 
 # only time-window and build + execute orders (testnets)
@@ -157,33 +151,16 @@ rotate-all-weth:
 	done
 
 # ───────────────────────────────────────────────
-#   SEMANTIC HELPERS
-# ───────────────────────────────────────────────
-
-wait:
-	@forge clean
-	@sleep 4
-
-pipeline-separator:
-	@echo ""
-	@echo "───────────────────────────────────────────────"
-	@echo "SIMULATE MARKET ACTIVITY"
-	@echo "───────────────────────────────────────────────"
-	@echo ""
-
-# ───────────────────────────────────────────────
 #   HIGH-LEVEL PIPELINES
 # ───────────────────────────────────────────────
 
-fund-approve-prepare: fund-weth approve prepare
-
-start: prepare fork pipeline-setup ## Compute window, start fork, deploy, and bootstrap
+start: prepare fork ## Compute window, start fork
 	@echo "🚀 Dev environment ready"
 
 reset: kill-anvil start ## Kill anvil and restart from scratch
 	@echo "🔄 Dev reset complete"
 
-pipeline-setup: deploy-core print-participants fund-weth bootstrap-nfts
+pipeline-setup: deploy-core print-participants wrap-weth bootstrap-nfts
 	@echo "✅ Core deployed and participants bootstrapped"
 	$(MAKE) approve
 	@echo "✅ OrderEngine fully authorized"
@@ -205,13 +182,7 @@ prepare: ## Compute fork start block and pipeline window timestamps
 # ───────────────────────────────────────────────
 
 deploy-core: ## Deploy OrderEngine + NFT collections, write addresses to pipeline.toml
-	@echo ""
-	@echo "───────────────────────────────────────────────"
-	@echo "DEPLOY"
-	@echo "───────────────────────────────────────────────"
-	@echo ""
 	@echo "🧾 Deploying core contracts..."
-	@echo ""
 	@forge script DeployCore.s.sol \
 		$(FORGE_COMMON_FLAGS)
 
@@ -270,9 +241,15 @@ rotate-weth:
 # ───────────────────────────────────────────────
 
 bootstrap-nfts: select-nfts ## Mint tokens per participant from the JSON selection
-	@TX_FILE=$(TX_OUT_DIR)/bootstrap-nfts.json && \
-	./$(RUNNERS)/bootstrap/bootstrap-nfts.sh $(TOKENS_BY_P_IDX_DIR) $$TX_FILE && \
-	npx tsx ./$(RUNNERS)/tx-manager/main.ts $$TX_FILE $(TX_MANAGER_TIMESPAN)
+	@source $(PIPELINE_STATE_DIR)/pipeline.env && \
+	for i in $$(seq 0 $$(($$NFT_C_COUNT - 1))); do \
+		col_var="NFT_C_$$i"; \
+		collection=$${!col_var}; \
+		echo "  collection $$i: $$collection"; \
+		sleep 20 && \
+		./$(RUNNERS)/bootstrap/bootstrap-nfts.sh $(TOKENS_BY_P_IDX_DIR) $(TX_OUT_DIR)/bootstrap-nfts-$$i.json "$$collection" && \
+		npx tsx ./$(RUNNERS)/tx-manager/main.ts $(TX_OUT_DIR)/bootstrap-nfts-$$i.json $(TX_MANAGER_TIMESPAN); \
+	done
 
 select-nfts: ## Compute deterministic token-to-participant selection for each NFT collection
 	@echo "🎲 Selecting NFTs..."
@@ -356,6 +333,4 @@ kill-anvil: ## Kill the running anvil process
 	pkill anvil 2>/dev/null || true
 
 print-participants: ## Print pipeline participants
-	@ echo ""
 	@./$(RUNNERS)/printers/print-participants.sh $(P_SIZE) --start-idx $(P_IDX_START)
-	@ echo ""

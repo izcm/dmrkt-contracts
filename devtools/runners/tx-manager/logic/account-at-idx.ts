@@ -1,7 +1,7 @@
 import { mnemonicToAccount } from "viem/accounts";
 
 export function accountAtIndex(idx: number) {
-  const mnemonic = process.env.PARTICIPANT_MNEMONIC;
+  const mnemonic = process.env.PARTICIPANT_MNEMONIC?.replace(/"/g, "");
   if (!mnemonic) throw new Error("PARTICIPANT_MNEMONIC is not set");
   return mnemonicToAccount(mnemonic, { addressIndex: idx });
 }
