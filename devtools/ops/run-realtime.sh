@@ -119,7 +119,7 @@ EXEC_LIMIT=$(( order_count * EXEC_RATE / 100 ))
     echo "=== PHASE 2: EXPORT ORDERS ==="
     echo "orders: $order_count"
 
-    "$RUNNERS_EXPORTERS/export-orders.sh" "$ORDER_OUT" "$order_count" \
+    "$OPS_EXPORTERS/export-orders.sh" "$ORDER_OUT" "$order_count" \
         --chain-id "$CHAIN_ID" \
         --export-url "$ORDERS_EXPORT_URL"
 fi

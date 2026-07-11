@@ -96,7 +96,7 @@ do
         echo "=== PHASE 2: EXPORT ORDERS (epoch $epoch) ==="
         echo "orders: $order_count"
 
-        "$RUNNERS_EXPORTERS/export-orders.sh" "$order_out" "$order_count" \
+        "$OPS_EXPORTERS/export-orders.sh" "$order_out" "$order_count" \
             --chain-id "$CHAIN_ID" \
             --export-url "$ORDERS_EXPORT_URL"
     fi

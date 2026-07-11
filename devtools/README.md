@@ -3,19 +3,23 @@
 Foundry scripts glued together to simulate marketplace activity. Computes a start block (default: 28 days ago) and forks mainnet at that block.
 
 ```
-prepare-fork.js          writes fork block + timestamps
+pipeline-window.sh       writes fork block + timestamps
      │
 start-fork.sh            spins up Anvil
      │
 DeployCore               deploys OrderEngine + DMrktLoot → pipeline.toml
      │
-Bootstrap (x3)           wraps ETH, mints NFTs, sets approvals
+SelectNFTs               computes token-to-participant selection → JSON
+     │
+wrap-weth.sh / bootstrap-nfts.sh / approve-*.sh  ──►  build tx envelopes ──► tx-manager sends them
      │
 run-epochs.sh  ──loop──► BuildEpoch    generates + signs orders (JSON)
-                    │     export-order.sh  POSTs to indexer
+                    │     export-orders.sh  POSTs to indexer
                     │     ExecuteOrder     settles subset on-chain
                     └──── advance block time
 ```
+
+<!-- TODO: this is a first pass at reflecting the tx-manager/envelope step — feel free to redraw entirely. -->
 
 **Contents** — [Overview](#overview) · [Epochs](#epochs) · [Where to Start](#where-to-start) · [Setup](#setup) · [Pipeline Reference](#pipeline-reference)
 
@@ -33,9 +37,10 @@ We fork mainnet instead of a blank chain. Currencies like WETH live at their rea
 
 Participants are derived from a mnemonic. Default participant count is 10, but can be increased / decreased without breaking the pipeline.
 
-Participants are funded during fork startup through Anvil's `--mnemonic` flag. Set `PARTICIPANT_MNEMONIC` in your `.env` to use a custom mnemonic. If not set, both the fork and the pipeline scripts fall back to the standard Hardhat/Anvil default mnemonic (`test test test ... junk`).
+Participants are funded during fork startup through Anvil's `--mnemonic` flag. Set `PARTICIPANT_MNEMONIC` in your `.env` — this is now **mandatory**, not optional.
 
-Scripts that need to read participants extend [BaseDevScript](./BaseDevScript.s.sol) — e.g. for allowance and transfer approvals. The `actor` field of every generated order or fill is one of the participant addresses.
+> [!WARNING]
+> Don't use the standard Hardhat/Anvil junk mnemonic (`test test test ... junk`). Its `account[0]` now has contract code deployed on it on mainnet, which breaks NFT minting: `_safeMint` calls `onERC721Received` on any recipient with code, and that contract's own logic causes the mint to revert. Pick any other mnemonic for `PARTICIPANT_MNEMONIC`.
 
 **The data**
 
@@ -81,23 +86,22 @@ data/
 ## Where to Start
 
 Skim these in order to build a mental model without reading everything:
+<change_this_its_not_good_start>
 
 | #   | File                             | What you learn                                                                                                                                 |
 | --- | -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
 | 1   | **`Makefile`** (targets section) | The full pipeline as named steps — what runs, in what order, and what each phase is called.                                                    |
 | 2   | **`DevConfig.s.sol`**            | All the config knobs in one place — read this to better understand the pipeline context.                                                       |
-| 3   | **`runners/run-epochs.sh`**      | The epoch loop in four labelled phases: BUILD → EXPORT → CHOOSE → EXECUTE. The probability decay logic is visible here too.                    |
+| 3   | **`ops/run-epochs.sh`**          | The epoch loop in four labelled phases: BUILD → EXPORT → CHOOSE → EXECUTE. The probability decay logic is visible here too.                    |
 | 4   | `BuildEpoch.s.sol`               | Implements the BUILD phase — generates and signs orders for a single epoch. Its dense; skim `run` then follow `_buildOrders` into `MarketSim`. |
 
 **Going deeper:**
 
-| Topic              | Read                                                                         |
-| ------------------ | ---------------------------------------------------------------------------- |
-| Sampling           | `MarketSim.sol`                                                              |
-| Order signing      | `SignOrder.s.sol`                                                            |
-| Bootstrap sequence | `DeployCore` → `BootstrapFunds` → `SelectNFTs` → `Approve` in that order. |
-
-The boostrap sequence is especially good for anyone new to foundry. They're very straight forward.
+| Topic              | Read                                                                                                                                    |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------- |
+| Sampling           | `MarketSim.sol`                                                                                                                         |
+| Order signing      | `SignOrder.s.sol`                                                                                                                       |
+| Bootstrap sequence | `DeployCore` → `SelectNFTs` → `wrap-weth.sh` → `bootstrap-nfts.sh` → `approve-nft-transfer.sh` / `approve-allowances.sh` in that order. |
 
 Foundry scripts that invoke `broadcast` receive a `participantIdx`, which corresponds to the participant's mnemonic index. Bash orchestrates parallel execution across participants by invoking one Foundry script per participant. Within each participant, any transactions executed in parallel use explicitly incremented nonces to ensure they remain valid.
 
@@ -144,19 +148,32 @@ The deploy scripts will populate the rest of the fields (contract addresses, for
 | curl                       |         |       |
 | jq                         |         |       |
 
-**Environment variables**
+**Environment variables** (set these in `.env`)
 
-| Var                    | Description                                                                                         | Example                                      |
-| ---------------------- | --------------------------------------------------------------------------------------------------- | -------------------------------------------- |
-| `SOURCE_RPC`           | Mainnet RPC URL used to seed the fork                                                               | `https://eth-mainnet.g.alchemy.com<API_KEY>` |
-| `RPC_URL`              | Local fork RPC URL                                                                                  | `http://localhost:8545`                      |
-| `RPC_HOST`             | Anvil bind address, expects an IP address                                                           | `127.0.0.1`                                  |
-| `RPC_PORT`             | Anvil port                                                                                          | `8545`                                       |
-| `CHAIN_ID`             | Chain ID for the local fork network                                                                 | `31337`                                      |
-| `PARTICIPANT_MNEMONIC` | Optional. Mnemonic for participant accounts. Defaults to the standard Hardhat/Anvil junk mnemonic.  | `word1 word2 ... word12`                     |
-| `P_IDX_START`          | Optional. Index of the first participant private key to derive from the mnemonic. Defaults to `0`.  | `0`                                          |
-| `P_SIZE`               | Optional. Number of participant private keys to derive, starting at `P_IDX_START`. Defaults to `5`. | `5`                                          |
-| `ORDERS_EXPORT_URL`    | Optional. Endpoint to POST orders to when `--export` is passed to `run-epochs.sh`                   | `http://localhost:5000/api/orders`           |
+| Var                    | Description                                                                                        | Example                                      |
+| ---------------------- | -------------------------------------------------------------------------------------------------- | -------------------------------------------- |
+| `SOURCE_RPC`           | Mainnet RPC URL used to seed the fork                                                              | `https://eth-mainnet.g.alchemy.com<API_KEY>` |
+| `RPC_URL`              | Local fork RPC URL                                                                                 | `http://localhost:8545`                      |
+| `PARTICIPANT_MNEMONIC` | Optional. Mnemonic for participant accounts. Defaults to the standard Hardhat/Anvil junk mnemonic. | `word1 word2 ... word12`                     |
+| `DEPLOYER_PK`          | <!-- TODO: describe -->                                                                            | <!-- TODO -->                                |
+| `ORDERS_EXPORT_URL`    | Optional. Endpoint to POST orders to when `--export` is passed to `run-epochs.sh`                  | `http://localhost:5000/api/orders`           |
+
+<!-- TODO: confirm which of RPC_HOST/RPC_PORT are actually read from .env vs only used by start-fork.sh internally -->
+
+**Makefile variables** (internal / overridable via `make VAR=value`, not `.env`)
+
+| Var                   | Description                                                              | Default                              |
+| --------------------- | ------------------------------------------------------------------------ | ------------------------------------ |
+| `RPC_HOST`            | Anvil bind address, expects an IP address                                | `127.0.0.1`                          |
+| `RPC_PORT`            | Anvil port                                                               | `8545`                               |
+| `CHAIN_ID`            | Chain ID for the local fork network — set by Makefile based on `MODE`    | `31337`                              |
+| `P_IDX_START`         | Index of the first participant private key to derive from the mnemonic.  | `0`                                  |
+| `P_SIZE`              | Number of participant private keys to derive, starting at `P_IDX_START`. | `10`                                 |
+| `TOKENS_BY_P_IDX_DIR` | <!-- TODO: describe -->                                                  | `data/31337/state/cols-mint-per-idx` |
+| `TX_OUT_DIR`          | <!-- TODO: describe -->                                                  | `data/31337/state/tx-out`            |
+| `TX_MANAGER_TIMESPAN` | <!-- TODO: describe -->                                                  | `600`                                |
+
+<!-- TODO: this table is still incomplete — GROUP_IDX, MAX_P_SIZE, FUNDER_IDX, EPOCH_COUNT, MODE, SILENT, EXPORT are all Makefile vars too; add rows or decide which are worth documenting. -->
 
 ---
 
@@ -202,14 +219,38 @@ Shared state file written by deploy scripts and read by pipeline runners.
 
 ### Scripts — Bash
 
-Located under `runners/`
+Located under `ops/`
 
-| Script               | Usage                                                                                                                                                       |
-| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `pipeline-window.sh` | Computes fork start block + window timestamps and writes these to `pipeline.toml`                                                                           |
-| `start-fork.sh`      | Starts the anvil fork. Reads start block from `pipeline.toml` and mnemonic from `PARTICIPANT_MNEMONIC`, defaulting to the standard junk mnemonic if not set |
-| `run-epochs.sh`      | Orchestrates the full epoch pipeline for each epoch                                                                                                         |
-| `export-order.sh`    | POST single order to endpoint specified as env variable `ORDER_POST_URL`. Called by `run-epochs` when `--export` is passed.                                 |
+| Script                    | Usage                                                                                                                                                       |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `fork/pipeline-window.sh` | Computes fork start block + window timestamps and writes these to `pipeline.toml`                                                                           |
+| `fork/start-fork.sh`      | Starts the anvil fork. Reads start block from `pipeline.toml` and mnemonic from `PARTICIPANT_MNEMONIC`, defaulting to the standard junk mnemonic if not set |
+| `run-epochs.sh`           | Orchestrates the full epoch pipeline for each epoch                                                                                                         |
+| `orders/export-orders.sh` | POSTs built orders to `ORDERS_EXPORT_URL`. Called by `run-epochs.sh` when `--export` is passed.                                                             |
+
+<!-- TODO: this table is incomplete — ops/ also has funding/, bootstrap/, printers/, exec-order.sh under orders/, and tx-manager/ (documented separately below). Fill in a row per script, or per-subdirectory if that's cleaner. -->
+
+---
+
+### Scripts — tx-manager (TypeScript)
+
+<!--
+TODO: write this section. Rough shape to cover:
+
+- What it is: a small viem-based dispatcher under `ops/tx-manager/` that actually sends transactions —
+  none of the bash scripts below call `cast send` directly anymore.
+- The envelope pattern: bash scripts (wrap-weth.sh, bootstrap-nfts.sh, distribute-eth.sh, etc.) don't send
+  transactions themselves — they build a JSON array of "envelopes" (either `eth-transfer` or `contract-call`,
+  see schemas.ts) describing what should be sent, and write it to a file under `TX_OUT_DIR`.
+- tx-manager (`main.ts`) reads that file, and for every unsent envelope: derives the signer via
+  `account-at-idx.ts`, encodes calldata via `encode-call.ts` (for contract-calls), tracks nonces per
+  account, sends the tx, and polls for a receipt.
+- Status lifecycle written back into the same JSON file: unsent (no status) -> pending -> success | failure.
+- Retries: `is-retryable.ts` classifies errors (nonce issues, rate limits, etc.) to decide whether to
+  retry a failed send or mark it permanently failed.
+- Why this exists instead of just using forge scripts to broadcast: <!-- fill in your reasoning here -->
+
+-->
 
 ---
 
@@ -217,16 +258,16 @@ Located under `runners/`
 
 #### Bootstrap
 
-Many of the scripts are coupled to `OrderEngine.sol` and its EIP-712 definitions, but the scripts in `bootstrap/` are a clean exception — they just wrap ETH, mint NFTs, and set approvals. No order types, no settlement logic. Easy to drop into any Foundry project that needs funded, approved participants.
+`bootstrap/` now only holds two Foundry scripts — deployment and token selection. Funding (WETH wrapping), minting, and approvals no longer happen in Foundry; they're bash scripts under `ops/` that build tx envelopes for tx-manager to send (see the tx-manager section above).
 
-| Script                 | Description                                                                                                                                     |
-| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| `DeployCore.s.sol`     | Deploys contracts and writes addresses to pipeline.toml. Adding more nft-collections is super simple, see script's doc comment for explanation. |
-| `BootstrapFunds.s.sol` | Wraps half of each participant's ETH into WETH                                                                                                  |
-| `SelectNFTs.s.sol`     | Computes a deterministic token-to-participant assignment for each nft-collection in `pipeline.toml` and writes it to JSON. Assumes collections implement the `DNFT` interface. Minting itself happens in bash (`runners/executors/exec-mints.sh`).      |
-| `Approve.s.sol`        | Grants NFT transfer auth + WETH allowance to OrderEngine                                                                                        |
-| `BaseDevScript.s.sol`  | Generates private keys from given mnemonic + participant access helpers and logging utilities                                                   |
-| `DevConfig.s.sol`      | Single source for reading `pipeline.toml`                                                                                                       |
+<!-- TODO: one line here on why funding/minting/approvals moved out of Foundry and into bash+tx-manager, for anyone wondering why bootstrap/ shrank. -->
+
+| Script                       | Description                                                                                                                                                                                                                                                           |
+| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bootstrap/DeployCore.s.sol` | Deploys contracts and writes addresses to pipeline.toml. Adding more nft-collections is super simple, see script's doc comment for explanation.                                                                                                                       |
+| `bootstrap/SelectNFTs.s.sol` | Computes a deterministic token-to-participant assignment for each nft-collection in `pipeline.toml` and writes it to JSON. Assumes collections implement the `DNFT` interface. Minting itself happens in bash (`ops/bootstrap/bootstrap-nfts.sh`), reading this JSON. |
+| `BaseDevScript.s.sol`        | Generates private keys from given mnemonic + participant access helpers and logging utilities                                                                                                                                                                         |
+| `DevConfig.s.sol`            | Single source for reading `pipeline.toml`                                                                                                                                                                                                                             |
 
 #### Pipelines
 

@@ -6,10 +6,10 @@ SHELL := /bin/bash
 
 BOOTSTRAP       := bootstrap
 PIPELINES       := pipelines
-RUNNERS         := runners
+OPS             := ops
 
-export RUNNERS_FORK        := $(RUNNERS)/fork
-export RUNNERS_EXPORTERS   := $(RUNNERS)/orders
+export OPS_FORK        := $(OPS)/fork
+export OPS_EXPORTERS   := $(OPS)/orders
 export PIPELINE_EPOCHS    := $(PIPELINES)/epochs
 export PIPELINE_EXECUTION := $(PIPELINES)/execution
 
@@ -51,11 +51,6 @@ APPROVALS_ROUND=false # if approvals round -> include all participants
 
 ifeq ($(MODE), sepolia)
 
-# GROUP_IDX selects which P_SIZE-sized group to rotate out of: 0 rotates
-# group 0 -> group 1, 1 rotates group 1 -> group 2, etc. Bump this alone to
-# advance rotate-weth to the next pair of groups.
-GROUP_IDX ?= 0 # this should not be larger than p_size / p_max_size
-
 # if its the initial run -> set idx to 0 and size to max _size
 # this executes all bootstrap steps for all participants until MAX_P_SZE
 # note that MAX_P_SIZE represents the POSSIBLE NFT HOLDERS do not make it smaller
@@ -75,7 +70,7 @@ else
 # use these for anvil mode 	
 	P_IDX_START=0
 	P_SIZE=10
-	MAX_P_SIZE=10
+	MAX_P_SIZE=50
 endif
 
 # if MAX is set to any value !== P_SIZE
@@ -84,7 +79,7 @@ export P_IDX_START P_SIZE MAX_P_SIZE
 
 # realtime ctx (execute-realtime target)
 REALTIME_TIME_WINDOW  = 15552000 # 180 days, in seconds
-REALTIME_EXEC_RATE    = 100      # % of built orders to execute
+REALTIME_EXEC_RATE    = 0      # % of built orders to execute
 REALTIME_NONCE_SEED   = $(shell date +%s) # non-static since realtime wants new dataset
 
 FUNDER_IDX=0 # strip receiver / distributor of eth and erc20 tokens
@@ -134,20 +129,32 @@ execute-pipeline: start pipeline-setup approve run-epochs ## Run the full pipeli
 
 run-epochs: ## Generate, sign, export, and settle orders across all epochs
 	@echo "📊 Building orders..."
-	@./$(RUNNERS)/run-epochs.sh $(EPOCH_COUNT) $(EXPORT_FLAG)
+	@./$(OPS)/run-epochs.sh $(EPOCH_COUNT) $(EXPORT_FLAG)
 
 # only time-window and build + execute orders (testnets)
 # timeWindow is 3 months with end_ts set to 60 days from time of writing
 execute-realtime: print-participants
 	@echo "🔢 Finding block number and timestamps..."
-	@./$(RUNNERS_FORK)/pipeline-window.sh --realtime $(REALTIME_TIME_WINDOW)
+	@./$(OPS_FORK)/pipeline-window.sh --realtime $(REALTIME_TIME_WINDOW)
 	@echo "🌀 Running realtime simulation"
-	@./runners/run-realtime.sh $(REALTIME_EXEC_RATE) $(REALTIME_NONCE_SEED) --export
+	@./$(OPS)/run-realtime.sh $(REALTIME_EXEC_RATE) $(REALTIME_NONCE_SEED) --export
 
 rotate-all-weth:
 	@for i in $$(seq 0 $$(($(MAX_P_SIZE) / $(P_SIZE) - 1))); do \
 		echo "── rotating group $$i ──"; \
-		$(MAKE) rotate-weth GROUP_IDX=$$i; \
+		$(MAKE) rotate-weth P_IDX_START=$$(($(P_IDX_START) + $$i * $(P_SIZE))); \
+	done
+
+distribute-eth-to-all: 
+	@$(MAKE) distribute-eth P_SIZE=$(MAX_P_SIZE)
+	
+my-own-test: start distribute-eth-to-all deploy-core
+	@set -e \	
+	@for i in $$(seq 0 $$(($(MAX_P_SIZE) / $(P_SIZE) -1))); do \
+		$(MAKE) wrap-weth P_IDX_START=$$(($(P_IDX_START) + $$i * $(P_SIZE))); \
+		$(MAKE) approve P_IDX_START=$$(($(P_IDX_START) + $$i * $(P_SIZE))); \
+		GROUP_ID=100; \
+		echo $$GROUP_ID; \
 	done
 
 # ───────────────────────────────────────────────
@@ -156,7 +163,7 @@ rotate-all-weth:
 
 start: prepare fork ## Compute window, start fork
 	@echo "🚀 Dev environment ready"
-
+ 
 reset: kill-anvil start ## Kill anvil and restart from scratch
 	@echo "🔄 Dev reset complete"
 
@@ -171,11 +178,11 @@ pipeline-setup: deploy-core print-participants wrap-weth bootstrap-nfts
 
 fork: ## Start the anvil fork
 	@echo "🧬 Starting anvil fork..."
-	@./$(RUNNERS_FORK)/start-fork.sh
+	@./$(OPS_FORK)/start-fork.sh
 
 prepare: ## Compute fork start block and pipeline window timestamps
 	@echo "🔢 Finding block number and timestamps..."
-	@./$(RUNNERS_FORK)/pipeline-window.sh --replay 2419200
+	@./$(OPS_FORK)/pipeline-window.sh --replay 2419200
 
 # ───────────────────────────────────────────────
 #   SETUP / GENESIS
@@ -183,7 +190,7 @@ prepare: ## Compute fork start block and pipeline window timestamps
 
 deploy-core: ## Deploy OrderEngine + NFT collections, write addresses to pipeline.toml
 	@echo "🧾 Deploying core contracts..."
-	@forge script DeployCore.s.sol \
+	@forge script $(BOOTSTRAP)/DeployCore.s.sol \
 		$(FORGE_COMMON_FLAGS)
 
 # ───────────────────────────────────────────────
@@ -193,20 +200,20 @@ deploy-core: ## Deploy OrderEngine + NFT collections, write addresses to pipelin
 distribute-eth:
 	@echo "Distributing eth..."
 	@TX_FILE=$(TX_OUT_DIR)/distribute-eth.json && \
-	./$(RUNNERS)/funding/distribute-eth.sh $(FUNDER_IDX) $(P_SIZE) $$TX_FILE \
-		--start-idx $$(($(P_IDX_START) + $(GROUP_IDX) * $(P_SIZE))) && \
-	npx tsx ./$(RUNNERS)/tx-manager/main.ts $$TX_FILE $(TX_MANAGER_TIMESPAN)
+	./$(OPS)/funding/distribute-eth.sh $(FUNDER_IDX) $(P_SIZE) $$TX_FILE \
+		--start-idx $(P_IDX_START) && \
+	npx tsx ./$(OPS)/tx-manager/main.ts $$TX_FILE $(TX_MANAGER_TIMESPAN)
 
 strip-eth:
 	@echo "Stripping eth..."
 	@TX_FILE=$(TX_OUT_DIR)/strip-eth.json && \
-	./$(RUNNERS)/funding/strip-eth.sh $(FUNDER_IDX) $(P_SIZE) $$TX_FILE \
-		--start-idx $$(($(P_IDX_START) + $(GROUP_IDX) * $(P_SIZE))) && \
-	npx tsx ./$(RUNNERS)/tx-manager/main.ts $$TX_FILE $(TX_MANAGER_TIMESPAN)
+	./$(OPS)/funding/strip-eth.sh $(FUNDER_IDX) $(P_SIZE) $$TX_FILE \
+		--start-idx $(P_IDX_START) && \
+	npx tsx ./$(OPS)/tx-manager/main.ts $$TX_FILE $(TX_MANAGER_TIMESPAN)
 
 rotate-eth:
 	@$(MAKE) strip-eth
-	@$(MAKE) distribute-eth GROUP_IDX=$$(($(GROUP_IDX)+1))
+	@$(MAKE) distribute-eth P_IDX_START=$$(($(P_IDX_START)+$(P_SIZE)))
 
 # ───────────────────────────────────────────────
 #   ERC20 FUNDING
@@ -215,26 +222,26 @@ rotate-eth:
 wrap-weth: ## Wrap ETH into WETH for all participants
 	@echo "💰 Wrapping WETH..."
 	@TX_FILE=$(TX_OUT_DIR)/wrap-weth.json && \
-	./$(RUNNERS)/bootstrap/wrap-weth.sh $(WETH) $(P_SIZE) $$TX_FILE --start-idx $(P_IDX_START) && \
-	npx tsx ./$(RUNNERS)/tx-manager/main.ts $$TX_FILE $(TX_MANAGER_TIMESPAN)
+	./$(OPS)/bootstrap/wrap-weth.sh $(WETH) $(P_SIZE) $$TX_FILE --start-idx $(P_IDX_START) && \
+	npx tsx ./$(OPS)/tx-manager/main.ts $$TX_FILE $(TX_MANAGER_TIMESPAN)
 
 distribute-weth:
 	@echo "Distributing weth..."
 	@TX_FILE=$(TX_OUT_DIR)/distribute-weth.json && \
-	./$(RUNNERS)/funding/erc20/distribute-erc20.sh $(WETH) $(FUNDER_IDX) $(P_SIZE) $$TX_FILE \
-		--start-idx $$(($(P_IDX_START) + $(GROUP_IDX) * $(P_SIZE))) && \
-	npx tsx ./$(RUNNERS)/tx-manager/main.ts $$TX_FILE $(TX_MANAGER_TIMESPAN)
+	./$(OPS)/funding/erc20/distribute-erc20.sh $(WETH) $(FUNDER_IDX) $(P_SIZE) $$TX_FILE \
+		--start-idx $(P_IDX_START) && \
+	npx tsx ./$(OPS)/tx-manager/main.ts $$TX_FILE $(TX_MANAGER_TIMESPAN)
 
 strip-weth:
 	@echo "Stripping weth..."
 	@TX_FILE=$(TX_OUT_DIR)/strip-weth.json && \
-	./$(RUNNERS)/funding/erc20/strip-erc20.sh $(WETH) $(FUNDER_IDX) $(P_SIZE) $$TX_FILE \
-		--start-idx $$(($(P_IDX_START) + $(GROUP_IDX) * $(P_SIZE))) && \
-	npx tsx ./$(RUNNERS)/tx-manager/main.ts $$TX_FILE $(TX_MANAGER_TIMESPAN)
+	./$(OPS)/funding/erc20/strip-erc20.sh $(WETH) $(FUNDER_IDX) $(P_SIZE) $$TX_FILE \
+		--start-idx $(P_IDX_START) && \
+	npx tsx ./$(OPS)/tx-manager/main.ts $$TX_FILE $(TX_MANAGER_TIMESPAN)
 
 rotate-weth:
 	@$(MAKE) strip-weth
-	@$(MAKE) distribute-weth GROUP_IDX=$$(($(GROUP_IDX)+1))
+	@$(MAKE) distribute-weth P_IDX_START=$$(($(P_IDX_START)+$(P_SIZE)))
 
 # ───────────────────────────────────────────────
 #   NFT SELECT & BOOTSTRAP
@@ -247,13 +254,13 @@ bootstrap-nfts: select-nfts ## Mint tokens per participant from the JSON selecti
 		collection=$${!col_var}; \
 		echo "  collection $$i: $$collection"; \
 		sleep 20 && \
-		./$(RUNNERS)/bootstrap/bootstrap-nfts.sh $(TOKENS_BY_P_IDX_DIR) $(TX_OUT_DIR)/bootstrap-nfts-$$i.json "$$collection" && \
-		npx tsx ./$(RUNNERS)/tx-manager/main.ts $(TX_OUT_DIR)/bootstrap-nfts-$$i.json $(TX_MANAGER_TIMESPAN); \
+		./$(OPS)/bootstrap/bootstrap-nfts.sh $(TOKENS_BY_P_IDX_DIR) $(TX_OUT_DIR)/bootstrap-nfts-$$i.json "$$collection" && \
+		npx tsx ./$(OPS)/tx-manager/main.ts $(TX_OUT_DIR)/bootstrap-nfts-$$i.json $(TX_MANAGER_TIMESPAN); \
 	done
 
 select-nfts: ## Compute deterministic token-to-participant selection for each NFT collection
 	@echo "🎲 Selecting NFTs..."
-	@forge script $(BOOTSTRAP)/DecideInitialMint.s.sol \
+	@forge script $(BOOTSTRAP)/SelectNFTs.s.sol \
 		$(FORGE_COMMON_FLAGS)
 
 # ───────────────────────────────────────────────
@@ -270,16 +277,16 @@ approve-nft-transfer:
 		col_var="NFT_C_$$i"; \
 		collection=$${!col_var}; \
 		echo "  collection $$i: $$collection"; \
-		./$(RUNNERS)/bootstrap/approve-nft-transfer.sh "$$ORDER_ENGINE" "$$collection" $(P_SIZE) $(TX_OUT_DIR)/approve-nft-$$i.json --start-idx $(P_IDX_START); \
-		npx tsx ./$(RUNNERS)/tx-manager/main.ts $(TX_OUT_DIR)/approve-nft-$$i.json $(TX_MANAGER_TIMESPAN); \
+		./$(OPS)/bootstrap/approve-nft-transfer.sh "$$ORDER_ENGINE" "$$collection" $(P_SIZE) $(TX_OUT_DIR)/approve-nft-$$i.json --start-idx $(P_IDX_START); \
+		npx tsx ./$(OPS)/tx-manager/main.ts $(TX_OUT_DIR)/approve-nft-$$i.json $(TX_MANAGER_TIMESPAN); \
 	done
 
 approve-allowances:
 	@echo "Approving WETH allowance..."
 	@TX_FILE=$(TX_OUT_DIR)/approve-allowances.json && \
 	source $(PIPELINE_STATE_DIR)/pipeline.env && \
-	./$(RUNNERS)/bootstrap/approve-allowances.sh "$$ORDER_ENGINE" "$$WETH" $(P_SIZE) $$TX_FILE --start-idx $(P_IDX_START) && \
-	npx tsx ./$(RUNNERS)/tx-manager/main.ts $$TX_FILE $(TX_MANAGER_TIMESPAN)
+	./$(OPS)/bootstrap/approve-allowances.sh "$$ORDER_ENGINE" "$$WETH" $(P_SIZE) $$TX_FILE --start-idx $(P_IDX_START) && \
+	npx tsx ./$(OPS)/tx-manager/main.ts $$TX_FILE $(TX_MANAGER_TIMESPAN)
 
 
 # ───────────────────────────────────────────────
@@ -309,9 +316,6 @@ token-owner: ## Read token owner  (COL=0x... ID=N)
 		$(ID) \
 		--rpc-url $(RPC_URL)
 
-START := $(P_IDX_START)
-COUNT := $(P_SIZE)
-
 # ───────────────────────────────────────────────
 #   MISC
 # ───────────────────────────────────────────────
@@ -333,4 +337,7 @@ kill-anvil: ## Kill the running anvil process
 	pkill anvil 2>/dev/null || true
 
 print-participants: ## Print pipeline participants
-	@./$(RUNNERS)/printers/print-participants.sh $(P_SIZE) --start-idx $(P_IDX_START)
+	@./$(OPS)/printers/print-participants.sh $(P_SIZE) --start-idx $(P_IDX_START)
+
+print-balances: ## Print ETH and WETH balances for participants idx P_IDX_START..+P_SIZE
+	@./$(OPS)/printers/check-balances.sh $(WETH) $(P_SIZE) --start-idx $(P_IDX_START)

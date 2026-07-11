@@ -11,9 +11,9 @@ import { DNFT } from "dev/interfaces/DNFT.sol";
 /**
  * @notice Computes a deterministic token-to-participant assignment for each deployed NFT
  *         collection and writes the selection to JSON. Minting itself happens separately,
- *         in bash (see runners/executors/exec-mints.sh), reading this JSON.
+ *         in bash (see ops/bootstrap/bootstrap-nfts.sh), reading this JSON.
  */
-contract DecideInitialMint is BaseDevScript, DevConfig {
+contract SelectNFTs is BaseDevScript, DevConfig {
     function run() external {
         // --------------------------------
         // LOAD CONFIG
