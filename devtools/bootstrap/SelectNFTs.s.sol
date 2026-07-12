@@ -14,14 +14,14 @@ import { DNFT } from "dev/interfaces/DNFT.sol";
  *         in bash (see ops/bootstrap/bootstrap-nfts.sh), reading this JSON.
  */
 contract SelectNFTs is BaseDevScript, DevConfig {
-    function run() external {
+    function run(uint256 pSize, uint256 pIdxStart) external {
         // --------------------------------
         // LOAD CONFIG
         // --------------------------------
 
         address[] memory collections = readCollections();
-        uint256 startIndex = vm.envOr("P_IDX_START", uint256(0));
-        uint256 participantCount = vm.envOr("P_SIZE", defaultParticipantSize());
+        uint256 startIndex = pIdxStart;
+        uint256 participantCount = pSize;
 
         uint256[] memory participantIdxs = new uint256[](participantCount);
         for (uint256 j = 0; j < participantCount; j++) {

@@ -2,19 +2,23 @@
 #
 # Executes a single order on-chain via ExecuteOrder.s.sol and logs the result.
 #
-# Usage: exec-order.sh <epoch> <order_index> --rpc-url <url> --sender <addr> --private-key <pk>
+# Usage: exec-order.sh <epoch> <order_index> <participant_size> <participant_start_idx> --rpc-url <url> --sender <addr> --private-key <pk>
 
 GREEN="\033[0;32m"
 YELLOW="\033[0;33m"
 RESET="\033[0m"
 
-USAGE_MSG="Usage: exec-order.sh <epoch> <order_index> --rpc-url <url> --sender <addr> --private-key <pk>"
+USAGE_MSG="Usage: exec-order.sh <epoch> <order_index> <participant_size> <participant_start_idx> --rpc-url <url> --sender <addr> --private-key <pk>"
 : "${1:?$USAGE_MSG}"
 : "${2:?$USAGE_MSG}"
+: "${3:?$USAGE_MSG}"
+: "${4:?$USAGE_MSG}"
 
 epoch="$1"
 order_index="$2"
-shift 2
+participant_size="$3"
+participant_start_idx="$4"
+shift 4
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -35,9 +39,9 @@ if forge script "$PIPELINE_EXECUTION"/ExecuteOrder.s.sol \
     --broadcast \
     --sender "$SENDER" \
     --private-key "$PRIVATE_KEY" \
-    --sig "run(uint256,uint256)" \
+    --sig "run(uint256,uint256,uint256,uint256)" \
     --silent \
-    "$epoch" "$order_index"
+    "$epoch" "$order_index" "$participant_size" "$participant_start_idx"
 then
     mined_at=$(cast block latest --rpc-url "$RPC_URL" -f timestamp)
     ts=$(date -d @"$mined_at" "+%Y-%m-%d %H:%M:%S")

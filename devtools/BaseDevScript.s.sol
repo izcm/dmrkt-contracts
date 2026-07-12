@@ -16,17 +16,9 @@ abstract contract BaseDevScript is Script {
      * @notice Populates the internal participants list and pk lookup map.
      *         Call this before using `participant()` or `pkOf()`. Scripts that only
      *         need to broadcast can skip this and call `generateKeys()` directly.
-     * @dev    Reads `P_SIZE` (default 5) and `P_IDX_START` (default 0)
-     *         from env so the participant range can be changed between pipeline runs
-     *         without threading params through every script's `run()`.
+     * @param keyCount   Number of participant keys to derive (e.g. `P_SIZE`).
+     * @param startIndex Mnemonic index to start deriving from (e.g. `P_IDX_START`).
      */
-    function loadParticipants() internal {
-        uint256 keyCount = vm.envOr("P_SIZE", defaultParticipantSize());
-        uint256 startIndex = vm.envOr("P_IDX_START", uint256(0));
-
-        loadParticipants(keyCount, startIndex);
-    }
-
     function loadParticipants(uint256 keyCount, uint256 startIndex) internal {
         uint256[] memory pks = _generateKeys(keyCount, startIndex);
 
@@ -61,17 +53,12 @@ abstract contract BaseDevScript is Script {
     /**
      * @notice Returns N private keys derived from the chain-specific mnemonic file.
      *         Use this when the script only needs to broadcast — no participant map needed.
-     *         NB: if changing the count, remember to update the --accounts flag in start-fork.sh
      */
     function _generateKeys(
         uint256 keyCount,
         uint256 startIndex
     ) private view returns (uint256[] memory) {
-        // use the standard eth dev mnemonic if not found
-        string memory mnemonic = vm.envOr(
-            "PARTICIPANT_MNEMONIC",
-            string("test test test test test test test test test test test junk")
-        );
+        string memory mnemonic = vm.envString("PARTICIPANT_MNEMONIC");
         uint256[] memory keys = new uint256[](keyCount);
 
         for (uint32 i = 0; i < keyCount; i++) {
@@ -122,10 +109,7 @@ abstract contract BaseDevScript is Script {
      *         mnemonic index (e.g. passed directly via `--sig`).
      */
     function pkAtMnemonicIndex(uint256 idx) internal view returns (uint256) {
-        string memory mnemonic = vm.envOr(
-            "PARTICIPANT_MNEMONIC",
-            string("test test test test test test test test test test test junk")
-        );
+        string memory mnemonic = vm.envString("PARTICIPANT_MNEMONIC");
         return vm.deriveKey(mnemonic, uint32(idx));
     }
 

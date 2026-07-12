@@ -6,7 +6,7 @@
 # optionally exports them to the indexer, then settles a subset on-chain (ExecuteOrder).
 # Execution probability decays across epochs to leave some orders unfilled for demo use.
 #
-# Usage:  run-epochs.sh <epoch_count> [--export]
+# Usage:  run-epochs.sh <epoch_count> <participant_size> [--export]
 # Env:    PIPELINE_STATE_DIR, MNEMONIC_JSON, RPC_URL PIPELINE_EXECUTION
 
 RED="\033[0;31m"
@@ -14,21 +14,26 @@ GREEN="\033[0;32m"
 YELLOW="\033[0;33m"
 RESET="\033[0m"
 
-: "${PIPELINE_STATE_DIR:?PIPELINE_STATE_DIR not set}"
-: "${TOML:?TOML not set}"
-: "${1:?Usage: run-epochs.sh <epoch_count> [--export]}"
+USAGE_MSG="Usage: run-epochs.sh <epoch_count> <participant_size> [--export]"
 
-PHRASE="${PARTICIPANT_MNEMONIC//\"/}"
-: "${PHRASE:?"Expected PARTICIPANT_MNEMONIC as environment variable, exiting."}"
+: "${1:?$USAGE_MSG}"
+: "${2:?$USAGE_MSG}"
 
-epoch_count=$1
-export_orders=false
-[ "$2" = "--export" ] && export_orders=true
+EPOCH_COUNT=$1
+EXPORT_ORDERS=false
+PARTICIPANT_SIZE="${2:?$USAGE_MSG}"
 
-if [ "$export_orders" = "true" ]; then
+[ "$3" = "--export" ] && EXPORT_ORDERS=true
+
+if [ "$EXPORT_ORDERS" = "true" ]; then
     : "${ORDERS_EXPORT_URL:?ORDERS_EXPORT_URL not set}"
 fi
 
+: "${PIPELINE_STATE_DIR:?PIPELINE_STATE_DIR not set}"
+: "${TOML:?TOML not set}"
+
+PHRASE="${PARTICIPANT_MNEMONIC//\"/}"
+: "${PHRASE:?"Expected PARTICIPANT_MNEMONIC as environment variable, exiting."}"
 
 # -------------------------
 # PHASE 0: CONFIG / CTX
@@ -45,14 +50,14 @@ DEPLOYER_ADDR=$(cast wallet address "$DEPLOYER_PK")
 START_TS=$(awk '/^\[31337\.uint\]/{found=1; next} found && /^\[/{exit} found && $1=="pipeline_start_ts"{print $3; exit}' "$TOML")
 END_TS=$(awk '/^\[31337\.uint\]/{found=1; next} found && /^\[/{exit} found && $1=="pipeline_end_ts"{print $3; exit}' "$TOML")
 
-delta=$(( END_TS - START_TS ))
+DELTA=$(( END_TS - START_TS ))
 
-if ((delta < epoch_count )); then
+if ((DELTA < EPOCH_COUNT )); then
     echo "epoch size would be 0 - invalid config"
     exit 1
 fi
 
-epoch_slice=$(( delta / epoch_count ))
+epoch_slice=$(( DELTA / EPOCH_COUNT ))
 epoch_sleep_time=2
 
 # --- logic for counting orders to execute ---
@@ -61,9 +66,9 @@ p0=0.9      # probability of execution epoch 0
 pMin=0.5    # min probability
 k=0.2       # rate constant
 
-for ((epoch=0; epoch < epoch_count; epoch++));
+for ((epoch=0; epoch < EPOCH_COUNT; epoch++));
 do
-    # We'll use full delta instead of epoch_slice as BuildEpoch.TIME_WINDOW
+    # We'll use full DELTA instead of epoch_slice as BuildEpoch.TIME_WINDOW
     # - all orders across epochs will have start/end timestamps valid at pipeline_end_ts
     # - any unsettled order will be valid for demo user to settle themselves
 
@@ -79,8 +84,8 @@ do
         --broadcast \
         --sender "$DEPLOYER_ADDR" \
         --private-key "$DEPLOYER_PK" \
-        --sig "run(uint256,uint256,uint256,uint256)" \
-        $epoch $delta 25 0 \
+        --sig "run(uint256,uint256,uint256,uint256,uint256,uint256)" \
+        $epoch $DELTA 25 0 $PARTICIPANT_SIZE 0 \
 
     sleep $epoch_sleep_time
     
@@ -91,7 +96,7 @@ do
     # PHASE 2: EXPORT ORDERS
     #--------------------------
 
-    if [ "$export_orders" = "true" ]; then
+    if [ "$EXPORT_ORDERS" = "true" ]; then
         echo
         echo "=== PHASE 2: EXPORT ORDERS (epoch $epoch) ==="
         echo "orders: $order_count"
@@ -153,9 +158,9 @@ do
             --broadcast \
             --sender "$DEPLOYER_ADDR" \
             --private-key "$DEPLOYER_PK" \
-            --sig "run(uint256,uint256)" \
+            --sig "run(uint256,uint256,uint256,uint256)" \
             --silent \
-            $epoch $i
+            $epoch $i $PARTICIPANT_SIZE 0
         then
             mined_at=$(cast block latest \
                 --rpc-url "$RPC_URL" \

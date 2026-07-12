@@ -62,7 +62,9 @@ contract BuildEpoch is MarketSim, SignOrder, EpochsJson, BaseDevScript, DevConfi
         uint256 _epoch,
         uint256 _timeWindow,
         uint256 _gap,
-        uint256 _nonceSeed
+        uint256 _nonceSeed,
+        uint256 _pSize,
+        uint256 _pIdxStart
     ) external {
         // --------------------------------
         // LOAD CONFIG & SETUP
@@ -78,7 +80,10 @@ contract BuildEpoch is MarketSim, SignOrder, EpochsJson, BaseDevScript, DevConfi
             _setDataDir(dir);
             console.log("DATA_DIR config exists => out dir set to %s", _dataDir());
         } catch {}
-        loadParticipants();
+
+        console.log("Participants: start_idx=%s count=%s", _pIdxStart, _pSize);
+
+        loadParticipants(_pSize, _pIdxStart);
         _createDefaultDirs(_epoch);
 
         if (_epoch != 0) {

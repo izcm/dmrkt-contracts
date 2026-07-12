@@ -32,7 +32,7 @@ else
 	include .env
 	CHAIN_ID=31337
 	WETH=0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2
-	EPOCH_COUNT = 1
+	EPOCH_COUNT = 4
 endif
 
 -include .env.rpcs
@@ -79,12 +79,12 @@ export P_IDX_START P_SIZE MAX_P_SIZE
 
 # realtime ctx (execute-realtime target)
 REALTIME_TIME_WINDOW  = 15552000 # 180 days, in seconds
-REALTIME_EXEC_RATE    = 0      # % of built orders to execute
-REALTIME_NONCE_SEED   = $(shell date +%s) # non-static since realtime wants new dataset
+REALTIME_EXEC_RATE    = 80      # % of built orders to execute
+# REALTIME_NONCE_SEED   = $(shell date +%s) # non-static since realtime wants new dataset
 
 FUNDER_IDX=0 # strip receiver / distributor of eth and erc20 tokens
 
-TX_MANAGER_TIMESPAN=600
+TX_MANAGER_TIMESPAN=900
 
 # ───────────────────────────────────────────────
 #   FLAGS
@@ -124,44 +124,38 @@ wait:
 # ───────────────────────────────────────────────
 
 # time warping (RPC_URL must point to a local fork)
-execute-pipeline: start pipeline-setup approve run-epochs ## Run the full pipeline
+execute-pipeline: start-replay pipeline-setup approve run-epochs ## Run the full pipeline
 	@echo "🚀 Dev environment ready"
 
 run-epochs: ## Generate, sign, export, and settle orders across all epochs
 	@echo "📊 Building orders..."
-	@./$(OPS)/run-epochs.sh $(EPOCH_COUNT) $(EXPORT_FLAG)
+	@./$(OPS)/run-epochs.sh $(EPOCH_COUNT) $(P_SIZE) $(EXPORT_FLAG)
 
 # only time-window and build + execute orders (testnets)
-# timeWindow is 3 months with end_ts set to 60 days from time of writing
+# timeWindow is 3 months where end timestampset to 60 
 execute-realtime: print-participants
-	@echo "🔢 Finding block number and timestamps..."
 	@./$(OPS_FORK)/pipeline-window.sh --realtime $(REALTIME_TIME_WINDOW)
 	@echo "🌀 Running realtime simulation"
-	@./$(OPS)/run-realtime.sh $(REALTIME_EXEC_RATE) $(REALTIME_NONCE_SEED) --export
+	@./$(OPS)/run-realtime.sh $(P_SIZE) $(or $(NONCE_SEED), 0) $(or $(EPOCH),0) --rate $(REALTIME_EXEC_RATE) --start-idx $(P_IDX_START)
 
-rotate-all-weth:
-	@for i in $$(seq 0 $$(($(MAX_P_SIZE) / $(P_SIZE) - 1))); do \
-		echo "── rotating group $$i ──"; \
-		$(MAKE) rotate-weth P_IDX_START=$$(($(P_IDX_START) + $$i * $(P_SIZE))); \
-	done
+# 	@./$(OPS)/run-realtime.sh $(REALTIME_EXEC_RATE) $(REALTIME_NONCE_SEED) --export
 
 distribute-eth-to-all: 
 	@$(MAKE) distribute-eth P_SIZE=$(MAX_P_SIZE)
-	
-my-own-test: start distribute-eth-to-all deploy-core
-	@set -e \	
-	@for i in $$(seq 0 $$(($(MAX_P_SIZE) / $(P_SIZE) -1))); do \
+
+my-own-test: prepare fork-realtime distribute-eth-to-all deploy-core bootstrap-nfts
+	@set -e; \
+	for i in $$(seq 0 $$(($(MAX_P_SIZE) / $(P_SIZE) - 1))); do \
 		$(MAKE) wrap-weth P_IDX_START=$$(($(P_IDX_START) + $$i * $(P_SIZE))); \
 		$(MAKE) approve P_IDX_START=$$(($(P_IDX_START) + $$i * $(P_SIZE))); \
-		GROUP_ID=100; \
-		echo $$GROUP_ID; \
+		$(MAKE) execute-realtime NONCE_SEED=$$i EPOCH=$$i P_IDX_START=$$(($(P_IDX_START) + $$i * $(P_SIZE))); \
 	done
 
 # ───────────────────────────────────────────────
 #   HIGH-LEVEL PIPELINES
 # ───────────────────────────────────────────────
 
-start: prepare fork ## Compute window, start fork
+start-replay: prepare fork-replay ## Compute window, start fork
 	@echo "🚀 Dev environment ready"
  
 reset: kill-anvil start ## Kill anvil and restart from scratch
@@ -176,7 +170,11 @@ pipeline-setup: deploy-core print-participants wrap-weth bootstrap-nfts
 #   FORK PREPARE & START
 # ───────────────────────────────────────────────
 
-fork: ## Start the anvil fork
+fork-replay: ## Start the anvil fork
+	@echo "🧬 Starting anvil fork..."
+	@./$(OPS_FORK)/start-fork.sh --replay
+
+fork-realtime: 
 	@echo "🧬 Starting anvil fork..."
 	@./$(OPS_FORK)/start-fork.sh
 
@@ -253,7 +251,6 @@ bootstrap-nfts: select-nfts ## Mint tokens per participant from the JSON selecti
 		col_var="NFT_C_$$i"; \
 		collection=$${!col_var}; \
 		echo "  collection $$i: $$collection"; \
-		sleep 20 && \
 		./$(OPS)/bootstrap/bootstrap-nfts.sh $(TOKENS_BY_P_IDX_DIR) $(TX_OUT_DIR)/bootstrap-nfts-$$i.json "$$collection" && \
 		npx tsx ./$(OPS)/tx-manager/main.ts $(TX_OUT_DIR)/bootstrap-nfts-$$i.json $(TX_MANAGER_TIMESPAN); \
 	done
@@ -261,6 +258,8 @@ bootstrap-nfts: select-nfts ## Mint tokens per participant from the JSON selecti
 select-nfts: ## Compute deterministic token-to-participant selection for each NFT collection
 	@echo "🎲 Selecting NFTs..."
 	@forge script $(BOOTSTRAP)/SelectNFTs.s.sol \
+		--sig "run(uint256,uint256)" \
+		$(P_SIZE) $(P_IDX_START) \
 		$(FORGE_COMMON_FLAGS)
 
 # ───────────────────────────────────────────────

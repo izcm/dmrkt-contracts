@@ -39,22 +39,26 @@ contract ExecuteOrder is EpochsJson, FillBid, SettlementValidation, BaseDevScrip
 
     /**
      * @notice Entry point. Reads order at `idx` from epoch `epoch`, validates it, and settles it.
-     * @param epoch  Epoch index — determines which state directory to read from.
-     * @param idx    Order index within the epoch.
+     * @param epoch Epoch index — determines which state directory to read from.
+     * @param idx   Order index within the epoch.
+     * @param pSize Size of the filler pool — this is the group funded with weth/eth and approved
+     *              to not have any reverts. Not necessarily the same group of participants
+     *              BuildEpoch used to build/sign the orders being filled here.
+     * @param pIdxStart Start index of the filler pool in the mnemonic-derived participant range.
      */
-    function run(uint256 epoch, uint256 idx) external {
+    function run(uint256 epoch, uint256 idx, uint256 pSize, uint256 pIdxStart) external {
         // --------------------------------
         // LOAD CONFIG & SETUP
         // --------------------------------
 
         address orderSettler = readSettlementContract();
 
-        uint256 maxParticipantSize = vm.envOr("MAX_P_SIZE", defaultParticipantSize());
-        loadParticipants(maxParticipantSize, 0);
+        loadParticipants(pSize, pIdxStart);
 
         logSection("EXECUTING ORDER");
         console.log("Epoch: %s", epoch);
         console.log("Index: %s", idx);
+        console.log("Participants: start_idx=%s count=%s", pIdxStart, pSize);
         logSeparator();
 
         // --------------------------------
