@@ -21,8 +21,8 @@ export TOML               := pipeline.toml
 
 MODE ?= anvil
 
-# EPOCH_COUNT is 1 since when simulating on sepolia
-# (since we aren't replaying past like on a local anvil fork)
+# EPOCH_SIZE is undefined for sepolia since we aren't replaying past like on a local anvil fork
+# EPOCH_SIZE and SECONDS_AGO is solely used to stimate time-window
 ifeq ($(MODE), sepolia)
 	include .env.sepolia
 	CHAIN_ID=11155111
@@ -33,6 +33,8 @@ else
 	CHAIN_ID=31337
 	WETH=0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2
 	EPOCH_COUNT = 4
+	EPOCH_SIZE = 604800
+	SECONDS_AGO = $(shell expr $(EPOCH_COUNT) \* $(EPOCH_SIZE))
 endif
 
 -include .env.rpcs
@@ -48,8 +50,6 @@ export TOKENS_BY_P_IDX_DIR := data/$(CHAIN_ID)/state/cols-mint-per-idx
 export TX_OUT_DIR = data/$(CHAIN_ID)/state/tx-out
 $(shell mkdir -p $(TX_OUT_DIR))
 
-APPROVALS_ROUND=false # if approvals round -> include all participants
-
 ifeq ($(MODE), sepolia)
 
 # if its the initial run -> set idx to 0 and size to max _size
@@ -58,20 +58,16 @@ ifeq ($(MODE), sepolia)
 # than the pool of previous buyers / minters unless u know what ure doing
 
 # -> future runs only have to build + execute orders
-ifeq ($(MODE)-$(APPROVALS_ROUND), sepolia-true)
+ifeq ($(MODE), sepolia-true)
 	P_IDX_START=0
-	P_SIZE=100
+	P_SIZE=20
 	MAX_P_SIZE=100
-else
-	P_IDX_START=25
-	P_SIZE=25
-	MAX_P_SIZE=50
 endif
 else
 # use these for anvil mode 	
 	P_IDX_START=0
 	P_SIZE=10
-	MAX_P_SIZE=P_SIZE
+	MAX_P_SIZE=$(P_SIZE)
 endif
 
 # if MAX is set to any value !== P_SIZE
