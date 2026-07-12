@@ -29,10 +29,10 @@ jobs:
       - name: Build image
         run: |
           docker build \
-            -t ghcr.io/${{ github.repository_owner }}/dmrkt-contracts:${{ github.ref_name }} \
+            -t ghcr.io/${{ github.repository_owner }}/market-sim:${{ github.ref_name }} \
             .
 
       - name: Push image
         run: |
           docker push \
-            ghcr.io/${{ github.repository_owner }}/dmrkt-contracts:${{ github.ref_name }}
+            ghcr.io/${{ github.repository_owner }}/market-sim:${{ github.ref_name }}

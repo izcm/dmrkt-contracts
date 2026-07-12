@@ -17,4 +17,4 @@ USER foundry
 RUN forge soldeer install
 RUN forge build
 
-CMD ["make compose-entrypoint"]
+CMD ["make pipeline"]
