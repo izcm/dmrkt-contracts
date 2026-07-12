@@ -48,7 +48,14 @@ FILLERS_START_IDX=""
 
 EXEC_RATE=100
 EXPORT_ORDERS=false
-GAP=25
+
+# asks and bids are sampled independently then summed, so total orders is
+# roughly 2x scan_limit*/gap (gap varies in [GAP, GAP+5]); may run lower since
+# asks are filtered to tokens owned by the participant pool. 
+# *scan_limit is set as NFTCollection.MAX_SUPPLY() 
+# we know this function exists as every demo NFTCollection 
+# implements the DNFT interface.
+GAP=20
 
 while [[ $# -gt 0 ]]; do
     case "$1" in

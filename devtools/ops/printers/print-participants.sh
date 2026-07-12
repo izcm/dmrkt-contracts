@@ -25,6 +25,6 @@ echo "DERIVED PARTICIPANTS"
 echo "--------------------"
 for ((i = START_IDX; i < START_IDX + P_SIZE; i++)); do
     addr=$(cast wallet address --mnemonic "${PHRASE//\"/}" --mnemonic-index "$i")
-    echo "P$((i + 1)) | $addr"
+    echo "P$((i)) | $addr"
 done
 echo "--------------------"

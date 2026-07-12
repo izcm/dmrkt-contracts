@@ -70,7 +70,7 @@ else
 # use these for anvil mode 	
 	P_IDX_START=0
 	P_SIZE=10
-	MAX_P_SIZE=50
+	MAX_P_SIZE=10
 endif
 
 # if MAX is set to any value !== P_SIZE
@@ -112,8 +112,8 @@ endif
 # ───────────────────────────────────────────────
 
 # This entrypoint is used by another repo that has its own fork prepare pipeline
-# compose-entrypoint: EXPORT_FLAG = --export
-compose-entrypoint: wait pipeline-setup run-epochs ## Docker Compose entrypoint — assumes fork + pipeline.toml are provided externally
+# pipeline: EXPORT_FLAG = --export
+pipeline: deploy-core print-participants bootstrap-nfts wrap-weth approve run-epochs ## Docker Compose entrypoint — assumes fork + pipeline.toml are provided externally
 
 wait:
 	@forge clean
@@ -123,9 +123,8 @@ wait:
 #   ENTRYPOINTSs
 # ───────────────────────────────────────────────
 
-# time warping (RPC_URL must point to a local fork)
-execute-pipeline: start-replay pipeline-setup approve run-epochs ## Run the full pipeline
-	@echo "🚀 Dev environment ready"
+# time warping 
+start-replay: start-replay pipeline
 
 run-epochs: ## Generate, sign, export, and settle orders across all epochs
 	@echo "📊 Building orders..."
@@ -136,20 +135,32 @@ run-epochs: ## Generate, sign, export, and settle orders across all epochs
 execute-realtime: print-participants
 	@./$(OPS_FORK)/pipeline-window.sh --realtime $(REALTIME_TIME_WINDOW)
 	@echo "🌀 Running realtime simulation"
-	@./$(OPS)/run-realtime.sh $(P_SIZE) $(or $(NONCE_SEED), 0) $(or $(EPOCH),0) --rate $(REALTIME_EXEC_RATE) --start-idx $(P_IDX_START)
+	@./$(OPS)/run-realtime.sh $(P_SIZE) $(or $(NONCE_SEED), 0) $(or $(EPOCH),0) \
+		--rate $(REALTIME_EXEC_RATE) \
+		--start-idx $(P_IDX_START) \
+		--fillers-size $(or $(FILLERS_SIZE), $(P_SIZE)) \
+		--fillers-start-idx $(or $(FILLERS_IDX_START), $(P_IDX_START))
 
 # 	@./$(OPS)/run-realtime.sh $(REALTIME_EXEC_RATE) $(REALTIME_NONCE_SEED) --export
 
 distribute-eth-to-all: 
 	@$(MAKE) distribute-eth P_SIZE=$(MAX_P_SIZE)
 
+# as apposed to `approve` and `wrap-weth`, execute-realtime does not update `p_idx_start` 
+# this is because we want to build orders across the participant group
+# same goes for the filler_idx_start; filler pool only grows, as participants get funded we can keep start_idx as 0
 my-own-test: prepare fork-realtime distribute-eth-to-all deploy-core bootstrap-nfts
 	@set -e; \
 	for i in $$(seq 0 $$(($(MAX_P_SIZE) / $(P_SIZE) - 1))); do \
-		$(MAKE) wrap-weth P_IDX_START=$$(($(P_IDX_START) + $$i * $(P_SIZE))); \
-		$(MAKE) approve P_IDX_START=$$(($(P_IDX_START) + $$i * $(P_SIZE))); \
-		$(MAKE) execute-realtime NONCE_SEED=$$i EPOCH=$$i P_IDX_START=$$(($(P_IDX_START) + $$i * $(P_SIZE))); \
+		IDX_START=$$(($(P_IDX_START) + $$i * $(P_SIZE))); \
+		FILLERS_SIZE=$$(($(P_IDX_START) + ($$i + 1) * $(P_SIZE))); \
+		$(MAKE) wrap-weth P_IDX_START=$$IDX_START; \
+		$(MAKE) approve P_IDX_START=$$IDX_START; \
+		$(MAKE) execute-realtime NONCE_SEED=$$i EPOCH=$$i \
+			FILLERS_SIZE=$$FILLERS_SIZE; \
 	done
+# 		$(MAKE) execute-realtime NONCE_SEED=$$i EPOCH=$$i P_IDX_START=$$IDX_START \
+# 		FILLERS_IDX_START=$(P_IDX_START); \
 
 # ───────────────────────────────────────────────
 #   HIGH-LEVEL PIPELINES
@@ -157,11 +168,8 @@ my-own-test: prepare fork-realtime distribute-eth-to-all deploy-core bootstrap-n
 
 start-replay: prepare fork-replay ## Compute window, start fork
 	@echo "🚀 Dev environment ready"
- 
-reset: kill-anvil start ## Kill anvil and restart from scratch
-	@echo "🔄 Dev reset complete"
 
-pipeline-setup: deploy-core print-participants wrap-weth bootstrap-nfts
+pipeline-setup: deploy-core print-participants bootstrap-nfts
 	@echo "✅ Core deployed and participants bootstrapped"
 	$(MAKE) approve
 	@echo "✅ OrderEngine fully authorized"

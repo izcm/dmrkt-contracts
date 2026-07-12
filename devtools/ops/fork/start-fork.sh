@@ -47,3 +47,5 @@ anvil --fork-url "$SOURCE_RPC" \
 
 # Wait for Anvil to start
 sleep 10
+
+#   --accounts "${P_SIZE:-10}"

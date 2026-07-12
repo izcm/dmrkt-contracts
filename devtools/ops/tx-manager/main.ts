@@ -1,5 +1,10 @@
-import { createPublicClient, createWalletClient, Hex, http } from "viem";
-import { anvil } from "viem/chains";
+import {
+  createPublicClient,
+  createWalletClient,
+  defineChain,
+  Hex,
+  http,
+} from "viem";
 
 import { readFileSync, writeFileSync } from "node:fs";
 
@@ -14,17 +19,30 @@ async function main() {
   const txFile = process.argv[2];
   const timespanSeconds = Number(process.argv[3]);
 
+  const rpcUrl = process.env.RPC_URL;
+  if (!rpcUrl) throw new Error("RPC_URL not set");
+
+  const chainId = Number(process.env.CHAIN_ID);
+  if (!chainId) throw new Error("CHAIN_ID not set");
+
+  const chain = defineChain({
+    id: chainId,
+    name: `chain-${chainId}`,
+    nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+    rpcUrls: { default: { http: [rpcUrl] } },
+  });
+
   const txEnvelopes: TxEnvelope[] = TxEnvelopeSchema.array().parse(
     JSON.parse(readFileSync(txFile, "utf-8")),
   );
 
   const walletClient = createWalletClient({
-    chain: anvil,
-    transport: http(),
+    chain,
+    transport: http(rpcUrl),
   });
   const publicClient = createPublicClient({
-    chain: anvil,
-    transport: http(),
+    chain,
+    transport: http(rpcUrl),
   });
 
   const fromIdxs = txEnvelopes.map((tx) => tx.from.idx);
@@ -50,7 +68,11 @@ async function main() {
 
     logProgress(txEnvelopes);
 
-    if (txEnvelopes.every((tx) => tx.status === "success" || tx.status === "failure")) {
+    if (
+      txEnvelopes.every(
+        (tx) => tx.status === "success" || tx.status === "failure",
+      )
+    ) {
       break;
     }
 
