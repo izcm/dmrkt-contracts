@@ -1,6 +1,6 @@
-# Marketplace contracts + market simulation pipeline
+# Market Sim
 
-A minimal marketplace paired with foundry scripts to simulate marketplace activity.
+A minimal marketplace paired with scripts simulating marketplace activity.
 
 These contracts support the `d | mrkt` interactive demo — its centerpiece being the Foundry simulation pipeline in [`devtools`](./devtools/README.md).
 
