@@ -46,6 +46,7 @@ export TOKENS_BY_P_IDX_DIR := data/$(CHAIN_ID)/state/cols-mint-per-idx
 
 # output files for tx hashes
 export TX_OUT_DIR = data/$(CHAIN_ID)/state/tx-out
+$(shell mkdir -p $(TX_OUT_DIR))
 
 APPROVALS_ROUND=false # if approvals round -> include all participants
 
@@ -70,7 +71,7 @@ else
 # use these for anvil mode 	
 	P_IDX_START=0
 	P_SIZE=10
-	MAX_P_SIZE=10
+	MAX_P_SIZE=P_SIZE
 endif
 
 # if MAX is set to any value !== P_SIZE
@@ -112,8 +113,10 @@ endif
 # ───────────────────────────────────────────────
 
 # This entrypoint is used by another repo that has its own fork prepare pipeline
+## Docker Compose entrypoint — assumes fork + pipeline.toml are provided externally
 # pipeline: EXPORT_FLAG = --export
-pipeline: deploy-core print-participants bootstrap-nfts wrap-weth approve run-epochs ## Docker Compose entrypoint — assumes fork + pipeline.toml are provided externally
+pipeline: deploy-core print-participants distribute-eth-to-all \
+	bootstrap-nfts wrap-weth approve run-epochs
 
 wait:
 	@forge clean
@@ -123,8 +126,8 @@ wait:
 #   ENTRYPOINTSs
 # ───────────────────────────────────────────────
 
-# time warping 
-start-replay: start-replay pipeline
+# time warping
+run-pipeline: start-replay pipeline
 
 run-epochs: ## Generate, sign, export, and settle orders across all epochs
 	@echo "📊 Building orders..."

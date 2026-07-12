@@ -41,7 +41,7 @@ anvil --fork-url "$SOURCE_RPC" \
   --host "$RPC_HOST" \
   --port "$RPC_PORT" \
   "${MNEMONIC_FLAG[@]}" \
-  --accounts "${P_SIZE:-10}" \
+  --accounts 1 \
   "${FORK_BLOCK_FLAG[@]}" \
   --silent &
 
