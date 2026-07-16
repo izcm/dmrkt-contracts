@@ -96,6 +96,7 @@ endif
 FORGE_COMMON_FLAGS = \
 	--rpc-url $(RPC_URL) \
 	--broadcast \
+	--legacy \
 	$(FORGE_SILENT)
 
 EXPORT ?= 0
@@ -105,22 +106,11 @@ EXPORT_FLAG = --export
 endif
 
 # ───────────────────────────────────────────────
-#   RESERVED FOR DMRKT-COMPOSE
-# ───────────────────────────────────────────────
-
-# This entrypoint is used by another repo that has its own fork prepare pipeline
-## Docker Compose entrypoint — assumes fork + pipeline.toml are provided externally
-# pipeline: EXPORT_FLAG = --export
-pipeline: deploy-core print-participants distribute-eth-to-all \
-	bootstrap-nfts wrap-weth approve run-epochs
-
-wait:
-	@forge clean
-	@sleep 4
-
-# ───────────────────────────────────────────────
 #   ENTRYPOINTSs
 # ───────────────────────────────────────────────
+
+pipeline: deploy-core print-participants distribute-eth-to-all \
+	bootstrap-nfts wrap-weth approve run-epochs
 
 # time warping
 run-pipeline: start-replay pipeline
@@ -141,9 +131,6 @@ execute-realtime: print-participants
 		--fillers-start-idx $(or $(FILLERS_IDX_START), $(P_IDX_START))
 
 # 	@./$(OPS)/run-realtime.sh $(REALTIME_EXEC_RATE) $(REALTIME_NONCE_SEED) --export
-
-distribute-eth-to-all: 
-	@$(MAKE) distribute-eth P_SIZE=$(MAX_P_SIZE)
 
 # as apposed to `approve` and `wrap-weth`, execute-realtime does not update `p_idx_start` 
 # this is because we want to build orders across the participant group
@@ -208,6 +195,9 @@ distribute-eth:
 	./$(OPS)/funding/distribute-eth.sh $(FUNDER_IDX) $(P_SIZE) $$TX_FILE \
 		--start-idx $(P_IDX_START) && \
 	npx tsx ./$(OPS)/tx-manager/main.ts $$TX_FILE $(TX_MANAGER_TIMESPAN)
+
+distribute-eth-to-all: 
+	@$(MAKE) distribute-eth P_SIZE=$(MAX_P_SIZE)
 
 strip-eth:
 	@echo "Stripping eth..."
