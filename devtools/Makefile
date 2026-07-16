@@ -51,14 +51,12 @@ export TX_OUT_DIR = data/$(CHAIN_ID)/state/tx-out
 $(shell mkdir -p $(TX_OUT_DIR))
 
 ifeq ($(MODE), sepolia)
-
 # if its the initial run -> set idx to 0 and size to max _size
 # this executes all bootstrap steps for all participants until MAX_P_SZE
 # note that MAX_P_SIZE represents the POSSIBLE NFT HOLDERS do not make it smaller
 # than the pool of previous buyers / minters unless u know what ure doing
 
 # -> future runs only have to build + execute orders
-ifeq ($(MODE), sepolia-true)
 	P_IDX_START=0
 	P_SIZE=20
 	MAX_P_SIZE=100
@@ -93,10 +91,14 @@ ifeq ($(SILENT),1)
 FORGE_SILENT = --silent
 endif
 
+ifeq ($(MODE), anvil)
+	LEGACY_FLAG=--legacy
+endif
+
 FORGE_COMMON_FLAGS = \
 	--rpc-url $(RPC_URL) \
 	--broadcast \
-	--legacy \
+	$(LEGACY_FLAG) \
 	$(FORGE_SILENT)
 
 EXPORT ?= 0
