@@ -60,7 +60,6 @@ ifeq ($(MODE), sepolia)
 	P_IDX_START=0
 	P_SIZE=20
 	MAX_P_SIZE=100
-endif
 else
 # use these for anvil mode 	
 	P_IDX_START=0
