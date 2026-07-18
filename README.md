@@ -2,7 +2,9 @@
 
 A minimal marketplace paired with scripts simulating marketplace activity.
 
-These contracts support the `d | mrkt` interactive demo — its centerpiece being is the simulation pipeline found at [`devtools`](./devtools/README.md).
+These contracts support the `d | mrkt` interactive demo — its centerpiece being is the simulation pipeline found at [`devtools`](./devtools/README.md). Devtools has its own README.
+
+This doc covers the Solidity orderbook contract, its associated test suite, and EIP-712 definitions. 
 
 > [!WARNING]
 > Not production ready.
