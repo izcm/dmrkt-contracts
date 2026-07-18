@@ -2,7 +2,7 @@
 
 A minimal marketplace paired with scripts simulating marketplace activity.
 
-These contracts support the `d | mrkt` interactive demo — its centerpiece being the Foundry simulation pipeline in [`devtools`](./devtools/README.md).
+These contracts support the `d | mrkt` interactive demo — its centerpiece being is the simulation pipeline found at [`devtools`](./devtools/README.md).
 
 > [!WARNING]
 > Not production ready.
