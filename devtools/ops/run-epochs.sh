@@ -41,7 +41,7 @@ PHRASE="${PARTICIPANT_MNEMONIC//\"/}"
 
 # --- compute address 0 from mnemonic and use as funder ---
 
-DEPLOYER_PK=$(cast wallet private-key --mnemonic "$PHRASE" --mnemonic-index 0)
+# DEPLOYER_PK=$(cast wallet private-key --mnemonic "$PHRASE" --mnemonic-index 0)
 DEPLOYER_ADDR=$(cast wallet address "$DEPLOYER_PK")
 
 # --- timestamps and epochs ---

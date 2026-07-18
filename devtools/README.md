@@ -103,25 +103,6 @@ Skim these in order to build a mental model without reading everything:
 | Order signing      | `SignOrder.s.sol`                                                                                                                       |
 | Bootstrap sequence | `DeployCore` → `SelectNFTs` → `wrap-weth.sh` → `bootstrap-nfts.sh` → `approve-nft-transfer.sh` / `approve-allowances.sh` in that order. |
 
-Foundry scripts that invoke `broadcast` receive a `participantIdx`, which corresponds to the participant's mnemonic index. Bash orchestrates parallel execution across participants by invoking one Foundry script per participant. Within each participant, any transactions executed in parallel use explicitly incremented nonces to ensure they remain valid.
-
-```
-Participant A
- ├─ nonce 0
- ├─ nonce 1
- ├─ nonce 2
-
-Participant B
- ├─ nonce 0
- ├─ nonce 1
- ├─ nonce 2
-
-Participant C
- ├─ nonce 0
- ├─ nonce 1
- ├─ nonce 2
-```
-
 ---
 
 ## Setup
@@ -150,13 +131,13 @@ The deploy scripts will populate the rest of the fields (contract addresses, for
 
 **Environment variables** (set these in `.env`)
 
-| Var                    | Description                                                                                        | Example                                      |
-| ---------------------- | -------------------------------------------------------------------------------------------------- | -------------------------------------------- |
-| `SOURCE_RPC`           | Mainnet RPC URL used to seed the fork                                                              | `https://eth-mainnet.g.alchemy.com<API_KEY>` |
-| `RPC_URL`              | Local fork RPC URL                                                                                 | `http://localhost:8545`                      |
-| `PARTICIPANT_MNEMONIC` | Optional. Mnemonic for participant accounts. Defaults to the standard Hardhat/Anvil junk mnemonic. | `word1 word2 ... word12`                     |
-| `DEPLOYER_PK`          | <!-- TODO: describe -->                                                                            | <!-- TODO -->                                |
-| `ORDERS_EXPORT_URL`    | Optional. Endpoint to POST orders to when `--export` is passed to `run-epochs.sh`                  | `http://localhost:5000/api/orders`           |
+| Var                    | Description                                                                                                                  | Example                                      |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------- |
+| `SOURCE_RPC`           | Mainnet RPC URL used to seed the fork                                                                                        | `https://eth-mainnet.g.alchemy.com<API_KEY>` |
+| `RPC_URL`              | Local fork RPC URL                                                                                                           | `http://localhost:8545`                      |
+| `PARTICIPANT_MNEMONIC` | Optional. Mnemonic for participant accounts. Defaults to the standard Hardhat/Anvil junk mnemonic.                           | `word1 word2 ... word12`                     |
+| `DEPLOYER_PK`          | Optional. Private key used to deploy core contracts. Defaults to the private key of `PARTICIPANT_MNEMONIC` idx 0 if not set. | `0xabc123...`                                |
+| `ORDERS_EXPORT_URL`    | Optional. Endpoint to POST orders to when `--export` is passed to `run-epochs.sh`                                            | `http://localhost:5000/api/orders`           |
 
 <!-- TODO: confirm which of RPC_HOST/RPC_PORT are actually read from .env vs only used by start-fork.sh internally -->
 
@@ -228,7 +209,7 @@ Located under `ops/`
 | `run-epochs.sh`           | Orchestrates the full epoch pipeline for each epoch                                                                                                         |
 | `orders/export-orders.sh` | POSTs built orders to `ORDERS_EXPORT_URL`. Called by `run-epochs.sh` when `--export` is passed.                                                             |
 
-<!-- TODO: this table is incomplete — ops/ also has funding/, bootstrap/, printers/, exec-order.sh under orders/, and tx-manager/ (documented separately below). Fill in a row per script, or per-subdirectory if that's cleaner. -->
+<!-- TODO: this table is incomplete — ops/ also has funding/, bootstrap/, helpers/, exec-order.sh under orders/, and tx-manager/ (documented separately below). Fill in a row per script, or per-subdirectory if that's cleaner. -->
 
 ---
 

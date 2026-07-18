@@ -51,7 +51,10 @@ for ((i = START_IDX; i < START_IDX + FROM_COUNT; i++)); do
     # no fixed amount -> drain the full balance, minus enough to cover this tx's own gas
     if [[ -z "$send_amount" ]]; then
         balance=$(cast balance "$p_addr" --rpc-url "$RPC_URL")
-        [[ "$balance" == "0" ]] && continue
+        if [[ "$balance" == "0" ]]; then
+            echo "[$i] $p_addr balance=0 — skipping"
+            continue
+        fi
 
         send_amount=$(echo "$balance - $GAS_RESERVE_WEI" | bc)
 

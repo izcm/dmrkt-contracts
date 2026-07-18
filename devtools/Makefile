@@ -22,12 +22,11 @@ export TOML               := pipeline.toml
 MODE ?= anvil
 
 # EPOCH_SIZE is undefined for sepolia since we aren't replaying past like on a local anvil fork
-# EPOCH_SIZE and SECONDS_AGO is solely used to stimate time-window
 ifeq ($(MODE), sepolia)
 	include .env.sepolia
 	CHAIN_ID=11155111
 	WETH=0x5f207d42F869fd1c71d7f0f81a2A67Fc20FF7323
-	EPOCH_COUNT = 1
+# 	EPOCH_COUNT = 1
 else
 	include .env
 	CHAIN_ID=31337
@@ -40,6 +39,9 @@ endif
 -include .env.rpcs
 
 PARTICIPANT_MNEMONIC := $(subst ",,$(PARTICIPANT_MNEMONIC))
+
+# DEPLOYER_PK is read from the environment/.env if already set, otherwise derived from PARTICIPANT_MNEMONIC idx 0
+DEPLOYER_PK ?= $(shell cast wallet private-key --mnemonic "$(PARTICIPANT_MNEMONIC)" --mnemonic-index 0)
 
 export SOURCE_RPC SEPOLIA_RPC RPC_URL CHAIN_ID RPC_HOST RPC_PORT ORDERS_EXPORT_URL DEPLOYER_PK PARTICIPANT_MNEMONIC
 
@@ -71,14 +73,15 @@ endif
 # it is your responsibility to fund the users P_SIZE..MAX_P_SIZE
 export P_IDX_START P_SIZE MAX_P_SIZE
 
-# realtime ctx (execute-realtime target)
+# realtime ctx (run-realtime target)
 REALTIME_TIME_WINDOW  = 15552000 # 180 days, in seconds
 REALTIME_EXEC_RATE    = 80      # % of built orders to execute
 # REALTIME_NONCE_SEED   = $(shell date +%s) # non-static since realtime wants new dataset
 
 FUNDER_IDX=0 # strip receiver / distributor of eth and erc20 tokens
 
-TX_MANAGER_TIMESPAN=900
+TX_MANAGER_TIMESPAN=1800 # txs that don't resolve affter 30 minutes are assumed to be dropped
+# sepolia is very slow...
 
 # ───────────────────────────────────────────────
 #   FLAGS
@@ -100,7 +103,7 @@ FORGE_COMMON_FLAGS = \
 	$(LEGACY_FLAG) \
 	$(FORGE_SILENT)
 
-EXPORT ?= 0
+EXPORT ?= 1
 
 ifeq ($(EXPORT), 1)
 EXPORT_FLAG = --export
@@ -114,7 +117,7 @@ pipeline: deploy-core print-participants distribute-eth-to-all \
 	bootstrap-nfts wrap-weth approve run-epochs
 
 # time warping
-run-pipeline: start-replay pipeline
+replay-pipeline: start-replay pipeline
 
 run-epochs: ## Generate, sign, export, and settle orders across all epochs
 	@echo "📊 Building orders..."
@@ -122,32 +125,37 @@ run-epochs: ## Generate, sign, export, and settle orders across all epochs
 
 # only time-window and build + execute orders (testnets)
 # timeWindow is 3 months where end timestampset to 60 
-execute-realtime: print-participants
+run-realtime: print-participants
 	@./$(OPS_FORK)/pipeline-window.sh --realtime $(REALTIME_TIME_WINDOW)
 	@echo "🌀 Running realtime simulation"
 	@./$(OPS)/run-realtime.sh $(P_SIZE) $(or $(NONCE_SEED), 0) $(or $(EPOCH),0) \
 		--rate $(REALTIME_EXEC_RATE) \
 		--start-idx $(P_IDX_START) \
 		--fillers-size $(or $(FILLERS_SIZE), $(P_SIZE)) \
-		--fillers-start-idx $(or $(FILLERS_IDX_START), $(P_IDX_START))
+		--fillers-start-idx $(or $(FILLERS_IDX_START), $(P_IDX_START)) \
+		$(EXPORT_FLAG)
 
 # 	@./$(OPS)/run-realtime.sh $(REALTIME_EXEC_RATE) $(REALTIME_NONCE_SEED) --export
 
-# as apposed to `approve` and `wrap-weth`, execute-realtime does not update `p_idx_start` 
+# as apposed to `approve` and `wrap-weth`, run-realtime does not update `p_idx_start` 
 # this is because we want to build orders across the participant group
 # same goes for the filler_idx_start; filler pool only grows, as participants get funded we can keep start_idx as 0
-my-own-test: prepare fork-realtime distribute-eth-to-all deploy-core bootstrap-nfts
+separate-deploy: distribute-eth-to-all deploy-core bootstrap-nfts
+full-realtime: # run this after deploy-core with a funded idx 0
 	@set -e; \
 	for i in $$(seq 0 $$(($(MAX_P_SIZE) / $(P_SIZE) - 1))); do \
 		IDX_START=$$(($(P_IDX_START) + $$i * $(P_SIZE))); \
 		FILLERS_SIZE=$$(($(P_IDX_START) + ($$i + 1) * $(P_SIZE))); \
-		$(MAKE) wrap-weth P_IDX_START=$$IDX_START; \
-		$(MAKE) approve P_IDX_START=$$IDX_START; \
-		$(MAKE) execute-realtime NONCE_SEED=$$i EPOCH=$$i \
+		if [ $$i -ne 0 ]; then \
+			$(MAKE) wrap-weth P_IDX_START=$$IDX_START; \
+			$(MAKE) approve P_IDX_START=$$IDX_START; \
+		fi; \
+		$(MAKE) run-realtime NONCE_SEED=$$i EPOCH=$$i \
 			FILLERS_SIZE=$$FILLERS_SIZE; \
 	done
-# 		$(MAKE) execute-realtime NONCE_SEED=$$i EPOCH=$$i P_IDX_START=$$IDX_START \
-# 		FILLERS_IDX_START=$(P_IDX_START); \
+
+# run realtime with local fork and no time replay
+anvil-realtime: prepare fork-realtime distribute-eth-to-all deploy-core bootstrap-nfts full-realtime 
 
 # ───────────────────────────────────────────────
 #   HIGH-LEVEL PIPELINES
@@ -334,7 +342,7 @@ kill-anvil: ## Kill the running anvil process
 	pkill anvil 2>/dev/null || true
 
 print-participants: ## Print pipeline participants
-	@./$(OPS)/printers/print-participants.sh $(P_SIZE) --start-idx $(P_IDX_START)
+	@./$(OPS)/helpers/print-participants.sh $(P_SIZE) --start-idx $(P_IDX_START)
 
 print-balances: ## Print ETH and WETH balances for participants idx P_IDX_START..+P_SIZE
-	@./$(OPS)/printers/check-balances.sh $(WETH) $(P_SIZE) --start-idx $(P_IDX_START)
+	@./$(OPS)/helpers/check-balances.sh $(WETH) $(P_SIZE) --start-idx $(P_IDX_START)

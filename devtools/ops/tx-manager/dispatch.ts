@@ -18,16 +18,36 @@ export async function initNonces(
   nonceTracker: Map<Hex, number>,
   fromIdxs: number[],
 ) {
-  await Promise.all(
-    fromIdxs.map(async (idx) => {
-      const address = accountAtIndex(idx).address;
-      const nonce = await publicClient.getTransactionCount({
+  for (const idx of fromIdxs) {
+    const address = accountAtIndex(idx).address;
+    const nonce = await getTransactionCountWithRetry(publicClient, address);
+    nonceTracker.set(address, nonce);
+  }
+}
+
+// retries retryable errors (eg. 429) indefinitely with backoff -- we can't proceed without every nonce
+async function getTransactionCountWithRetry(
+  publicClient: PublicClient<Transport, Chain>,
+  address: Hex,
+) {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await publicClient.getTransactionCount({
         address,
         blockTag: "pending",
       });
-      nonceTracker.set(address, nonce);
-    }),
-  );
+    } catch (err) {
+      if (!isRetryable(err)) {
+        throw err;
+      }
+      const delay = Math.min(1000 * attempt, 15000);
+      console.error(
+        `nonce lookup failed for ${address}, retrying in ${delay}ms:`,
+        err,
+      );
+      await new Promise((res) => setTimeout(res, delay));
+    }
+  }
 }
 
 // poll transaction receipts
@@ -57,8 +77,8 @@ export async function pollReceipts(
 
       onEnvelopeUpdate(txEnvelopes);
     } catch (err) {
-      if (err instanceof TransactionReceiptNotFoundError) {
-        // no tx receipt found -> continue
+      if (err instanceof TransactionReceiptNotFoundError || isRetryable(err)) {
+        // no tx receipt found yet, or transient RPC error -> retry next poll
         continue;
       }
 
@@ -102,6 +122,9 @@ export async function processUnsentEnvelopes(
         tx.errMsg = err instanceof Error ? err.message : JSON.stringify(err);
         onEnvelopeUpdate(txEnvelopes);
       }
+
+      // brief pause before moving on -- avoids hammering the RPC right after an error
+      await new Promise((res) => setTimeout(res, 1000));
     }
   }
 }

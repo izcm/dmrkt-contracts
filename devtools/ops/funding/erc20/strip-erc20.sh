@@ -68,7 +68,7 @@ for ((i = START_IDX; i < START_IDX + FROM_COUNT; i++)); do
         --argjson fromIdx "$i" \
         --argjson toIdx "$DEST_IDX" \
         --arg contract "$TOKEN_ADDR" \
-        --arg tokens "$TOKENS_PER_SENDER" '
+        --arg tokens "$send_amount" '
     {
         type: "contract-call",
         from: {
@@ -76,7 +76,7 @@ for ((i = START_IDX; i < START_IDX + FROM_COUNT; i++)); do
             idx: $fromIdx
         },
         to: $contract,
-        sig: "transfer(address, uint256)",
+        sig: "transfer(address,uint256)",
         args: [
             { kind: "participant", idx: $toIdx },
             $tokens

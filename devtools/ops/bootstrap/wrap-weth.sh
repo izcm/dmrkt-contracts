@@ -17,7 +17,7 @@ shift 3
 START_IDX=0
 RPC_URL="${RPC_URL:-http://localhost:8545}" # default anvil
 AMOUNT="" # empty -> wrap full balance (minus gas reserve)
-GAS_RESERVE_WEI=500000000000000000 # 0.5 ETH kept unwrapped for gas
+GAS_RESERVE_WEI=250000000000000000 # 0.25 ETH kept unwrapped for gas
 
 # flags
 while [[ $# -gt 0 ]]; do
