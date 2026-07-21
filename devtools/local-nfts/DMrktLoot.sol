@@ -5,7 +5,7 @@ import "@openzeppelin/token/ERC721/ERC721.sol";
 import "@openzeppelin/utils/Base64.sol";
 import "@openzeppelin/utils/Strings.sol";
 
-import { DNFT } from "dev/interfaces/DNFT.sol";
+import { DNFT } from "../interfaces/DNFT.sol";
 import { DMrktMathConfig } from "./DMrktMathConfig.sol";
 import { DMrktNFTLib } from "./DMrktNFTLib.sol";
 

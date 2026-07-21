@@ -36,14 +36,16 @@ else
 	SECONDS_AGO = $(shell expr $(EPOCH_COUNT) \* $(EPOCH_SIZE))
 endif
 
--include .env.rpcs
-
 PARTICIPANT_MNEMONIC := $(subst ",,$(PARTICIPANT_MNEMONIC))
 
 # DEPLOYER_PK is read from the environment/.env if already set, otherwise derived from PARTICIPANT_MNEMONIC idx 0
 DEPLOYER_PK ?= $(shell cast wallet private-key --mnemonic "$(PARTICIPANT_MNEMONIC)" --mnemonic-index 0)
 
-export SOURCE_RPC SEPOLIA_RPC RPC_URL CHAIN_ID RPC_HOST RPC_PORT ORDERS_EXPORT_URL DEPLOYER_PK PARTICIPANT_MNEMONIC
+# for pipeline.toml config per chain
+# only needed when pipeline.toml contains several chains
+-include .env.rpcs
+
+export SEPOLIA_RPC SOURCE_RPC RPC_URL CHAIN_ID RPC_HOST RPC_PORT ORDERS_EXPORT_URL DEPLOYER_PK PARTICIPANT_MNEMONIC
 
 export PIPELINE_STATE_DIR := data/$(CHAIN_ID)/state
 export TOKENS_BY_P_IDX_DIR := data/$(CHAIN_ID)/state/cols-mint-per-idx
@@ -103,7 +105,7 @@ FORGE_COMMON_FLAGS = \
 	$(LEGACY_FLAG) \
 	$(FORGE_SILENT)
 
-EXPORT ?= 1
+EXPORT ?= 0
 
 ifeq ($(EXPORT), 1)
 EXPORT_FLAG = --export
